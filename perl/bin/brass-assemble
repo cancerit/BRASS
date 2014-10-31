@@ -1,0 +1,438 @@
+#!/usr/bin/env perl
+
+########## LICENCE ##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+########## LICENCE ##########
+
+# brass-assemble -- Find exact breakpoints via local assembly.
+
+use strict;
+use warnings FATAL => 'all';
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use File::Path qw(make_path);
+use File::Temp;
+use Getopt::Long qw(:config bundling no_ignore_case);
+
+use Bio::DB::Sam;
+
+use Graph;
+use Graph::Reader::Velvet;
+
+use Bio::Brass;
+use Bio::Brass::Alignment;
+use Bio::Brass::ReadSelection;
+use Bio::Brass::VelvetGraph;
+use Bio::Tools::Run::Velvet;
+
+$0 =~ s{.*/}{};
+
+my %output_filename;
+my $output_format = 'tab';
+my $basedir = "working";
+my $verbose = 0;
+my $clean = 0;
+my $genome_fa;
+my $score_cutoff = 61;
+my $aligner_mode;
+
+sub show_version {
+  print <<"EOF";
+brass-assemble (Brass) $Bio::Brass::VERSION
+Copyright (C) 2013 Genome Research Ltd.
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+  exit 0;
+}
+
+sub show_usage {
+  my ($option) = @_;
+
+  my $usage = <<"EOF";
+Usage: brass-assemble [OPTION]... BEDPE-FILE [BAM-FILE]...
+Options:
+  -o FILE    Write events to FILE rather than standard output
+  -O FORMAT  Write the next output stream in the specified FORMAT
+  -r TARGET  Use reference TARGET (FASTA file or Exonerate server HOST:12886)
+  -T DIR     Use DIR for temporary working files  [./working]
+  -X         Clean the working dir if flag present
+  -m         Mode [aln|mem], how to interpret BWA aligned input.
+  -v         Display progress information (-vv for more detailed logging)
+Output formats:
+  bedpe      Paired-end BED
+  log        Progress information as selected via -v
+  tab        Legacy tabular format
+  vcf        Variant Call Format (v4.1)
+EOF
+
+  if ($option eq 'help') { print $usage; exit 0; }
+  else { print STDERR $usage; exit 1; }
+}
+
+GetOptions(
+  'o=s' => sub { $output_filename{$output_format} = $_[1] },
+  'O=s' => \$output_format,
+  'r=s' => \$genome_fa, #\$Bio::Brass::Alignment::exonerate_target,
+  'T=s' => \$basedir,
+  'X' => \$clean,
+  'm=s' => \$aligner_mode,
+  'v+'  => \$verbose,
+  'help|?' => \&show_usage,
+  'version' => \&show_version) or show_usage('bad-options');
+
+show_usage('stdin-terminal') if scalar @ARGV == 0 && -t STDIN;
+
+#warn "$0: warning: no reference genome/Exonerate server specified\n"
+#    unless defined $Bio::Brass::Alignment::exonerate_target;
+
+die "$0: undefined reference file argument R" unless defined $genome_fa;
+die "$0: bad reference file |$genome_fa|" unless -f $genome_fa;
+die "$0: mode must be defined" unless(defined $aligner_mode);
+die "$0: bad mode |$aligner_mode|" unless($aligner_mode =~ m/^(aln|mem)$/);
+
+my @bam_filenames = (scalar @ARGV > 1)? splice(@ARGV, 1) : ();
+my @sample_bams = map { Bio::Brass::ReadSelection->new($_, $aligner_mode) } @bam_filenames;
+
+my $ref_fai = Bio::DB::Sam::Fai->load($genome_fa);
+$Bio::Brass::Alignment::ref_fai = $ref_fai;
+
+my ($bedpe, $tab, $vcf);
+
+sub open_output {
+  my ($filename) = @_;
+  open my $fh, '>', $filename or die "$0: can't write to $filename: $!\n";
+  return $fh;
+}
+
+
+binmode \*STDOUT, ":utf8";
+
+$bedpe = open_output($output_filename{bedpe}) if exists $output_filename{bedpe};
+$tab = open_output($output_filename{tab}) if exists $output_filename{tab};
+die "$0: VCF output not implemented\n" if exists $output_filename{vcf};
+
+my $graph_reader = Graph::Reader::Velvet->new();
+
+my $working_dir = File::Temp->newdir( "$basedir/tmpXXXXXX", CLEANUP => $clean );
+
+my $counter = 0;
+
+while (<>) {
+  next if $_ =~ m/^#/;
+  chomp;
+  $counter++;
+  eval{
+  	assemble(split /\t/, $_);
+  };if($@){
+
+  	if (defined $bedpe)
+	  { close $bedpe or die "$0: closing $output_filename{bedpe} failed: $!\n"; }
+	if (defined $tab)
+	  { close $tab or die "$0: closing $output_filename{tab} failed: $!\n"; }
+	if (defined $vcf)
+	  { close $vcf or die "$0: closing $output_filename{vcf} failed: $!\n"; }
+	close or die "$0: closing $output_filename{log} failed: $!\n";
+
+  	die $@;
+  }
+#  last if($counter > 10);
+}
+
+print $tab "#EOF" if(defined $tab);
+
+if (defined $bedpe)
+  { close $bedpe or die "$0: closing $output_filename{bedpe} failed: $!\n"; }
+if (defined $tab)
+  { close $tab or die "$0: closing $output_filename{tab} failed: $!\n"; }
+if (defined $vcf)
+  { close $vcf or die "$0: closing $output_filename{vcf} failed: $!\n"; }
+
+print "Finished. $counter lines processed\n"  if $verbose;
+close or die "$0: closing $output_filename{log} failed: $!\n";
+
+exit 0;
+
+sub assemble {
+  my ($chrL, $L5, $L3, $chrH, $H5, $H3, $id, undef, $strandL, $strandH) = @_;
+  $L5++; $H5++;  # Convert to 1-based [$L5,$L3], [$H5,$H3] intervals
+
+  print "Processing variant: $id\n" if $verbose;
+
+#return undef unless($id == 1); # uncomment to investigate a single variant (update the value)
+
+  print "* $id ($chrL$strandL:$L5-$L3 / $chrH$strandH:$H5-$H3)\n"
+    if $verbose;
+
+  #make_path "$workingdir_id";
+  my $workingdir_id = File::Temp->newdir( "$working_dir/${id}-XXXXXX", CLEANUP => $clean );
+
+
+  my @sample_names;
+
+  my @read_filenames;
+  foreach my $sample (@sample_bams) {
+    my $ndx = scalar(@read_filenames) + 1;
+    my $fname = "$workingdir_id/reads$ndx.sam";
+    open my $reads, '>', $fname or die "$0: can't write to $fname: $!\n";
+    my ($kept, $discarded) = $sample->write_local_reads($reads, @_);
+    push @sample_names, $sample->sample_name();
+    close $reads or die "$0: closing $fname failed: $!\n";
+    print "Wrote $kept reads to $fname, discarded $discarded\n" if $verbose;
+    if($kept == 0) {
+      print "No reads found in sample $sample_names[-1] for assembly input ... skipping variant\n" if $verbose;
+      return undef;
+    }
+    push @read_filenames, $fname;
+  }
+
+  K: foreach my $k (65, 53, 47, 37, 31, 27, 25, 23, 21, 19, 17) {
+    my $directory = "$workingdir_id/$k";
+    if (-d $directory) { unlink glob("$directory/*") }
+    else { make_path $directory }
+
+    my $velvet = Bio::Tools::Run::Velvet->new(-hash_length => $k,
+			      -dir => $directory, -verbose => $verbose);
+    $velvet->quiet(1);
+
+    $velvet->prepare(@read_filenames);
+    @_ = $velvet->run(-cov_cutoff => 1.001);
+    print "$k: graph has $_[0] vertices; n50 $_[1], max $_[2], total $_[3]\n"
+      if $verbose;
+
+    my $graph = $graph_reader->read_graph("$directory/LastGraph");
+
+    ## TODO there is currently a bug in velvet and I think the read contributions are suspect...
+    ## the contributing reads are found in the stats file and must be read in separately...
+#    open(my $stats_file_fh,"<","$directory/stats.txt") or die "Cannot open |$directory/stats.txt| for reading: $!";
+#    my $stats_header = <$stats_file_fh>;
+#    while(my $line = <$stats_file_fh>){
+#        chomp $line;
+#        my($n_id,undef,undef,undef,undef,undef,undef,undef,undef,undef,@contrib_read_counts) = split("\t", $line);
+#        my $counter = 1;
+#        foreach my $contrib_read_count (@contrib_read_counts){
+#            $graph->set_vertex_attribute($n_id,"short${counter}_nb", $contrib_read_count);
+#            $graph->set_vertex_attribute(-$n_id,"short${counter}_nb", $contrib_read_count);
+#            $counter++;
+#        }
+#    }
+#	close($stats_file_fh) || die("Cannot close handle for |$directory/stats.txt|: $!");
+
+    my $nbubbles = smooth_fringe_bubbles($graph);
+    print "$k: smoothed $nbubbles bubbles on the raggedy edge\n" if $verbose;
+
+    my ($score, @quintets) = quintet_score($graph);
+    print "$k: score: $score\n" if $verbose;
+
+    # TODO From here down lifted from previous edition of driver script,
+    # ought to be tidied up.
+
+    next unless $score >= $score_cutoff;
+    next unless scalar(@quintets) == 1;
+    my @quintet = @{$quintets[0]};
+    print "Feature ", format_quintet(@quintet), " (lengths ", join(", ", map { $graph->get_vertex_contig_length($_) } @quintet), ")\n";
+    print ">L1\n", $graph->get_vertex_contig($quintet[1]), "\n" if $verbose;
+    print ">R3\n", $graph->get_vertex_contig($quintet[3]), "\n" if $verbose;
+
+    my $L1len = length $graph->get_vertex_contig($quintet[1]);
+    my $R3len = length $graph->get_vertex_contig($quintet[3]);
+
+    my $Lregion =  "$chrL:".($L5-($L1len+500)).'-'.($L3+500+$L1len);
+    my $Rregion =  "$chrH:".($H5-($R3len+500)).'-'.($H3+500+$R3len);
+
+    map_contigs($directory,"--percent 80", $graph, [$Lregion,$Rregion] ,$quintet[1], $quintet[3]);
+
+    my ($rawchrL, $prettychrL, $aligned_L5, $aligned_L3, $aligned_Lstrand,
+        $text, $gap,
+        $rawchrH, $prettychrH, $aligned_H5, $aligned_H3, $aligned_Hstrand) = get_bp_alignment($graph, @quintet);
+
+
+    unless (defined $gap) {
+      print "Total disaster: gap is undefined\n" if $verbose;
+      next;
+    }
+
+    # FIXME Allow one side to be undefined
+    unless (defined $prettychrL && defined $prettychrH) {
+      print "At least one side couldn't be mapped\n" if $verbose;
+      next;
+    }
+
+    my $chro = chrcmp($rawchrL, $rawchrH);
+#print "L: $rawchrL:$prettychrL:$aligned_L5 / H: $rawchrH:$prettychrH:$aligned_H5; chro:$chro; L5>H5:", ($aligned_L5>$aligned_H5)?"T":"F", "\n";
+    if ($chro > 0 || ($chro == 0 && $aligned_L5 > $aligned_H5)) {
+      # Reverse it
+      ($rawchrL, $rawchrH) = ($rawchrH, $rawchrL);
+      ($prettychrL, $prettychrH) = (flipstrand($prettychrH), flipstrand($prettychrL));
+      ($aligned_L5, $aligned_L3, $aligned_H5, $aligned_H3) = ($aligned_H3, $aligned_H5, $aligned_L3, $aligned_L5);
+      ($text = reverse $text) =~ tr/ACGTacgt/TGCAtgca/;
+#print "L: $rawchrL:$prettychrL:$aligned_L5-$aligned_L3 / H: $rawchrH:$prettychrH:$aligned_H5-$aligned_H3; done reversed it\n";
+    }
+
+    ## Skip anything that falls outside of the initial phase I bounds
+    unless ($L5 <= $aligned_L5 && $aligned_L5 <= $L3 && $L5 <= $aligned_L3 && $aligned_L3 <= $L3) {
+      print "Low side $aligned_L5..$aligned_L3 $aligned_Lstrand outwith bounds $L5..$L3 $strandL\n" if $verbose;
+      next;
+    }
+    unless ($H5 <= $aligned_H5 && $aligned_H5 <= $H3 && $H5 <= $aligned_H3 && $aligned_H3 <= $H3) {
+      print "High side $aligned_H5..$aligned_H3 $aligned_Hstrand outwith bounds $H5..$H3 $strandH\n" if $verbose;
+      next;
+    }
+
+    my $L = "$prettychrL  " . compress_range($aligned_L5, $aligned_L3);
+    my $H = compress_range($aligned_H5, $aligned_H3) . "  $prettychrH";
+    my $brass;
+    my ($micro, $non_tmpl) = qw(. .);
+    if ($gap > 0)    {
+      $brass = "$L] $text [$H";
+      $non_tmpl = $text;
+    }
+    elsif ($gap < 0) {
+      $brass = "$L--$text--$H";
+      $micro = $text;
+    }
+    else { $brass = "$L][$H" }
+    $brass .= "  (score $score)";
+
+    print "  $brass\n" if $verbose;
+
+    ## Locate and attach read names to the break point spanning node.
+    my %contrib_read_names;
+    my $contrib_read_string = q{};
+    my $contributing_samples = '';
+
+    ##[[id,offset,offset],[id,offset,offset],....]
+    my $contrib_read_ids = $graph->get_vertex_attribute($quintet[2],'short_reads'); ##get the middle vertex from the quintet
+
+    my %contrib_read_ids_map;
+    map {$contrib_read_ids_map{$_->[0]}++} @{$contrib_read_ids};
+
+    ## Only include the sample name if it actually contributed to the event.
+    ## This gives a rough estimate of SOMATICNESS.
+    ## It is not foolproof tho... If the untemplated sequence is large enough and shares similarity with ANY of the search space
+    ## it will give a false reading as kmers from other locations will be used to construct the node... although it may shatter the pattern...
+    foreach my $index (1..scalar(@sample_names)){
+      if($graph->get_vertex_attribute($quintet[2],"short${index}_Ocov" )){
+        $contributing_samples .= ',' if $contributing_samples;
+        $contributing_samples .= $sample_names[$index-1];
+      }
+    }
+
+    my $reads_file = join('/',$directory,'CnyUnifiedSeq.names');
+    open(my $reads_file_fh,"<",$reads_file) or die "Cannot open |$reads_file| for reading: $!";
+
+    while(<$reads_file_fh>){
+      chomp;
+      my($read_name,$id,$category) = split("\t",$_);
+      next unless exists $contrib_read_ids_map{$id};
+      $read_name =~ s/>//;## get rid of the first fastq header character.
+      push @{$contrib_read_names{$category}},$read_name;
+    }
+    close($reads_file_fh) || die("Cannot close handle for |$reads_file|: $!");
+
+    foreach my $cat (sort {$a <=> $b} keys %contrib_read_names){
+      $contrib_read_string .= q{|}  if($contrib_read_string);
+      $contrib_read_string .= join(q{,}, @{$contrib_read_names{$cat}});
+    }
+
+    if (defined $bedpe) {
+      # FIXME Check that these are all appropriate, especially strands
+      # and that the coordinates are not off-by-one (especially zero-based)
+
+      print $bedpe join("\t", $rawchrL, ($aligned_L5-1), $aligned_L3, $rawchrH, ($aligned_H5-1), $aligned_H3, $id,
+			      $score, strand($prettychrL), strand($prettychrH), $contributing_samples, $brass, $non_tmpl, $micro, $contrib_read_string ), "\n";
+    }
+
+    if (defined $tab) {
+      print $tab join("\t",
+	    $rawchrL, strand($prettychrL), $aligned_L5, $aligned_L3,
+	    $rawchrH, strand($prettychrH), $aligned_H5, $aligned_H3,
+	    $non_tmpl,
+	    $micro,
+	    $score, $id, $contributing_samples, $brass), "\n";
+    }
+
+    open FMT, ">$directory/features.txt" or die "Can't write $directory/features.txt: $!\n";
+    binmode FMT, ":utf8";
+    print FMT "Feature: ", format_quintet(@quintet), "\n",
+      format_quintet_alignment($graph, @{$_}), "\n\n" foreach @quintets;
+    close FMT;
+
+    open QUERY, ">$directory/query.fa" or die "Can't write $directory/query.fa: $!\n";
+    open TARGET, ">$directory/target.fa" or die "Can't write $directory/target.fa: $!\n";
+    my ($one, $broken, $two) = get_quintet_triplet($graph, @quintet);
+    print QUERY ">query\n$broken\n";
+    print TARGET ">one\n$one\n>two\n$two\n";
+    close TARGET;
+    close QUERY;
+
+    last K;
+    # End of TODO tidy up
+  }
+  print "\n" if $verbose;
+}
+
+sub chrcmp {
+  my ($a, $b) = @_;
+  $a =~ s/Chr\.//;  $a =~ s/-$//;
+  $b =~ s/Chr\.//;  $b =~ s/-$//;
+
+  if ($a !~ /\D/) { return ($b !~ /\D/)? $a <=> $b : -1 }
+  else { return ($b !~ /\D/)? +1 : $a cmp $b }
+}
+
+sub flipstrand {
+  local $_ = $_[0];
+  # The strand character to be flipped is before any "["-introduced clauses
+  my ($chr, $extra) = /([^[ ]+)((\s*\[.*)?)/;
+  $_ = $chr;
+  if (/-$/) { s/-$// }
+  else { $_ .= '-' }
+  return "$_$extra";
+}
+
+sub strand {
+  local $_ = $_[0];
+  # The strand character is before any "["-introduced clauses
+  my ($chr, $extra) = /([^[ ]+)((\s*\[.*)?)/;
+  $_ = $chr;
+  if (/-$/) { return '-' } else { return '+' }
+}
+
+sub compress_range {
+    my $a = "$_[0]";
+    my $b = "$_[1]";
+
+    if (length($a) == length($b)) {
+	return $a if $a eq $b;
+
+	my $i = 0;
+	$i++ while substr($a, $i, 1) eq substr($b, $i, 1);
+
+	# Write a single digit difference as 216(17) rather than 216(7).
+	$i-- if $i > 0 && $i == length($b) - 1;
+
+	$b = substr($b, $i);
+    }
+
+    return "$a($b)";
+}

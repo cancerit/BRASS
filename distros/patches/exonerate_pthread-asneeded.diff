@@ -1,0 +1,247 @@
+--- exonerate-2.2.0-orig/configure.in	2008-10-17 11:04:33.000000000 +0100
++++ exonerate-2.2.0/configure.in	2013-10-08 12:05:58.028644000 +0100
+@@ -289,7 +289,7 @@
+ if test "$enable_pthreads" = yes; then
+     echo "Using PTHREADS"
+     CFLAGS="$CFLAGS -DUSE_PTHREADS"
+-    LDFLAGS="$LDFLAGS -lpthread"
++    LDFLAGS="$LDFLAGS -pthread"
+ elif test "$enable_pthreads" = no; then
+     echo "Not using pthreads"
+ else
+--- exonerate-2.2.0-orig/configure	2008-10-17 11:04:52.000000000 +0100
++++ exonerate-2.2.0/configure	2013-10-08 12:06:07.590714000 +0100
+@@ -4569,7 +4569,7 @@
+ if test "$enable_pthreads" = yes; then
+     echo "Using PTHREADS"
+     CFLAGS="$CFLAGS -DUSE_PTHREADS"
+-    LDFLAGS="$LDFLAGS -lpthread"
++    LDFLAGS="$LDFLAGS -pthread"
+ elif test "$enable_pthreads" = no; then
+     echo "Not using pthreads"
+ else
+--- exonerate-2.2.0-orig/aclocal.m4	2008-10-17 11:04:50.000000000 +0100
++++ exonerate-2.2.0/aclocal.m4	2013-10-08 14:22:30.691126000 +0100
+@@ -1,5 +1,5 @@
+ dnl aclocal.m4 generated automatically by aclocal 1.4-p6
+-
++dnl (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ dnl Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ dnl This file is free software; the Free Software Foundation
+ dnl gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/Makefile.in	2008-10-17 11:04:50.000000000 +0100
++++ exonerate-2.2.0/Makefile.in	2013-10-08 14:25:14.133290000 +0100
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/doc/Makefile.in
++++ exonerate-2.2.0/doc/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/doc/man/Makefile.in
++++ exonerate-2.2.0/doc/man/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/doc/man/man1/Makefile.in
++++ exonerate-2.2.0/doc/man/man1/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/Makefile.in
++++ exonerate-2.2.0/src/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/struct/Makefile.in
++++ exonerate-2.2.0/src/struct/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/general/Makefile.in
++++ exonerate-2.2.0/src/general/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/sequence/Makefile.in
++++ exonerate-2.2.0/src/sequence/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/comparison/Makefile.in
++++ exonerate-2.2.0/src/comparison/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/database/Makefile.in
++++ exonerate-2.2.0/src/database/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/c4/Makefile.in
++++ exonerate-2.2.0/src/c4/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/bsdp/Makefile.in
++++ exonerate-2.2.0/src/bsdp/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/sdp/Makefile.in
++++ exonerate-2.2.0/src/sdp/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/model/Makefile.in
++++ exonerate-2.2.0/src/model/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/hub/Makefile.in
++++ exonerate-2.2.0/src/hub/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/program/Makefile.in
++++ exonerate-2.2.0/src/program/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/src/util/Makefile.in
++++ exonerate-2.2.0/src/util/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/Makefile.in
++++ exonerate-2.2.0/test/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/data/Makefile.in
++++ exonerate-2.2.0/test/data/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/data/cdna/Makefile.in
++++ exonerate-2.2.0/test/data/cdna/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/data/protein/Makefile.in
++++ exonerate-2.2.0/test/data/protein/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/exonerate/Makefile.in
++++ exonerate-2.2.0/test/exonerate/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/ipcress/Makefile.in
++++ exonerate-2.2.0/test/ipcress/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+--- exonerate-2.2.0-orig/test/util/Makefile.in
++++ exonerate-2.2.0/test/util/Makefile.in
+@@ -1,5 +1,5 @@
+ # Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+-
++# (Touch this so it's newer than configure.in, to avoid re-aclocaling.)
+ # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,

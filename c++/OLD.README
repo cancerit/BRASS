@@ -1,0 +1,22 @@
+To compile and install you need to do the following:
+
+!!! Make sure lib/Bio/Brass.pm has new version number !!!
+
+Have a copy of the cansam source compiled relatively to the brass source as ../cansam
+The cansam source from github is sufficient (https://github.com/jmarshall/cansam).
+
+Once cansam is compiled you can run the following preferably as cangen:
+
+setenv BRASS_INST /software/CGP/projects/brass-X.X.X
+
+make clean
+make
+make install prefix=$BRASS_INST
+cd /software/CGP/projects
+rm -f brass
+ln -s $BRASS_INST brass
+
+# should you have new programs that need adding to /software/CGP/bin
+# you need to add a symbolic link that points to the
+# /software/CGP/projects/brass/bin/* version of the script.
+# This will ensure that on future releases all code is kept in sync

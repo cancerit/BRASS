@@ -1,0 +1,261 @@
+#!/usr/bin/perl
+
+########## LICENCE ##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+########## LICENCE ##########
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::RealBin/lib";
+
+use Getopt::Long;
+use Graph;
+use Graph::Reader::Velvet;
+use File::Basename;
+use File::Path;
+use File::Temp qw(tempfile);
+use Bio::Brass;
+use Bio::Brass::Alignment;
+use Bio::Brass::VelvetGraph;
+use Bio::Tools::Run::Velvet;
+
+my $k = 31;
+my $clean = undef;
+my $directory = undef;
+my $verbose = -1;
+my $note = undef;
+my $tabout = undef;
+my $run_args = "";
+
+#$Bio::Brass::Alignment::exonerate_target = "cbi5c:12886"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "cansrv-test:12886"; # FIXME
+$Bio::Brass::Alignment::exonerate_target = "localhost:12886"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "~/human37/chr1.fa ~/human37/chr3.fa ~/human37/chr7.fa ~/human37/chr9.fa"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "~/ref/chr3.fa ~/ref/chr5.fa ~/ref/chr6.fa ~/ref/chr11.fa ~/ref/chr12.fa"; # FIXME
+
+binmode STDOUT, ":utf8";
+
+# Main -- parse arguments
+# ====
+
+my $version = '';
+my $help = '';
+
+Getopt::Long::Configure("bundling");
+$_ = GetOptions(c => \$clean, "k=i" => \$k, "d=s" => \$directory,
+		"v" => \$verbose, note => \$note, "args=s" => \$run_args,
+		"tab=s" => \$tabout,
+		version => \$version, help => \$help);
+
+if ($version) {
+    print <<EOF;
+findbp (Brass) $Bio::Brass::VERSION
+Copyright (C) 2011 Genome Research Ltd.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+    exit 0;
+}
+elsif ($help || ! $_ || scalar(@ARGV) == 0) {
+    while (<DATA>) { last if /^\s+findbp/ }
+    s/^\s*//;
+
+    if ($help) {  print "Usage: $_"; exit 0; }
+    else { print STDERR "Usage: $_"; exit 2; }
+}
+
+my $reads_title = join("-", map { scalar(fileparse($_, qr/\.[^.]*/)) } @ARGV);
+
+if (defined $directory) {
+    $directory =~ s/%k/$k/g;
+    $directory =~ s/%r/$reads_title/g;
+}
+else {
+    # FIXME Set up a temporary directory
+    $directory = "foo";
+}
+
+my $TAB;
+open $TAB, ">>&=3" or die "Can't fdopen(3): $!\n" if defined $tabout;
+
+####
+# $rebuild = out_of_date($target, @prerequisites);
+#
+sub out_of_date {
+    my $target = shift @_;
+
+    return 1 unless -e $target;
+    my $target_mtime = (stat _)[9];
+    foreach (@_) { return 1 if (stat $_)[9] >= $target_mtime }
+
+    return 0;
+}
+####
+
+
+unlink glob("$directory/*") if $clean;
+mkpath($directory) unless -d $directory;
+
+my $velvet = Bio::Tools::Run::Velvet->new(-hash_length => $k,
+		-dir => $directory, -verbose => $verbose);
+
+$velvet->quiet(1);
+
+$velvet->prepare(@ARGV) if out_of_date("$directory/Roadmaps", @ARGV);
+
+# FIXME Also factor in $run_args
+if (out_of_date("$directory/LastGraph", "$directory/Roadmaps") || 1) {
+    @_ = $velvet->run(-cov_cutoff => 1.001, $run_args);
+    print "Final graph has $_[0] nodes and n50 of $_[1], " .
+	  "max $_[2], total $_[3]\n"
+	unless $note;
+}
+
+my $graph;
+if (out_of_date("$directory/LastGraph.xml", "$directory/LastGraph")) {
+    my $reader = Graph::Reader::Velvet->new();
+    $graph = $reader->read_graph("$directory/LastGraph");
+}
+else {
+    my $reader = Graph::Reader::XML->new();
+    $graph = $reader->read_graph("$directory/LastGraph.xml");
+}
+
+my @quintets = find_breakpoints($graph);
+my @dusty = find_dusty_vertices($graph);
+
+set_vertex_style($graph, "filled", map { @{$_} } @quintets);
+set_vertex_style($graph, "bold", @dusty);
+view_graph($graph, "$directory/$reads_title-k$k.dot");
+
+if (scalar(@dusty) > 0) { #is_dusty($graph)) {
+    @dusty = @dusty[1..5] if scalar(@dusty) > 5; # FIXME NUKE-ME
+    #map_contigs("--score 400", $graph, @dusty);
+    map_contigs("--bestn 2", $graph, @dusty);
+    #map_contigs("--score 2000", $graph, @dusty);
+
+    foreach my $vertex (@dusty) {
+	my $mappings = $graph->get_vertex_attribute($vertex, 'mappings');
+	$_->trim_mismatches() foreach @$mappings;
+	@$mappings = sort { $a <=> $b } @$mappings;
+
+	my ($text, $cate) = get_isolated_bp_alignment($graph, $vertex);
+	next unless defined $text;
+
+	my $len = $graph->get_vertex_contig_length($vertex);
+	print "Isolated vertex $vertex (length $len)\n  $text\n";
+
+	my ($left, $within, $right, $gap) = get_isolated_bp_surrounding_region($graph, $vertex);
+	my ($w1, $w2) = ($within, "");
+	($w1, $w2) = ($w2, $w1) if $gap >= 0;
+	print $TAB "$reads_title\t$tabout\tHomo $cate\t$text\t$left\t$w1\t$w2\t$right\t$left$within$right\n" if defined $tabout;
+	warn "Can't find $left$within$right in original contig\n" if index($graph->get_vertex_contig($vertex), "$left$within$right") < 0;
+    }
+}
+
+if (0) {
+#=== put the reverse quintets back
+my @rq = ();
+foreach (@quintets) {
+    local @_ = @$_;
+    @_ = reverse (map { -$_ } @_);
+    push @rq, \@_;
+}
+push @quintets, @rq;
+#===
+}
+
+foreach (@quintets) {
+    local @_ = @$_;
+    print "Feature ", format_quintet(@_), " (lengths ",
+	join(", ", map { $graph->get_vertex_contig_length($_) } @_), ")\n";
+
+    map_contigs("--percent 80", $graph, $_[1], $_[3]);
+    foreach (1, 3) {
+	my $mappings = $graph->get_vertex_attribute($_[$_], 'mappings');
+	@$mappings = sort @$mappings;
+    }
+
+    my ($alignment, $cate) = get_bp_alignment_text($graph, @_);
+    print "  $alignment\n";
+    my ($left, $within, $right, $gap) = get_bp_surrounding_region($graph, @_);
+    my ($w1, $w2) = ($within, "");
+    ($w1, $w2) = ($w2, $w1) if $gap >= 0;
+    print $TAB "$reads_title\t$tabout\tHetero $cate\t$alignment\t$left\t$w1\t$w2\t$right\t$left$within$right\n" if defined $tabout;
+    #print "  ", get_bp_region($graph, @_), "\n";
+}
+
+#$graph->set_vertex_attribute($_, "tooltip", $graph->get_vertex_contig($_))
+#    foreach $graph->vertices;
+
+
+open FMT, ">$directory/features.txt"
+    or die "Can't write $directory/features.txt: $!\n";
+binmode FMT, ":utf8";
+
+#print format_alignments($graph, @{$_}), "\n" foreach @_;
+
+print FMT "Feature: ", format_quintet(@{$_}), "\n",
+#	  format_alignments($graph, @{$_}),
+	  format_quintet_alignment($graph, @{$_}), "\n\n" foreach @quintets;
+close FMT;
+
+__DATA__
+
+=head1 NAME
+
+findbp - identify breakpoints by examining de Bruijn graphs
+
+=head1 SYNOPSIS
+
+    findbp [--tab] [-c] [-d dir] [-k kmer] [-v] [--note] [--args args] reads...
+
+=head1 DESCRIPTION
+
+Blah blah blah.
+
+=over 4
+
+=item -c
+
+Start from a clean slate, deleting any files in the working directory.
+By default, steps will be skipped if their output files are already present.
+
+=item -d I<directory>
+
+Specifies the directory for holding the working files.  The directory
+specified may be a template containing the following conversion specifications:
+C<%r> (an encoding of the basenames of the input read files),
+C<%k> (hash size).
+
+=item -k I<number>
+
+Sets the Velvet hash length (I<k> value) to be used.
+By default, 31 will be used.
+
+=back
+
+=head1 AUTHOR
+
+John Marshall E<lt>jm18@sanger.ac.ukE<gt>
+
+=cut

@@ -1,0 +1,228 @@
+#!/usr/bin/perl
+
+########## LICENCE ##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+########## LICENCE ##########
+
+# make-repeat-file -- Generate BED file listing Ensembl repeat features.
+
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::CoordSystem;
+use Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
+use Bio::EnsEMBL::DBSQL::SliceAdaptor;
+use List::Util qw(first);
+
+my $output_filename = undef;
+my $low_complex;
+my $simp_repeats;
+my $ensembl_url = 'mysql://anonymous@ensembldb.ensembl.org/';
+my $verbose = 1;
+
+unless (GetOptions( 'o=s' => \$output_filename,
+                    'l=s' => \$low_complex,
+                    'r=s' => \$simp_repeats,
+                    'q' => sub { $verbose = 0 },
+                    'u=s' => \$ensembl_url)
+	&& scalar(@ARGV) == 1) {
+  print STDERR <<EOF;
+Usage: make-repeat-file [-o FILE] [-r FILE] [-l FILE] [-q] [-u URL] SPECIES
+Options:
+  -o FILE   Write repeat data to FILE rather than standard output
+  -r FILE   Simple repeats bed from UCSC (see NOTE)
+  -l FILE   Low complexity repeats bed from UCSC (see NOTE)
+  -q        Suppress progress messages
+  -u URL    Connect to Ensembl at URL (defaults to ensembldb.ensembl.org)
+
+  NOTE:
+  UCSC data files
+    'Low complexity regions' are no longer available from Ensembl
+      Repeats: RepeatMasker
+      filter: Free form query: repName like '%rich' or repName = 'polypyrimidine' or repName ='polypurine'
+
+    'Simple repeats'  are no longer available from Ensembl
+      Repeats: RepeatMasker
+      Filter: repClass match Simple_repeat
+EOF
+  exit 1;
+}
+
+my $species = $ARGV[0];
+
+my $registry = 'Bio::EnsEMBL::Registry';
+$registry->load_registry_from_url($ensembl_url);
+
+my $slice_adaptor = $registry->get_adaptor($species, 'Core', 'Slice')
+    or die "$0: can't get slice adaptor for $species\n";
+
+my $chromosomes = $slice_adaptor->fetch_all('chromosome', undef, 0, 1);
+my $reference = $chromosomes->[0]->coord_system();
+my $database_name = $slice_adaptor->dbc->dbname;
+
+my $out;
+if (defined $output_filename) {
+  open $out, '>', $output_filename
+      or die "$0: can't write to $output_filename: $!\n";
+}
+else { $out = \*STDOUT }
+
+# Sort the chromosomes by name, mostly just for cosmetic reasons
+my @chromosomes = sort {
+    # sort numeric names numerically, and before alphabetic names
+    if ($a =~ /^\d/) { return ($b =~ /^\d/)? $a <=> $b : -1 }
+    elsif ($b =~ /^\d/) { return +1 }
+    # otherwise alphabetically, but with mitochondria and unassigned last
+    elsif ($a =~ /^[MU]/) { return ($b =~ /^[MU]/)? $a cmp $b : +1 }
+    else { return ($b =~ /^[MU]/)? -1 : $a cmp $b }
+  } map { $_->seq_region_name } @$chromosomes;
+
+my $rcon_adaptor = $registry->get_adaptor($species, 'Core', 'RepeatConsensus')
+    or die "$0: can't get repeat consensus adaptor for $species\n";
+
+# Fall back to SQL if the fairly new fetch_all_repeat_types() isn't available
+my $repeat_types = eval { $rcon_adaptor->fetch_all_repeat_types() } ||
+	   execute_simple($rcon_adaptor,
+			  'SELECT DISTINCT repeat_type FROM repeat_consensus');
+
+my %from_file;
+if(defined $low_complex) {
+  push @{$repeat_types}, 'Low complexity regions' unless(first {$_ eq 'Low complexity regions'} @{$repeat_types});
+  $from_file{'Low complexity regions'} = $low_complex;
+}
+if(defined $simp_repeats) {
+  push @{$repeat_types}, 'Simple repeats' unless(first {$_ eq 'Simple repeats'} @{$repeat_types});
+  $from_file{'Simple repeats'} = $simp_repeats;
+}
+
+foreach my $type (@$repeat_types) {
+  my $action = brass_action($type);
+  next unless defined $action;
+
+  my @headers = (quote('name', $type));
+  push @headers, quote('action', $action) if $action;
+  push @headers, quote('species', $reference->species),
+		 quote('db', $reference->version);
+  push @headers, quote('species_alias', $species)
+      unless lc $species eq lc $reference->species;
+
+  if(exists $from_file{$type}) {
+    push @headers, quote('description', "$type from UCSC file $from_file{$type}");
+  }
+  else {
+    push @headers, quote('description', "$type from Ensembl $database_name");
+  }
+
+  print STDERR join(" ", "Repeat", @headers), "...\n" if $verbose;
+  print $out join("\t", "track", @headers), "\n";
+
+  if(exists $from_file{$type}) {
+    my %structure;
+    open my $in_file, '<', $from_file{$type} || $!;
+    while(my $ln = <$in_file>) {
+      next if $ln =~ /^track/;
+      chomp $ln;
+      my ($chr, $start, $end, $id) = (split /\t/, $ln)[0..3];
+      $chr =~ s/^chr// unless(first {$chr eq $_} @chromosomes);
+      next unless(first {$chr eq $_} @chromosomes);
+      $structure{$chr}{$start}{$end}=$id;
+    }
+    close $in_file;
+    foreach my $chr (@chromosomes) {
+      print STDERR "Chromosome $chr...\n" if $verbose;
+      my @starts = sort {$a<=>$b} keys %{$structure{$chr}};
+      for my $start(@starts) {
+        my @ends = sort {$a<=>$b} keys %{$structure{$chr}{$start}};
+        for my $end(@ends) {
+          print $out join("\t", $chr, $start, $end, $structure{$chr}{$start}{$end}),"\n";
+        }
+      }
+    }
+  }
+  else {
+    foreach my $chr (@chromosomes) {
+      my $slice = $slice_adaptor->fetch_by_region('chromosome', $chr);
+      next unless defined $slice;
+
+      print STDERR "Chromosome $chr...\n" if $verbose;
+
+      my $features = $slice->get_all_RepeatFeatures(undef, $type);
+      while ($_ = shift @$features) {
+        my $id = $_->display_id();
+        $id =~ tr/\t/ /;
+
+        print $out join("\t", $chr, $_->start - 1, $_->end, $id), "\n";
+      }
+    }
+  }
+}
+
+if (defined $output_filename) {
+  close $out or die "$0: error writing to $output_filename: $!\n";
+}
+
+
+# Returns the desired action header for the given repeat type.
+sub brass_action {
+  local $_ = lc $_[0];
+
+  return undef if $_ eq 'dust';  # Ignore the least interesting repeats
+
+  return 'annotate:transposon' if /transposon/ || /^ltr/;
+  return 'filter:reads' if /^(simple|satellite|low complexity)/;
+  return '';
+}
+
+# Returns "KEY=VALUE", with the value quoted if necessary.
+sub quote {
+  my $key = $_[0];
+  local $_ = $_[1];
+
+  if (/[\s'"]/) {
+    tr/\t/ /;
+    s/([\\"])/\\$1/g;
+    $_ = qq{"$_"};
+  }
+
+  return "$key=$_";
+}
+
+# Executes SQL selecting a single column, and returns an array reference
+# containing the items selected.
+sub execute_simple {
+  my ($adaptor, $sql) = @_;
+
+  # If the newish Utils::SqlHelper and sql_helper() are available, use them
+  my $helper;
+  eval { $helper = $adaptor->dbc()->sql_helper() } &&
+      return $helper->execute_simple(-SQL => $sql);
+
+  # ...otherwise do it by hand
+  my $sth = $adaptor->prepare($sql);
+  my (@array, $item);
+  $sth->execute();
+  $sth->bind_columns(\$item);
+  while ($sth->fetch()) { push @array, $item }
+  return \@array;
+}

@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+
+########## LICENCE ##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+########## LICENCE ##########
+
+# rearr2bedpe -- Convert group-rearrs default output to BEDPE format.
+
+use strict;
+use warnings;
+
+use List::Util qw(first sum);
+
+while (<>) {
+  chomp;
+
+  # Leave headers and other comments as is.
+  if (/^#/) { print "$_\n"; next; }
+
+  my ($chrL, $strandL, $L5, $L3,
+      $chrH, $strandH, $H5, $H3, @rest) = split /\t/, $_;
+
+  my $nsamples = (scalar(@rest) - 1) / 2;
+
+  my $score  = sum(@rest[0 .. $nsamples-1]);
+  my $notes  = $rest[$nsamples];
+  my ($name) = split /;/, (first { $_ ne '.' } @rest[$nsamples+1 .. $#rest]);
+
+  # In BEDPE, features (i.e., intervals) are *between* the coordinates;
+  # equivalently, start positions are 0-based and end positions are 1-based.
+  my $L5zero = $L5 - 1;
+  my $H5zero = $H5 - 1;
+
+  print join("\t", $chrL, $L5zero, $L3, $chrH, $H5zero, $H3,
+		   $name, $score, $strandL, $strandH, $notes), "\n";
+}

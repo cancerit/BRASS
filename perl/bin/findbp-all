@@ -1,0 +1,445 @@
+#!/usr/bin/perl
+
+########## LICENCE ##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+########## LICENCE ##########
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::RealBin/lib";
+
+use Getopt::Long;
+use Graph;
+use Graph::Reader::Velvet;
+use File::Basename;
+use File::Path;
+use File::Temp qw(tempfile);
+use Bio::Brass;
+use Bio::Brass::Alignment;
+use Bio::Brass::ReadSelection;
+use Bio::Brass::VelvetGraph;
+use Bio::Tools::Run::Velvet;
+
+my $clean = undef;
+my $directory = undef;
+my $verbose = -1;
+my $note = undef;
+my $tabout = undef;
+my $run_args = "";
+my $server = undef;
+
+$Bio::Brass::Alignment::exonerate_target = "cgp-1-1-06:12886"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "cansrv-test:12886"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "localhost:12886"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "~/human37/chr1.fa ~/human37/chr3.fa ~/human37/chr7.fa ~/human37/chr9.fa"; # FIXME
+#$Bio::Brass::Alignment::exonerate_target = "~/ref/chr3.fa ~/ref/chr5.fa ~/ref/chr6.fa ~/ref/chr11.fa ~/ref/chr12.fa"; # FIXME
+
+my ($process_all, $process_dust, $samplebam, $view_all, $samp_a, $samp_b, $samp_c, $also_normal, $bob);
+Getopt::Long::Configure("bundling");
+$_ = GetOptions(a => \$process_all, 'b=s' => \$samplebam, d => \$process_dust, v => \$view_all, N => \$also_normal, bob => \$bob,
+		's=s' => \$server,
+		A => \$samp_a, B => \$samp_b, C => \$samp_c);
+if (! $_ || scalar(@ARGV) != 3) {
+  print STDERR "Usage: findbp-all [-adNvAC] [-s SERVER] [-b BAMFILE] INFILE OUTFILE COLUMNFILE\n";
+  print STDERR <<'EOF';
+Options:
+  -a         Process all events, including those with solutions already found
+  -b FILE    BAM file to select reads from
+  -bob       Search for graph patterns, but don't try to map anything
+  -A,-B,-C   Select the A, B, or C sample to be processed
+  -d         Also process dusty vertices
+  -N         Also process a corresponding normal sample
+  -s SERVER  Connect to an Exonerate server at SERVER, e.g., hostname:12886
+  -v         View all graphs, including those with score 0
+EOF
+  exit 1;
+}
+
+my $abc = '';
+$abc = 'a' if $samp_a;
+$abc = 'b' if $samp_b;
+$abc = 'c' if $samp_c;
+
+$Bio::Brass::Alignment::exonerate_target = $server if defined $server;
+
+sub openbam {
+  my ($bamfname) = @_;
+  my $base = $bamfname;
+  $base =~ s/\.bam$//;
+
+  if (-e "$base.bai" && ! -e "$base.bam.bai") {
+    # HACK Fix up the index filename.  Sigh...
+    print STDERR "(Alas, moving $base.bai to $base.bam.bai)\n";
+    rename "$base.bai", "$base.bam.bai"
+        or die "$0: rename $base.bai to $base.bam.bai failed: $!\n";
+  }
+
+  return Bio::Brass::ReadSelection->new($bamfname);
+}
+
+my ($sample, $samplename);
+if (defined $samplebam) {
+  $sample = openbam($samplebam);
+  $_ = $samplebam;
+  s{.*/}{};
+  s{.bam}{};
+  $samplename = $_;
+}
+
+open FIN, $ARGV[0] or die "$0: can't open $ARGV[0]: $!\n";
+open FOUT, '>', $ARGV[1] or die "$0: can't write to $ARGV[1]: $!\n";
+open COLOUT, '>', $ARGV[2] or die "$0: can't write to $ARGV[2]: $!\n";
+
+binmode STDOUT, ":utf8";
+
+my $reader = Graph::Reader::Velvet->new();
+
+my $attempt = 0;
+my $improved = 0;
+
+while (<FIN>) {
+  chomp;
+
+  if (/^track/) {
+    print FOUT "$_\n";
+    ($samplename) = /name=(\S+)/;
+    ($samplebam) = /bigDataUrl=file:(\S+)/;
+    $sample = openbam($samplebam);
+    next;
+  }
+
+  my @fields = split /\t/, $_;
+
+  my ($schrL, $sL5, $sL3, $schrH, $sH5, $sH3,
+      $id, undef, $sstrandL, $sstrandH, $brass) = @fields;
+  $sL5++;
+  $sH5++;
+  if (! defined $brass) { $brass = ""; push @fields, $brass; }
+
+  check_sensible($id, 'L', $schrL, $sL5, $sL3, $sstrandL);
+  check_sensible($id, 'H', $schrH, $sH5, $sH3, $sstrandH);
+
+  my $working_dir = File::Temp->newdir( "tmpXXXXXX", CLEANUP => 1 );
+
+
+  if ($brass eq '' || $process_all) {
+
+  	my $readdirectory = File::Temp->newdir( "$working_dir/$id${abc}XXXXXX", CLEANUP => 1 );
+    #mkdir "working/$id$abc" unless -d "working/$id$abc";
+
+    print "* $samplename $id\n";
+    $attempt++;
+
+#   if (-d $readdirectory) { unlink glob("$readdirectory/*.sam") }
+#    else { mkdir $readdirectory }
+
+    die "$0: no sample BAM file specified yet\n" unless defined $sample;
+
+    my $readfilename = "$readdirectory/reads.sam";
+
+    open my $fh, ">$readfilename"
+	or die "$0: can't write to $readfilename: $!\n";
+
+    my ($kept, $discarded) = $sample->write_local_reads($fh, @fields);
+    close $fh;
+
+    print "Wrote $kept reads to $readfilename, discarded $discarded\n";
+
+    #K: foreach my $k (37, 29, 23, 17, 13)
+    #K: foreach my $k (25, 23, 21, 19, 17, 15, 13, 11)
+    #K: foreach my $k (37, 31, 25, 23, 21, 19, 17)
+    #K: foreach my $k (65, 53, 47, 37, 31)
+    # JohnM 12 June  reversed them again
+    #K: foreach my $k (31, 37, 47, 53, 65)
+    #K: foreach my $k (31, 33, 35, 37, 47, 53, 65)
+    K: foreach my $k (65, 53, 47, 37, 31, 27, 25, 23, 21, 19, 17) {
+      my $directory = "$readdirectory/$k";
+      if (-d $directory) { unlink glob("$directory/*") }
+      else { mkdir $directory }
+
+      my $velvet = Bio::Tools::Run::Velvet->new(-hash_length => $k,
+				-dir => $directory, -verbose => 1);
+      $velvet->quiet(1);
+      my @samples = ($readfilename);
+      die "!!! Implement generating $readdirectory/normal.sam" if $also_normal;
+      #push @samples, "d/${id}b.sam" if $also_normal;
+      $velvet->prepare(@samples);
+      @_ = $velvet->run(-cov_cutoff => 1.001);
+      print "$k: graph has $_[0] vertices; n50 $_[1], max $_[2], total $_[3]\n";
+
+      my $graph = $reader->read_graph("$directory/LastGraph");
+
+      my $nbubbles = smooth_fringe_bubbles($graph);
+      print "$k: smoothed $nbubbles bubbles on the raggedy edge\n";
+
+      my ($score, @quintets) = quintet_score($graph);
+
+#      my $nbubbles = ($score >= 40)? annotate_bubbles($graph, 2) : 0;
+#      if ($nbubbles > 0) {
+#	print "$k: annotated $nbubbles bubbles at score $score\n";
+#	my ($w_bubble, $w_quintet) = quintet_weights($graph, @quintets);
+#	if ($w_bubble + 3 < $w_quintet) {
+#	  @_ = $velvet->run(-cov_cutoff => $w_bubble + 0.01);
+#	  print "$k: graph has $_[0] vertices; n50 $_[1], max $_[2], total $_[3]\n";
+#	  $graph = $reader->read_graph("$directory/LastGraph");
+#	  ($score, @quintets) = quintet_score($graph);
+#	}
+#	else {
+#	  print "$k: annotated $nbubbles bubbles, but won't rerun as cutoff $w_bubble will hurt $w_quintet\n";
+#	}
+#      }
+
+      print "$k: score: $score\n";
+
+      if (has_nonloop_edges($graph) || $view_all) {
+	if ($nbubbles > 0) { add_graph_labels($graph, "%I %L", "%C"); add_costs($graph); }
+	else { add_graph_labels($graph, "%I %L", "%C") }
+
+	my $writer = Graph::Writer::Dot->new();
+	$writer->write_graph($graph, "$directory/$id-$k$k-s$score.dot");
+	#view_graph($graph, "$directory/$id-k$k-s$score.dot") if $score > 0 || $view_all;
+      }
+      else {
+	print "$k: graph consists solely of isolated vertices and vertices with loops\n";
+      }
+
+      if ($process_dust) {
+	my @dusty = find_dusty_vertices($graph, 8);
+	map_contigs("--bestn 2", $graph, @dusty);
+	print "##\tRange   $schrL$sstrandL $sL5-$sL3   $schrH$sstrandH $sH5-$sH3\n";
+	foreach my $vertex (@dusty) {
+	  my $mappings = $graph->get_vertex_attribute($vertex, 'mappings');
+	  $_->trim_mismatches() foreach @$mappings;
+	  @$mappings = sort { $a <=> $b } @$mappings;
+
+	  my ($text, $cate) = get_isolated_bp_alignment($graph, $vertex);
+	  next unless defined $text;
+
+	  my $len = $graph->get_vertex_contig_length($vertex);
+	  print "Isolated vertex $vertex (length $len)\n  $text\n";
+
+	  my ($left, $within, $right, $gap) = get_isolated_bp_surrounding_region($graph, $vertex);
+	  my ($w1, $w2) = ($within, "");
+	  ($w1, $w2) = ($w2, $w1) if $gap >= 0;
+
+	  print "####\tHomo $cate\t$text\t$left\t$w1\t$w2\t$right\t$left$within$right\n";
+
+	  warn "Can't find $left$within$right in original contig\n" if index($graph->get_vertex_contig($vertex), "$left$within$right") < 0;
+	}
+      }
+
+      #next if $_[0] < 5 || $_[0] >= 18;
+      next unless $score >= 61;
+
+      next unless scalar(@quintets) == 1;
+
+      local @_ = @{$quintets[0]};
+      print "Feature ", format_quintet(@_), " (lengths ",
+	    join(", ", map { $graph->get_vertex_contig_length($_) } @_), ")\n";
+
+      print ">L1\n", $graph->get_vertex_contig($_[1]), "\n";
+      print ">R3\n", $graph->get_vertex_contig($_[3]), "\n";
+next if $bob;
+      map_contigs("--percent 80", $graph, $_[1], $_[3]);
+#      foreach (1, 3) {
+#	my $mappings = $graph->get_vertex_attribute($_[$_], 'mappings');
+#	@$mappings = sort @$mappings;
+#      }
+#
+      my ($rawchrL, $chrL, $L5, $L3, $text, $gap, $rawchrH, $chrH, $H5, $H3) =
+	    get_bp_alignment($graph, @_);
+
+      unless (defined $gap) {
+	print "Total disaster: gap is undefined\n";
+	next;
+      }
+
+      # FIXME Allow one side to be undefined
+      unless (defined $chrL && defined $chrH) {
+	print "At least one side couldn't be mapped\n";
+	next;
+      }
+
+      my $chro = chrcmp($rawchrL, $rawchrH);
+#print "L: $rawchrL:$chrL:$L5 / H: $rawchrH:$chrH:$H5; chro:$chro; L5>H5:", ($L5>$H5)?"T":"F", "\n";
+      if ($chro > 0 || ($chro == 0 && $L5 > $H5)) {
+	# Reverse it
+	($rawchrL, $rawchrH) = ($rawchrH, $rawchrL);
+        ($chrL, $chrH) = (flipstrand($chrH), flipstrand($chrL));
+	($L5, $L3, $H5, $H3) = ($H3, $H5, $L3, $L5);
+	($text = reverse $text) =~ tr/ACGTacgt/TGCAtgca/;
+#print "L: $rawchrL:$chrL:$L5-$L3 / H: $rawchrH:$chrH:$H5-$H3; done reversed it\n";
+      }
+
+
+      unless ($sL5 <= $L5 && $L5 <= $sL3 && $sL5 <= $L3 && $L3 <= $sL3) {
+	print "Low side $L5..$L3 outwith bounds $sL5..$sL3\n";
+	next;
+      }
+      unless ($sH5 <= $H5 && $H5 <= $sH3 && $sH5 <= $H3 && $H3 <= $sH3) {
+	print "High side $H5..$H3 outwith bounds $sH5..$sH3\n";
+	next;
+      }
+
+      my $L = "$chrL  " . compress_range($L5, $L3);
+      my $H = compress_range($H5, $H3) . "  $chrH";
+      if ($gap > 0)    { $brass = "$L] $text [$H" }
+      elsif ($gap < 0) { $brass = "$L--$text--$H" }
+      else             { $brass = "$L][$H" }
+      $brass .= "  (score $score)";
+
+      print "  $brass (k: $k)\n";
+      $improved++;
+
+      print COLOUT join("\t",
+      	$rawchrL, strand($chrL), $L5, $L3,
+      	$rawchrH, strand($chrH), $H5, $H3,
+	($gap > 0)? $text : '.',
+	($gap < 0)? $text : '.',
+	$score, $id, $k, $samplename), "\n";
+
+      open FMT, ">$directory/features.txt"
+	  or die "Can't write $directory/features.txt: $!\n";
+      binmode FMT, ":utf8";
+      print FMT "Feature: ", format_quintet(@{$_}), "\n",
+	  format_quintet_alignment($graph, @{$_}), "\n\n" foreach @quintets;
+      close FMT;
+
+      open QUERY, ">$directory/query.fa"
+	  or die "Can't write $directory/query.fa: $!\n";
+      open TARGET, ">$directory/target.fa"
+	  or die "Can't write $directory/target.fa: $!\n";
+      my ($one, $broken, $two) = get_quintet_triplet($graph, @_);
+      print QUERY ">query\n$broken\n";
+      print TARGET ">one\n$one\n>two\n$two\n";
+      close TARGET;
+      close QUERY;
+
+      last K;
+    }
+
+    print "\n";
+  }
+
+  if ($fields[10] ne '' && $fields[10] ne $brass) {
+    my ($old, $new) = ($fields[10], $brass);
+    $old =~ s/\s*[(]score\s+\d+[)]$//;
+    $new =~ s/\s*[(]score\s+\d+[)]$//;
+    print "  $fields[10]\t[[###PREVIOUS###]]\n\n" if $old ne $new;
+  }
+
+  $fields[10] = $brass;
+  print FOUT join("\t", @fields), "\n";
+}
+
+
+print <<EOF;
+
+Attempted to improve $attempt groups; succeded on $improved
+EOF
+
+
+sub chrcmp {
+  my ($a, $b) = @_;
+  $a =~ s/Chr\.//;  $a =~ s/-$//;
+  $b =~ s/Chr\.//;  $b =~ s/-$//;
+
+  if ($a !~ /\D/) { return ($b !~ /\D/)? $a <=> $b : -1 }
+  else { return ($b !~ /\D/)? +1 : $a cmp $b }
+}
+
+sub flipstrand {
+  local $_ = $_[0];
+  # The strand character to be flipped is before any "["-introduced clauses
+  my ($chr, $extra) = /([^[ ]+)((\s*\[.*)?)/;
+  $_ = $chr;
+  if (/-$/) { s/-$// }
+  else { $_ .= '-' }
+  return "$_$extra";
+}
+
+sub strand {
+  local $_ = $_[0];
+  # The strand character is before any "["-introduced clauses
+  my ($chr, $extra) = /([^[ ]+)((\s*\[.*)?)/;
+  $_ = $chr;
+  if (/-$/) { return '-' } else { return '+' }
+}
+
+sub compress_range {
+    my $a = "$_[0]";
+    my $b = "$_[1]";
+
+    if (length($a) == length($b)) {
+	return $a if $a eq $b;
+
+	my $i = 0;
+	$i++ while substr($a, $i, 1) eq substr($b, $i, 1);
+
+	# Write a single digit difference as 216(17) rather than 216(7).
+	$i-- if $i > 0 && $i == length($b) - 1;
+
+	$b = substr($b, $i);
+    }
+
+    return "$a($b)";
+}
+
+sub map_contigs_fast {
+  my ($args, $g, @v) = @_;
+
+  # First map with the default (speedy) ungapped model.
+  map_contigs($args, $g, @v);
+  @v = grep { scalar(@{$g->get_vertex_attribute($_, 'mappings')}) == 0 } @v;
+  return unless scalar(@v > 0);
+
+  # Some vertices were unmapped; try again with a slower gapped model.
+  map_contigs("$args --model affine:local", $g, @v);
+}
+
+sub add_costs {
+    my ($graph) = @_;
+    foreach ($graph->vertices()) {
+	next unless $graph->has_vertex_attribute($_, 'bubble');
+	$graph->set_vertex_attribute($_, "label",
+	    $graph->get_vertex_attribute($_, "label") . " b" .
+	    $graph->get_vertex_attribute($_, 'bubble'));
+    }
+}
+
+sub has_nonloop_edges {
+    my ($g) = @_;
+    foreach ($g->edges()) { return 1 if $$_[0] != $$_[1] }
+    return 0;
+}
+
+sub check_sensible {
+  my ($id, $s, $chr, $p5, $p3, $strand) = @_;
+  my @msg;
+  push @msg, "strand$s is '$strand'" unless $strand eq '+' || $strand eq '-';
+  push @msg, "chromosome$s is '$chr'" unless $chr =~ /[1-9XY]|[12][1-9]|I*V?/;
+  push @msg, "${s}5 ($p5) and ${s}3 ($p3) are reversed" unless $p5 <= $p3;
+  return if scalar(@msg) == 0;
+
+  my $msg = join("\n", @msg);
+  die "$0: data for $id is invalid: $msg\n";
+}

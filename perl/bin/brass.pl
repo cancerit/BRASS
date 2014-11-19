@@ -130,7 +130,7 @@ sub setup {
   pod2usage(-verbose => 2) if(defined $opts{'m'});
 
   if($opts{'version'}) {
-    print 'Version: ',Sanger::CGP::Pindel::Implement->VERSION,"\n";
+    print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
     exit 0;
   }
 

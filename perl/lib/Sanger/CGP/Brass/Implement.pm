@@ -206,13 +206,13 @@ sub assemble {
 
     my $split_dir = File::Spec->catdir($tmp, 'split');
     my $split_file = File::Spec->catfile($split_dir, 'split.');
-    $split_file .= sprintf '%03d', $index-1;
+    $split_file .= sprintf '%06d', $index-1;
 
     my $tmp_assemble = File::Spec->catdir($tmp, 'assemble');
     make_path($tmp_assemble) unless(-e $tmp_assemble);
 
     my $assembled = File::Spec->catfile($tmp_assemble, 'bedpe.');
-    $assembled .= sprintf '%03d', $index-1;
+    $assembled .= sprintf '%06d', $index-1;
 
     my $command = "$^X ";
     $command .= _which('brass-assemble');

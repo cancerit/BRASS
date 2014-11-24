@@ -42,6 +42,8 @@ use File::Copy qw(move);
 use PCAP::Threaded;
 use PCAP::Bam;
 
+const my $ASSEMBLE_SPLIT => 100;
+
 ## input
 const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s filename=%s};
 # tmpdir, iter, file
@@ -182,7 +184,7 @@ sub split_filtered {
   remove_tree($split_dir) if(-d $split_dir);
   make_path($split_dir);
   my $command = sprintf 'split --suffix-length=3 --numeric-suffixes --verbose --lines=%s %s %s/split.',
-                        1000, $groups, $split_dir;
+                        $ASSEMBLE_SPLIT, $groups, $split_dir;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 

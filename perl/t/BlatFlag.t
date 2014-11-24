@@ -68,5 +68,10 @@ is (($BlatFlag->infile()), $testfile , "get infile");
 is (($BlatFlag->field()), $field , "field");
 is (($BlatFlag->ref()), $ref , "ref");
 ok(defined $diff, 'file has been modified');
-is ($infile_size, $outfile_size , "Outfile size check");
-if ($infile_size  == $outfile_size) { unlink $testfile; }
+if(-e '/nfs/cancer_ref01/human/37/genome.fa') {
+  is ($infile_size, $outfile_size , "Outfile size check");
+  if ($infile_size  == $outfile_size) { unlink $testfile; }
+}
+else {
+  unlink $testfile;
+}

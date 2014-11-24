@@ -13,6 +13,8 @@
 /nytprof
 /perl/bin/filter_pindel_reads
 /perl/bin/pindel
+/perl/Makefile.old
 /LICENCE.TXT
 /README.TXT
 /licence_head.txt
+/perl/perltidy.LOG

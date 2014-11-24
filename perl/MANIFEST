@@ -28,6 +28,7 @@ lib/Sanger/CGP/BrassFilter/TransFlag.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+perltidy.LOG
 t/1_pm_compile.t
 t/2_pl_compile.t
 t/BlatFlag.t

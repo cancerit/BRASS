@@ -2,21 +2,21 @@ package Bio::Brass::ReadSelection;
 
 ########## LICENCE ##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
-# 
+#
 # This file is part of BRASS.
-# 
+#
 # BRASS is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ########## LICENCE ##########
@@ -158,7 +158,7 @@ quality mapping of the single end.
 =cut
 
 sub _get_reads {
-  my ($self, $chr, $pos5, $pos3, $strand, $k, $d, $q) = @_;
+  my ($self, $chr, $pos5, $pos3, $strand, $k, $q, $abort_reads) = @_;
 
   my $normalpos5 = $pos5 - $self->{'maxmaxins'};
   my $normalpos3 = $pos3 + $self->{'maxmaxins'};
@@ -170,9 +170,9 @@ sub _get_reads {
   my $discarded = 0;
   my $aligner = $self->{aligner_mode};
   $self->{'bam'}->fetch("$chr:$normalpos5-$normalpos3", sub {
+    return if($kept >= $abort_reads);
     my $a = $_[0];
     my $flags = $a->flag;
-
     ## Ignore reads if they match the following flags:
     return if $flags & NOT_PRIMARY_ALIGN;
     return if $flags & VENDER_FAIL;
@@ -209,11 +209,11 @@ sub _get_reads {
     }
 
     if ($emit) {
-      $k->{$a->qname}->{$a->tam_line}++;
+      push @{$k->{$a->qname}}, join "\t", (split /\t/, $a->tam_line)[0..10];
+      $kept++;
     }
     else {
       $discarded++;
-      $d->{$a->tam_line}++;
     }
   });
 
@@ -234,21 +234,26 @@ sub write_local_reads {
   my ($self, $out, $chrl, $lstart, $lend, $chrh, $hstart, $hend,
 	    undef, undef, $strandl, $strandh) = @_;
 
-  my ($k_reads, $d_reads, $q_pairs) = ({},{}, []);
-  my ($k1, $d1) = $self->_get_reads($chrl, $lstart+1, $lend, $strandl, $k_reads, $d_reads, $q_pairs);
-  my ($k2, $d2) = $self->_get_reads($chrh, $hstart+1, $hend, $strandh, $k_reads, $d_reads, $q_pairs);
+  my $abort_reads = 500_000;
+  my ($k_reads, $q_pairs) = ({},[]);
 
-  my @keep;
+  my ($k1, $d1) = $self->_get_reads($chrl, $lstart+1, $lend, $strandl, $k_reads, $q_pairs, $abort_reads);
+  return (0,$k1+$d1) if($k1 > $abort_reads); # artificially block extreme depth from assembly
+
+  my ($k2, $d2) = $self->_get_reads($chrh, $hstart+1, $hend, $strandh, $k_reads, $q_pairs, $abort_reads);
+  return (0,$k2+$d2) if($k2 >= $abort_reads); # artificially block extreme depth from assembly
+
+  my $k_count = 0;
   for my $pair(keys %{$k_reads}) {
     # unmapped mates which had a poor quality mapping
     # are discarded by this section
     next if(first { $_ eq $pair } @{$q_pairs});
-    push @keep, keys %{$k_reads->{$pair}};
+    my @keep = @{$k_reads->{$pair}};
+    print $out join "\n", @keep;
+    print $out "\n";
+    $k_count+= scalar @keep;
   }
-  my @discard = keys %{$d_reads};
-  print $out join "\n", @keep;
-  print $out "\n";
-  return (scalar @keep, scalar @discard);
+  return ($k_count, $d1 + $d2);
 }
 
 =head2 sample_name

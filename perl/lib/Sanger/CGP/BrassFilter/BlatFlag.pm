@@ -2,21 +2,21 @@ package Sanger::CGP::BrassFilter::BlatFlag;
 
 ########## LICENCE ##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
-# 
+#
 # This file is part of BRASS.
-# 
+#
 # BRASS is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ########## LICENCE ##########
@@ -198,7 +198,7 @@ sub process {
     unless ($ok) { print "Blat: Check failed\n"; return; }
 
     # check the ref file is there and valid
-    my $ok = $self->_check_file($self->{ref}, 'ref');
+    $ok = $self->_check_file($self->{ref}, 'ref');
     unless ($ok) { print "Blat: Check ref failed\n"; return; }
 
     $ok = $self->_read_data();
@@ -321,16 +321,20 @@ sub _get_hits {
 
 	# get top score
 	open my $fh,  "<$blat_outfile" or die $!;
-	my $line = '';
+	my $line;
 	while($line = <$fh>) {
 	    next unless ($line =~ /$Lrange/);
+	    chomp $line;
 	    last;
 	}
 	close $fh or die $!;
-	chomp $line;
 
-	my @hit = split " ", $line; # take the top blat hit
-	my $score = $hit[0] - $hit[1];
+
+  my $score = 0;
+  if(defined $line) {
+	  my @hit = split " ", $line; # take the top blat hit
+	  $score = $hit[0] - $hit[1];
+	}
 	$self->{data}->{$name}->{score} = $score;
 	if ($self->{debug}) { print "$name | SCORE:$score\n"; }
 

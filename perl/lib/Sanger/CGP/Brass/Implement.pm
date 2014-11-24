@@ -183,7 +183,7 @@ sub split_filtered {
   my $split_dir = File::Spec->catdir($tmp, 'split');
   remove_tree($split_dir) if(-d $split_dir);
   make_path($split_dir);
-  my $command = sprintf 'split --suffix-length=3 --numeric-suffixes --verbose --lines=%s %s %s/split.',
+  my $command = sprintf 'split --suffix-length=6 --numeric-suffixes --verbose --lines=%s %s %s/split.',
                         $ASSEMBLE_SPLIT, $groups, $split_dir;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);

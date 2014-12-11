@@ -66,7 +66,7 @@ const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 
 ## assemble
-const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
+const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -e -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
 # genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
 
 ## grass
@@ -216,7 +216,8 @@ sub assemble {
 
     my $command = "$^X ";
     $command .= _which('brass-assemble');
-    $command .= sprintf $BRASS_ASSEMBLE, $options->{'genome'},
+    $command .= sprintf $BRASS_ASSEMBLE, $options->{'depth'},
+                                          $options->{'genome'},
                                           $tmp_assemble,
                                           $assembled,
                                           $split_file,

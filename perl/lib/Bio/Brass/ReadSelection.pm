@@ -120,6 +120,7 @@ sub new {
       }
       $sample_names{$1}++    if(/\tSM:([^\t]+)/);
     }
+    $max = 500 if($max == 0);
 
 	warn "Multiple sample names detected in |$filename|" if scalar keys %sample_names > 1;
 
@@ -129,6 +130,10 @@ sub new {
 	$self->{maxmaxins} = $max;
 
     return bless $self, $class;
+}
+
+sub maxmaxins {
+  return shift->{maxmaxins};
 }
 
 sub DESTROY {
@@ -158,10 +163,10 @@ quality mapping of the single end.
 =cut
 
 sub _get_reads {
-  my ($self, $chr, $pos5, $pos3, $strand, $k, $q, $abort_reads) = @_;
+  my ($self, $chr, $pos5, $pos3, $ext5, $ext3, $strand, $k, $q, $abort_reads) = @_;
 
-  my $normalpos5 = $pos5 - $self->{'maxmaxins'};
-  my $normalpos3 = $pos3 + $self->{'maxmaxins'};
+  my $normalpos5 = $pos5 - $ext5;
+  my $normalpos3 = $pos3 + $ext3;
 
   my $mutpos5 = ($strand eq '+')? $normalpos5 : $pos5;
   my $mutpos3 = ($strand eq '+')? $pos3 : $normalpos3;
@@ -231,16 +236,16 @@ emitted and in the vicinity but discarded due to strand and mappedness rules.
 =cut
 
 sub write_local_reads {
-  my ($self, $out, $chrl, $lstart, $lend, $chrh, $hstart, $hend,
+  my ($self, $out, $extend, $chrl, $lstart, $lend, $chrh, $hstart, $hend,
 	    undef, undef, $strandl, $strandh) = @_;
 
   my $abort_reads = 500_000;
   my ($k_reads, $q_pairs) = ({},[]);
 
-  my ($k1, $d1) = $self->_get_reads($chrl, $lstart+1, $lend, $strandl, $k_reads, $q_pairs, $abort_reads);
+  my ($k1, $d1) = $self->_get_reads($chrl, $lstart+1, $lend, $extend->{L5}, $extend->{L3}, $strandl, $k_reads, $q_pairs, $abort_reads);
   return (0,$k1+$d1) if($k1 > $abort_reads); # artificially block extreme depth from assembly
 
-  my ($k2, $d2) = $self->_get_reads($chrh, $hstart+1, $hend, $strandh, $k_reads, $q_pairs, $abort_reads);
+  my ($k2, $d2) = $self->_get_reads($chrh, $hstart+1, $hend, $extend->{H5}, $extend->{H3}, $strandh, $k_reads, $q_pairs, $abort_reads);
   return (0,$k2+$d2) if($k2 >= $abort_reads); # artificially block extreme depth from assembly
 
   my $k_count = 0;

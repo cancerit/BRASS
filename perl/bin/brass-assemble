@@ -34,6 +34,12 @@ use File::Temp;
 use Getopt::Long qw(:config bundling no_ignore_case);
 
 use Bio::DB::Sam;
+use Data::Dumper;
+
+BEGIN {
+  $SIG{__WARN__} = sub {warn $_[0] unless( $_[0] =~ m/^Subroutine Tabix.* redefined/)};
+};
+use Tabix;
 
 use Graph;
 use Graph::Reader::Velvet;
@@ -49,6 +55,7 @@ $0 =~ s{.*/}{};
 my %output_filename;
 my $output_format = 'tab';
 my $basedir = "working";
+my $extreme_bed;
 my $verbose = 0;
 my $clean = 0;
 my $genome_fa;
@@ -74,6 +81,7 @@ Options:
   -o FILE    Write events to FILE rather than standard output
   -O FORMAT  Write the next output stream in the specified FORMAT
   -r TARGET  Use reference TARGET (FASTA file or Exonerate server HOST:12886)
+  -e FILE    High-depth regions to avoid - tabix indexed BED
   -T DIR     Use DIR for temporary working files  [./working]
   -X         Clean the working dir if flag present
   -m         Mode [aln|mem], how to interpret BWA aligned input.
@@ -93,6 +101,7 @@ GetOptions(
   'o=s' => sub { $output_filename{$output_format} = $_[1] },
   'O=s' => \$output_format,
   'r=s' => \$genome_fa, #\$Bio::Brass::Alignment::exonerate_target,
+  'e=s' => \$extreme_bed,
   'T=s' => \$basedir,
   'X' => \$clean,
   'm=s' => \$aligner_mode,
@@ -110,8 +119,28 @@ die "$0: bad reference file |$genome_fa|" unless -f $genome_fa;
 die "$0: mode must be defined" unless(defined $aligner_mode);
 die "$0: bad mode |$aligner_mode|" unless($aligner_mode =~ m/^(aln|mem)$/);
 
+my $extreme_tabix;
+if(defined $extreme_bed) {
+  die "Does not appear to be a bed.gz file: $extreme_bed" unless($extreme_bed =~ m/\.bed\.gz$/);
+  if($extreme_bed !~ m/^(http|ftp)/) {
+    die "File does not exist : $extreme_bed" unless(-e $extreme_bed);
+    die "File appears to be empty : $extreme_bed" unless(-s _);
+    die "Tabix index does not exist : $extreme_bed.tbi" unless(-e "$extreme_bed.tbi");
+    die "Tabix index appears to be empty : $extreme_bed.tbi" unless(-s _);
+  }
+  $extreme_tabix = new Tabix(-data => $extreme_bed);
+}
+
 my @bam_filenames = (scalar @ARGV > 1)? splice(@ARGV, 1) : ();
 my @sample_bams = map { Bio::Brass::ReadSelection->new($_, $aligner_mode) } @bam_filenames;
+
+# identify the largest insertsize from bams, this needs to be used to determine if
+# the default extension will cause high-depth regions to be pulled
+# this is defaulted to 500 if header doesn't contain MI
+my $max_insert = 0;
+for my $tmpBam(@sample_bams) {
+  $max_insert = $tmpBam->maxmaxins if($tmpBam->maxmaxins > $max_insert);
+}
 
 my $ref_fai = Bio::DB::Sam::Fai->load($genome_fa);
 $Bio::Brass::Alignment::ref_fai = $ref_fai;
@@ -172,9 +201,58 @@ close or die "$0: closing $output_filename{log} failed: $!\n";
 
 exit 0;
 
+=head2 max_extend
+
+Determine what the extension size should be, it should be the
+same for all inputs otherwise the assembly will be mismatched at
+the ends of the paths, here we take into account if it will extend
+into any high depth regions too
+
+=cut
+
+sub max_extend {
+  my ($chr, $pos, $prime) = @_;
+  my $max_extend = $max_insert;
+  if(defined $extreme_tabix) {
+    my ($low, $high);
+    if($prime == 5) {
+      $low = $pos - $max_insert; # this makes it 0-based for you
+      $high = $pos;
+    }
+    else {
+      $low = $pos - 1;
+      $high = $pos + $max_insert;
+    }
+    my $res = $extreme_tabix->query($chr, $low, $high);
+    if(defined $res->get) {
+      my $line = $extreme_tabix->read($res);
+      if(defined $line) {
+        chomp $line;
+        my ($tbi_l, $tbi_h) = (split /\t/, $line)[1,2];
+        if($prime == 5) {
+          $max_extend = ($pos - $tbi_h)-1;
+        }
+        else {
+          $max_extend = ($tbi_l - $pos)-1;
+        }
+      }
+    }
+  }
+  return $max_extend;
+}
+
 sub assemble {
   my ($chrL, $L5, $L3, $chrH, $H5, $H3, $id, undef, $strandL, $strandH) = @_;
   $L5++; $H5++;  # Convert to 1-based [$L5,$L3], [$H5,$H3] intervals
+
+  my %extend;
+  $extend{L5} = max_extend($chrL, $L5, 5);
+  $extend{L3} = max_extend($chrL, $L3, 3);
+  $extend{H5} = max_extend($chrH, $H5, 5);
+  $extend{H3} = max_extend($chrH, $H3, 3);
+  for my $extend_key(keys %extend) {
+    return undef if($extend{$extend_key} < 25);
+  }
 
   print "Processing variant: $id\n" if $verbose;
 
@@ -194,7 +272,7 @@ sub assemble {
     my $ndx = scalar(@read_filenames) + 1;
     my $fname = "$workingdir_id/reads$ndx.sam";
     open my $reads, '>', $fname or die "$0: can't write to $fname: $!\n";
-    my ($kept, $discarded) = $sample->write_local_reads($reads, @_);
+    my ($kept, $discarded) = $sample->write_local_reads($reads, \%extend, @_);
     push @sample_names, $sample->sample_name();
     close $reads or die "$0: closing $fname failed: $!\n";
     print "Wrote $kept reads to $fname, discarded $discarded\n" if $verbose;

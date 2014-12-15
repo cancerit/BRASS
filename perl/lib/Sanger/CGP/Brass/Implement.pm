@@ -45,7 +45,8 @@ use PCAP::Bam;
 const my $ASSEMBLE_SPLIT => 100;
 
 ## input
-const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s filename=%s};
+const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
+const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s};
 # tmpdir, iter, file
 const my $PREP_BAM => q{ -b %s};
 # basfile[ -e exclude chrs]
@@ -66,8 +67,8 @@ const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 
 ## assemble
-const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -e -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
-# genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
+const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -e %s -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
+# extreme depth, genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
 
 ## grass
 const my $GRASS => ' -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s';
@@ -93,8 +94,11 @@ sub input {
     my $outbam = File::Spec->catfile($tmp, sanitised_sample_from_bam($input));
     $outbam .= '.brm.bam';
 
-    my $command = _which('bamcollate2');
-    $command .= sprintf $BAMCOLLATE, $tmp, $index, $input;
+    my $command = _which('bedtools');
+    $command .= sprintf $BED_INTERSECT_V, $input, $options->{'depth'};
+    $command .= ' | ';
+    $command .= _which('bamcollate2');
+    $command .= sprintf $BAMCOLLATE, $tmp, $index;
     $command .= ' | ';
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');

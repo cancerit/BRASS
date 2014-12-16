@@ -31,6 +31,7 @@ use List::Util qw(first);
 use File::Spec;
 use File::Temp qw(tmpnam);
 use Bio::Brass qw($VERSION);
+use PCAP::Bam::Bas;
 
 =head1 NAME
 
@@ -120,16 +121,33 @@ sub new {
       }
       $sample_names{$1}++    if(/\tSM:([^\t]+)/);
     }
-    $max = 500 if($max == 0);
+    $max = insert_from_bas($filename) if($max == 0);
 
 	warn "Multiple sample names detected in |$filename|" if scalar keys %sample_names > 1;
 
 	my @names = keys %sample_names;
 
 	$self->{sample_name} = $names[0] if scalar @names;
-	$self->{maxmaxins} = $max; # this isn't relevant for assembly
+	$self->{maxmaxins} = $max;
 
     return bless $self, $class;
+}
+
+sub insert_from_bas {
+  my $filename = shift;
+  my $max_mi = 0;
+  my $bas = "$filename.bas";
+  if(-e $bas && -s _) {
+    my $bas_ob = PCAP::Bam::Bas->new($bas);
+    my @groups = $bas_ob->read_groups;
+    for my $rg_id(@groups) {
+      my $mean_insert_size = $bas_ob->get($rg_id, 'mean_insert_size');
+      my $insert_size_sd = $bas_ob->get($rg_id, 'insert_size_sd');
+      my $mi = int( $mean_insert_size + (2 * $insert_size_sd) );
+      $max_mi = $mi if($mi > $max_mi);
+    }
+  }
+  return $max_mi;
 }
 
 sub maxmaxins {
@@ -165,8 +183,8 @@ quality mapping of the single end.
 sub _get_reads {
   my ($self, $chr, $pos5, $pos3, $strand, $k, $q, $abort_reads) = @_;
 
-  my $normalpos5 = $pos5 - 100;
-  my $normalpos3 = $pos3 + 100;
+  my $normalpos5 = $pos5 - $self->{maxmaxins};
+  my $normalpos3 = $pos3 + $self->{maxmaxins};
 
   my $mutpos5 = ($strand eq '+')? $normalpos5 : $pos5;
   my $mutpos3 = ($strand eq '+')? $pos3 : $normalpos3;

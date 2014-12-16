@@ -36,11 +36,6 @@ use Getopt::Long qw(:config bundling no_ignore_case);
 use Bio::DB::Sam;
 use Data::Dumper;
 
-BEGIN {
-  $SIG{__WARN__} = sub {warn $_[0] unless( $_[0] =~ m/^Subroutine Tabix.* redefined/)};
-};
-use Tabix;
-
 use Graph;
 use Graph::Reader::Velvet;
 

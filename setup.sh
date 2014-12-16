@@ -93,20 +93,6 @@ echo > $INIT_DIR/setup.log
     echo; echo
 ) >>$INIT_DIR/setup.log 2>&1
 
-perlmods=( "Graph" )
-
-set -e
-for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
-  (
-    set -x
-    $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
-    set +x
-    echo; echo
-  ) >>$INIT_DIR/setup.log 2>&1
-  done_message "" "Failed during installation of $i."
-done
-
 set -eu
 
 # cleanup inst_path
@@ -121,6 +107,26 @@ ARCHNAME=`perl -e 'use Config; print $Config{archname};'`
 PERLROOT=$INST_PATH/lib/perl5
 PERLARCH=$PERLROOT/$ARCHNAME
 export PERL5LIB="$PERLROOT:$PERLARCH"
+
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
+if [[ "x$CHK" == "x" ]] ; then
+  echo "PREREQUISITE: Please install PCAP-core before proceeding: https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases"
+  exit 1;
+fi
+
+perlmods=( "Graph" )
+
+set -e
+for i in "${perlmods[@]}" ; do
+  echo -n "Installing build prerequisite $i..."
+  (
+    set -x
+    perl $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
+    set +x
+    echo; echo
+  ) >>$INIT_DIR/setup.log 2>&1
+  done_message "" "Failed during installation of $i."
+done
 
 #create a location to build dependencies
 SETUP_DIR=$INIT_DIR/install_tmp

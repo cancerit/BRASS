@@ -2,27 +2,28 @@
 
 ########## LICENCE ##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
-# 
+#
 # This file is part of BRASS.
-# 
+#
 # BRASS is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ########## LICENCE ##########
 
 
 SOURCE_BLAT="http://users.soe.ucsc.edu/~kent/src/blatSrc35.zip"
+SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz"
 
 done_message () {
     if [ $? -eq 0 ]; then
@@ -92,20 +93,6 @@ echo > $INIT_DIR/setup.log
     echo; echo
 ) >>$INIT_DIR/setup.log 2>&1
 
-perlmods=( "Graph" )
-
-set -e
-for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
-  (
-    set -x
-    $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
-    set +x
-    echo; echo
-  ) >>$INIT_DIR/setup.log 2>&1
-  done_message "" "Failed during installation of $i."
-done
-
 set -eu
 
 # cleanup inst_path
@@ -121,11 +108,50 @@ PERLROOT=$INST_PATH/lib/perl5
 PERLARCH=$PERLROOT/$ARCHNAME
 export PERL5LIB="$PERLROOT:$PERLARCH"
 
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
+if [[ "x$CHK" == "x" ]] ; then
+  echo "PREREQUISITE: Please install PCAP-core before proceeding: https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases"
+  exit 1;
+fi
+
+perlmods=( "Graph" )
+
+set -e
+for i in "${perlmods[@]}" ; do
+  echo -n "Installing build prerequisite $i..."
+  (
+    set -x
+    perl $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
+    set +x
+    echo; echo
+  ) >>$INIT_DIR/setup.log 2>&1
+  done_message "" "Failed during installation of $i."
+done
+
 #create a location to build dependencies
 SETUP_DIR=$INIT_DIR/install_tmp
 mkdir -p $SETUP_DIR
 
 cd $SETUP_DIR
+
+echo -n "Building bedtools ..."
+if [ -e $SETUP_DIR/bedtools.success ]; then
+  echo -n " previously installed ...";
+else
+  cd $SETUP_DIR
+  (
+  set -x
+  if [ ! -e bedtools ]; then
+    get_distro "bedtools2" $SOURCE_BEDTOOLS
+    mkdir -p bedtools2
+    tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz
+  fi
+  make -C bedtools2 -j$CPU
+  cp bedtools2/bin/* $INST_PATH/bin/.
+  touch $SETUP_DIR/bedtools.success
+  )>>$INIT_DIR/setup.log 2>&1
+fi
+done_message "" "Failed to build bedtools."
 
 echo -n "Building blat ..."
 if [ -e $SETUP_DIR/blat.success ]; then

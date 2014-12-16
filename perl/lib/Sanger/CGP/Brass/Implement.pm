@@ -42,10 +42,11 @@ use File::Copy qw(move);
 use PCAP::Threaded;
 use PCAP::Bam;
 
-const my $ASSEMBLE_SPLIT => 100;
+const my $ASSEMBLE_SPLIT => 30;
 
 ## input
-const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s filename=%s};
+const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
+const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s};
 # tmpdir, iter, file
 const my $PREP_BAM => q{ -b %s};
 # basfile[ -e exclude chrs]
@@ -67,7 +68,7 @@ const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile
 
 ## assemble
 const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
-# genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
+# extreme depth, genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
 
 ## grass
 const my $GRASS => ' -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s';
@@ -93,8 +94,11 @@ sub input {
     my $outbam = File::Spec->catfile($tmp, sanitised_sample_from_bam($input));
     $outbam .= '.brm.bam';
 
-    my $command = _which('bamcollate2');
-    $command .= sprintf $BAMCOLLATE, $tmp, $index, $input;
+    my $command = _which('bedtools');
+    $command .= sprintf $BED_INTERSECT_V, $input, $options->{'depth'};
+    $command .= ' | ';
+    $command .= _which('bamcollate2');
+    $command .= sprintf $BAMCOLLATE, $tmp, $index;
     $command .= ' | ';
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');
@@ -177,14 +181,13 @@ sub split_filtered {
   my $tmp = $options->{'tmp'};
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
-
   my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
 
   my $split_dir = File::Spec->catdir($tmp, 'split');
   remove_tree($split_dir) if(-d $split_dir);
   make_path($split_dir);
-  my $command = sprintf 'split --suffix-length=6 --numeric-suffixes --verbose --lines=%s %s %s/split.',
-                        $ASSEMBLE_SPLIT, $groups, $split_dir;
+  my $command = sprintf q{grep -v '^#' %s | split --suffix-length=7 --numeric-suffixes --verbose --lines=%s - %s/split.},
+                        $groups, $ASSEMBLE_SPLIT, $split_dir;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
@@ -206,13 +209,13 @@ sub assemble {
 
     my $split_dir = File::Spec->catdir($tmp, 'split');
     my $split_file = File::Spec->catfile($split_dir, 'split.');
-    $split_file .= sprintf '%06d', $index-1;
+    $split_file .= sprintf '%07d', $index-1;
 
     my $tmp_assemble = File::Spec->catdir($tmp, 'assemble');
     make_path($tmp_assemble) unless(-e $tmp_assemble);
 
     my $assembled = File::Spec->catfile($tmp_assemble, 'bedpe.');
-    $assembled .= sprintf '%06d', $index-1;
+    $assembled .= sprintf '%07d', $index-1;
 
     my $command = "$^X ";
     $command .= _which('brass-assemble');

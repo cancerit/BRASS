@@ -85,6 +85,7 @@ my %index_max = ( 'input'   => 2,
 sub cleanup {
   my $options = shift;
   my $tmpdir = $options->{'tmp'};
+  system("cp $tmpdir/*.brm.bam $options->{outdir}/.");
   move(File::Spec->catdir($tmpdir, 'logs'), File::Spec->catdir($options->{'outdir'}, 'logs')) || die $!;
   my $basefile = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
 

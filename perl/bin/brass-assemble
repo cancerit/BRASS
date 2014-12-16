@@ -34,6 +34,7 @@ use File::Temp;
 use Getopt::Long qw(:config bundling no_ignore_case);
 
 use Bio::DB::Sam;
+use Data::Dumper;
 
 use Graph;
 use Graph::Reader::Velvet;
@@ -49,6 +50,7 @@ $0 =~ s{.*/}{};
 my %output_filename;
 my $output_format = 'tab';
 my $basedir = "working";
+my $extreme_bed;
 my $verbose = 0;
 my $clean = 0;
 my $genome_fa;
@@ -131,8 +133,6 @@ $bedpe = open_output($output_filename{bedpe}) if exists $output_filename{bedpe};
 $tab = open_output($output_filename{tab}) if exists $output_filename{tab};
 die "$0: VCF output not implemented\n" if exists $output_filename{vcf};
 
-my $graph_reader = Graph::Reader::Velvet->new();
-
 my $working_dir = File::Temp->newdir( "$basedir/tmpXXXXXX", CLEANUP => $clean );
 
 my $counter = 0;
@@ -197,6 +197,7 @@ sub assemble {
     my ($kept, $discarded) = $sample->write_local_reads($reads, @_);
     push @sample_names, $sample->sample_name();
     close $reads or die "$0: closing $fname failed: $!\n";
+system("wc -l $fname");
     print "Wrote $kept reads to $fname, discarded $discarded\n" if $verbose;
     if($kept == 0) {
       print "No reads found in sample $sample_names[-1] for assembly input ... skipping variant\n" if $verbose;
@@ -219,6 +220,7 @@ sub assemble {
     print "$k: graph has $_[0] vertices; n50 $_[1], max $_[2], total $_[3]\n"
       if $verbose;
 
+    my $graph_reader = Graph::Reader::Velvet->new();
     my $graph = $graph_reader->read_graph("$directory/LastGraph");
 
     ## TODO there is currently a bug in velvet and I think the read contributions are suspect...

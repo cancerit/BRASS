@@ -71,6 +71,8 @@ my %index_max = ( 'input'   => 2,
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'assemble') {
     $options->{'splits'} = Sanger::CGP::Brass::Implement::split_count($options);
+    my $jobs = $options->{'splits'};
+    $jobs = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
     $threads->run($options->{'splits'}, 'assemble', $options)
   }
 

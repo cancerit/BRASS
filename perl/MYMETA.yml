@@ -25,4 +25,4 @@ requires:
   Pod::Coverage: '0.23'
   Template: '2.26'
   Test::Fatal: '0.013'
-version: v2.1.0
+version: v2.1.1

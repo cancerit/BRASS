@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ########## LICENCE ##########
-# Copyright (c) 2014 Genome Research Ltd.
+# Copyright (c) 2014,2015 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -19,6 +19,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# 1. The usage of a range of years within a copyright statement contained within
+# this distribution should be interpreted as being equivalent to a list of years
+# including the first and last year specified and all consecutive years between
+# them. For example, a copyright statement that reads ‘Copyright (c) 2005, 2007-
+# 2009, 2011-2012’ should be interpreted as being identical to a statement that
+# reads ‘Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012’ and a copyright
+# statement that reads ‘Copyright (c) 2005-2012’ should be interpreted as being
+# identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
+# 2009, 2010, 2011, 2012’."
 ########## LICENCE ##########
 
 
@@ -54,6 +64,15 @@ get_distro () {
     curl -sS -o $1.$EXT -L $2
   else
     wget -nv -O $1.$EXT $2
+  fi
+}
+
+get_file () {
+# output, source
+  if hash curl 2>/dev/null; then
+    curl --insecure -sS -o $1 -L $2
+  else
+    wget -nv -O $1 $2
   fi
 }
 
@@ -114,6 +133,15 @@ if [[ "x$CHK" == "x" ]] ; then
   exit 1;
 fi
 
+#create a location to build dependencies
+SETUP_DIR=$INIT_DIR/install_tmp
+mkdir -p $SETUP_DIR
+
+## grab cpanm:
+rm -f $SETUP_DIR/cpanm
+get_file $SETUP_DIR/cpanm http://xrl.us/cpanm
+chmod +x $SETUP_DIR/cpanm
+
 perlmods=( "Graph" )
 
 set -e
@@ -121,16 +149,12 @@ for i in "${perlmods[@]}" ; do
   echo -n "Installing build prerequisite $i..."
   (
     set -x
-    perl $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
+    perl $SETUP_DIR/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
     set +x
     echo; echo
   ) >>$INIT_DIR/setup.log 2>&1
   done_message "" "Failed during installation of $i."
 done
-
-#create a location to build dependencies
-SETUP_DIR=$INIT_DIR/install_tmp
-mkdir -p $SETUP_DIR
 
 cd $SETUP_DIR
 
@@ -259,7 +283,7 @@ if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
 fi
 (
   set -x
-  perl $INIT_DIR/perl/bin/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
+  perl $SETUP_DIR/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
   set +x
 ) >>$INIT_DIR/setup.log 2>&1
 done_message "" "Failed during installation of core dependencies."

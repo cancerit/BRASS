@@ -4,7 +4,6 @@ bin/brassI_filter.pl
 bin/brassI_np_in.pl
 bin/brassI_pre_filter.pl
 bin/brassI_prep_bam.pl
-bin/cpanm
 bin/findbp
 bin/findbp-all
 bin/make-repeat-file

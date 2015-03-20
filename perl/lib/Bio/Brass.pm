@@ -1,7 +1,7 @@
 package Bio::Brass;
 
 ########## LICENCE ##########
-# Copyright (c) 2014 Genome Research Ltd.
+# Copyright (c) 2014,2015 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -19,6 +19,16 @@ package Bio::Brass;
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# 1. The usage of a range of years within a copyright statement contained within
+# this distribution should be interpreted as being equivalent to a list of years
+# including the first and last year specified and all consecutive years between
+# them. For example, a copyright statement that reads ‘Copyright (c) 2005, 2007-
+# 2009, 2011-2012’ should be interpreted as being identical to a statement that
+# reads ‘Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012’ and a copyright
+# statement that reads ‘Copyright (c) 2005-2012’ should be interpreted as being
+# identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
+# 2009, 2010, 2011, 2012’."
 ########## LICENCE ##########
 
 
@@ -36,7 +46,7 @@ our @EXPORT = qw(find_breakpoints find_dusty_vertices
 		 is_dusty get_isolated_bp_alignment get_isolated_bp_surrounding_region
 		 $VERSION);
 
-our $VERSION = '2.1.1';
+our $VERSION = '2.1.2';
 
 =head1 NAME
 

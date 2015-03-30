@@ -1,0 +1,10 @@
+John Marshall (https://github.com/jmarshall)
+  All code except lib/perl/Sanger tree.
+
+Jonathan Hinton (https://github.com/jwhsanger)
+  Significant work on brass-assemble (post jmarshall)
+
+Lucy Stebbings (https://github.com/lucystebbings)
+  All code under perl/lib/Sanger/CGP/BrassFilter
+
+All contributions post 31-Oct-2014 are covered by the commit information held within the GitHub repository.

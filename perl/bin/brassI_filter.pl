@@ -39,12 +39,14 @@ use lib "$FindBin::Bin/../lib";
 
 use strict;
 use warnings FATAL => 'all';
+use File::Copy qw(move);
 
 use Sanger::CGP::BrassFilter::BrassMarkedGroups;
 use Sanger::CGP::BrassFilter::TransFlag;
 use Sanger::CGP::BrassFilter::OccursFlag;
 use Sanger::CGP::BrassFilter::CnFlag;
 use Sanger::CGP::BrassFilter::BlatFlag;
+use Sanger::CGP::BrassFilter::Cleanup;
 
 use File::Which;
 use Getopt::Long;
@@ -163,7 +165,10 @@ if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copy
 if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
 
 # process core information and print to outfile
-if ($do_process) { process($infile, $outfile, $tumour); }
+if ($do_process) {
+  process($infile, $outfile, $tumour);
+  cleanup($outfile);
+}
 
 # check for translocations
 if ($do_trans) { update_translocations($outfile, $bal_trans_field, $inv_field, $bal_distance, $inv_distance); }
@@ -177,7 +182,6 @@ if ($do_copynumber)  { update_cn($outfile, $cn_field, $cn_within, $infile_ascat,
 # check for L v H range blat scores
 if ($do_range_blat)  { update_blat($outfile, $blat_field, $blat_script, $ref, $minIdentity); }
 
-#-----------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------#
 sub process {
     my ($infile, $outfile, $tumour) = @_;
@@ -205,6 +209,19 @@ sub process {
 	print "finished printing to $outfile at $date";
     }
 }
+
+#-----------------------------------------------------------------------------#
+sub cleanup {
+  my ($outfile) = @_;
+  $outfile = "$outfile.bedpe" unless($outfile =~ m/\.bedpe$/);
+  my $new_out = "$outfile.tmp";
+
+  my $cleanup = Sanger::CGP::BrassFilter::Cleanup->new(-infile  => $outfile,
+						                                      -outfile => $new_out);
+	$cleanup->process();
+  move($new_out, $outfile) || die $!;
+}
+
 #------------------------------------------------------------------------------------------------#
 
 sub update_translocations {

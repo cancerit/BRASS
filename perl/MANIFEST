@@ -4,6 +4,7 @@ bin/brassI_filter.pl
 bin/brassI_np_in.pl
 bin/brassI_pre_filter.pl
 bin/brassI_prep_bam.pl
+bin/combineResults.pl
 bin/findbp
 bin/findbp-all
 bin/make-repeat-file
@@ -21,6 +22,7 @@ lib/Graph/Reader/Velvet.pm
 lib/Sanger/CGP/Brass/Implement.pm
 lib/Sanger/CGP/BrassFilter/BlatFlag.pm
 lib/Sanger/CGP/BrassFilter/BrassMarkedGroups.pm
+lib/Sanger/CGP/BrassFilter/Cleanup.pm
 lib/Sanger/CGP/BrassFilter/CnFlag.pm
 lib/Sanger/CGP/BrassFilter/OccursFlag.pm
 lib/Sanger/CGP/BrassFilter/TransFlag.pm

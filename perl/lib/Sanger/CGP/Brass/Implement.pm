@@ -248,11 +248,36 @@ sub grass {
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
   my $assembled = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.assembled.bedpe');
+  my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
   my $merge = sprintf '(cat %s/assemble/bedpe.* | sort -k1,1 -k 2,2n > %s)', $tmp, $assembled;
 
   my $tumour = File::Spec->catfile($tmp, $options->{'safe_tumour_name'}).'.brm.bam';
   my $normal = File::Spec->catfile($tmp, $options->{'safe_normal_name'}).'.brm.bam';
 
+  my $annot_phaseI_prefix = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'_ann.groups.filtered');
+  my $annot_phaseII_prefix = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'_ann.assembled');
+
+  my $final = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.annot');
+
+  my $combine_cmd = "$^X ";
+  $combine_cmd .= _which('combineResults.pl');
+  $combine_cmd .= ' '.$annot_phaseI_prefix;
+  $combine_cmd .= ' '.$annot_phaseII_prefix;
+  $combine_cmd .= ' '.$final;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'),
+                                            [ $merge,
+                                              _grass($options, $assembled),
+                                              _grass($options, $groups),
+                                              $combine_cmd],
+                                            0);
+
+  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+  return 1;
+}
+
+sub _grass {
+  my ($options, $input) = @_;
   my $grass_cmd = "$^X ";
   $grass_cmd .= _which('grass.pl');
   $grass_cmd .= sprintf $GRASS, $options->{'g_cache'},
@@ -263,19 +288,8 @@ sub grass {
                               $options->{'protocol'},
                               $options->{'tumour_name'},
                               $options->{'normal_name'},
-                              $assembled;
-
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$merge, $grass_cmd], 0);
-
-  my $munged_name =File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'_ann.assembled.vcf');
-  my $annotated = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.annot.vcf');
-  move $munged_name, $annotated || die $!;
-  $munged_name =~ s/vcf$/bedpe/;
-  $annotated =~ s/vcf$/bedpe/;
-  move $munged_name, $annotated || die $!;
-
-  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
-  return 1;
+                              $input;
+  return $grass_cmd;
 }
 
 sub split_count {

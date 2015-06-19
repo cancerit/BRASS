@@ -97,14 +97,20 @@ my %index_max = ( 'input'   => 2,
 sub cleanup {
   my $options = shift;
   my $tmpdir = $options->{'tmp'};
-  system("cp $tmpdir/*.brm.bam $options->{outdir}/.");
-  move(File::Spec->catdir($tmpdir, 'logs'), File::Spec->catdir($options->{'outdir'}, 'logs')) || die $!;
   my $basefile = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
 
   unlink "$basefile.groups";
+  unlink "$basefile.groups.filtered.bedpe";
   unlink "$basefile.assembled.bedpe";
+  unlink $basefile.'_ann.assembled.vcf';
+  unlink $basefile.'_ann.assembled.bedpe';
   unlink "$basefile.annot.vcf";
   unlink "$basefile.annot.vcf.srt";
+  unlink $basefile.'_ann.groups.filtered.vcf';
+  unlink $basefile.'_ann.groups.filtered.bedpe';
+
+  system("cp $tmpdir/*.brm.bam $options->{outdir}/.");
+  move(File::Spec->catdir($tmpdir, 'logs'), File::Spec->catdir($options->{'outdir'}, 'logs')) || die $!;
 
   remove_tree $tmpdir if(-e $tmpdir);
 	return 0;

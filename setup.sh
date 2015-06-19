@@ -133,6 +133,12 @@ if [[ "x$CHK" == "x" ]] ; then
   exit 1;
 fi
 
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Sanger::CGP::Grass`
+if [[ "x$CHK" == "x" ]] ; then
+  echo "PREREQUISITE: Please install grass before proceeding: https://github.com/cancerit/grass/releases"
+  exit 1;
+fi
+
 #create a location to build dependencies
 SETUP_DIR=$INIT_DIR/install_tmp
 mkdir -p $SETUP_DIR

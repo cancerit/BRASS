@@ -45,6 +45,7 @@ WriteMakefile(
                         bin/brassI_pre_filter.pl
                         bin/brassI_prep_bam.pl
                         bin/brass.pl
+                        bin/combineResults.pl
                         bin/findbp
                         bin/findbp-all
                         bin/make-repeat-file

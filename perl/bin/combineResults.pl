@@ -39,7 +39,7 @@ sub mergeVcf {
 
   my $new_info = q{##INFO=<ID=BAS,Number=.,Type=Integer,Description="Brass Assembly Score:A maximum score of 100 indicates a perfect pattern of 5 vertices in Velvet's de Bruijn graph">}
                   .qq{\n}
-                  .q{##INFO=<ID=SVCLASS,Number=.,Type=String,Description="basic SV class, deletion, inversion, tandem-duplication">};
+                  .q{##INFO=<ID=SVCLASS,Number=.,Type=String,Description="basic SV class, deletion, inversion, tandem-duplication, translocation">};
   my $new_format = q{##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Count of pairs that span this breakpoint">};
 
   my $info_found = 0;
@@ -188,7 +188,10 @@ sub svclass {
   my ($end_a, $end_b) = @{$_[0]};
   die "Record IDs out of sync at:\n",join("\t",@{$end_a}),"\n",join("\t",@{$end_b}),"\n" if($end_a->[2] !~ m/_[12]$/ || $end_b->[2] !~ m/_[12]$/);
   my $class;
-  if($end_a->[4] =~ m/^[[:upper:]]\[/) {
+  if($end_a->[0] ne $end_b->[0]) {
+    $class = 'translocation';
+  }
+  elsif($end_a->[4] =~ m/^[[:upper:]]\[/) {
     # ++
     $class = 'deletion';
   }

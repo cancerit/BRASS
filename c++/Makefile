@@ -66,7 +66,7 @@ rearrgroup.o: rearrgroup.cpp rearrgroup.h
 version.inc: ../perl/lib/Bio/Brass.pm
 	perl -I../perl/lib -MBio::Brass -e 'print <<"EOF"'		\
 	  -e '/* Generated from lib/Bio/Brass.pm */'		\
-	  -e '#define BRASS_VERSION $$VERSION'	\
+	  -e '#define BRASS_VERSION "$$VERSION"'	\
 	  -e 'EOF' > $@
 
 

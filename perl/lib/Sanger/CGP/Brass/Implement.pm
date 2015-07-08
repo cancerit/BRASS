@@ -388,6 +388,9 @@ sub get_bam_info {
       $tum_name = $_->{'SM'} unless(defined $tum_name);
       die "Tumour BAM file has multiple sample names in header ($options->{tumour})\n" if($tum_name ne $_->{'SM'});
     }
+    if(exists $_->{'PL'}) {
+      $tum_plat = $_->{'PL'};
+    }
   }
 
   $bam_ob = PCAP::Bam->new($options->{'normal'});
@@ -396,6 +399,9 @@ sub get_bam_info {
     if(exists $_->{'SM'}) {
       $norm_name = $_->{'SM'} unless(defined $norm_name);
       die "Normal BAM file has multiple sample names in header ($options->{normal})\n" if($norm_name ne $_->{'SM'});
+    }
+    if(exists $_->{'PL'}) {
+      $norm_plat = $_->{'PL'};
     }
   }
 

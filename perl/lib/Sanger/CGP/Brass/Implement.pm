@@ -58,7 +58,7 @@ const my $ASSEMBLE_SPLIT => 30;
 const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
 const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s};
 # tmpdir, iter, file
-const my $PREP_BAM => q{ -b %s};
+const my $PREP_BAM => q{ -b %s -p %s};
 # basfile[ -e exclude chrs]
 const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s};
 # out_bamname, out_bamname, out_bamname
@@ -104,6 +104,14 @@ sub input {
     my $outbam = File::Spec->catfile($tmp, sanitised_sample_from_bam($input));
     $outbam .= '.brm.bam';
 
+    my $rg_prefix;
+    if($index == 1) {
+      $rg_prefix = 'T';
+    }
+    else {
+      $rg_prefix = 'N';
+    }
+
     my $command = _which('bedtools');
     $command .= sprintf $BED_INTERSECT_V, $input, $options->{'depth'};
     $command .= ' | ';
@@ -112,7 +120,7 @@ sub input {
     $command .= ' | ';
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');
-    $command .= sprintf $PREP_BAM, $input.'.bas';
+    $command .= sprintf $PREP_BAM, $input.'.bas', $rg_prefix;
     $command .= " -e $options->{'exclude'}" if(exists $options->{'exclude'});
     $command .= ' | ';
     $command .= _which('bamsort');

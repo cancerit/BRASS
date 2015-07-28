@@ -167,7 +167,7 @@ if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copy
 # process core information and print to outfile
 if ($do_process) {
   process($infile, $outfile, $tumour);
-  cleanup($outfile);
+#  cleanup($outfile);
 }
 
 # check for translocations

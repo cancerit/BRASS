@@ -157,7 +157,7 @@ sub setup {
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
   PCAP::Cli::file_for_reading('genome', $opts{'genome'});
-  PCAP::Cli::file_for_reading('repeats', $opts{'repeats'});
+  PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
@@ -167,6 +167,7 @@ sub setup {
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'ascat'} unless(defined $opts{'ascat'});
   delete $opts{'exclude'} unless(defined $opts{'exclude'});
+  delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
@@ -233,7 +234,6 @@ brass.pl [options]
     -tumour    -t   Tumour BAM file
     -normal    -n   Normal BAM file
     -depth     -d   Regions of excessive sequencing depth to be ignored
-    -repeats   -r   Repeat file, see 'make-repeat-file'
     -genome    -g   Genome fasta file
     -species   -s   Species name
     -assembly  -as  Assembly name
@@ -241,6 +241,7 @@ brass.pl [options]
     -g_cache   -gc  Genome cache file.
 
   Optional
+    -repeats   -r   Repeat file, see 'make-repeat-file'
     -ascat     -a   ASCAT copynumber summary
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)

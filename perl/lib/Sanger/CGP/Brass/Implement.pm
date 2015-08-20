@@ -64,7 +64,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 # out_bamname, out_bamname, out_bamname
 
 ## group
-const my $BRASS_GROUP => q{ -I %s -F %s %s %s};
+const my $BRASS_GROUP => q{ -I %s};
 # extreme depth, repeats.gz, tumour.brm.bam, normal.brm.bam[, normal_panel.bam]
 const my $FILTER_GROUP => q{ -i - -t %s -o %s};
 # tumour name
@@ -146,7 +146,9 @@ sub group {
   my $normal = File::Spec->catfile($tmp, $options->{'safe_normal_name'}).'.brm.bam';
 
   my $command = _which('brass-group');
-  $command .= sprintf $BRASS_GROUP, $options->{'depth'}, $options->{'repeats'}, $tumour, $normal;
+  $command .= sprintf $BRASS_GROUP, $options->{'depth'};
+  $command .= ' -F '. $options->{'repeats'} if(exists $options->{'repeats'});
+  $command .= " $tumour $normal";
   $command .= ' | ';
   $command .= "$^X ";
   $command .= _which('brassI_pre_filter.pl');

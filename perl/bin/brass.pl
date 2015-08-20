@@ -76,7 +76,7 @@ my %index_max = ( 'input'   => 2,
   Sanger::CGP::Brass::Implement::group($options) if(!exists $options->{'process'} || $options->{'process'} eq 'group');
 
   Sanger::CGP::Brass::Implement::filter($options) if(!exists $options->{'process'} || $options->{'process'} eq 'filter');
-exit;
+
   Sanger::CGP::Brass::Implement::split_filtered($options) if(!exists $options->{'process'} || $options->{'process'} eq 'split');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'assemble') {

@@ -200,6 +200,10 @@ sub split_filtered {
                         $groups, $ASSEMBLE_SPLIT, $split_dir;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  my $splitOne = $split_dir.'/split.0000000';
+  if(! -e $splitOne){
+    `touch $splitOne`;
+  }
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }

@@ -482,6 +482,22 @@ sub process {
 
   print "min_tumour_count $self->{min_tumour_count}\n" if($self->{debug});
 
+  # Print header to file here rather than in print row.
+  # That way we end up with an empty file with header so we know the script ran OK.
+
+  # open an output file handler if it isn't already set
+  my $bedpe_file = ($self->{outfile} || $self->{infile});
+  unless ($bedpe_file =~ /\.bedpe$/) { $bedpe_file .= '.bedpe'; }
+  my $bedpe_fh = $self->{bedpe_out_fh};
+
+  unless ($bedpe_fh) {
+    if ($self->{debug}) { print "opening $bedpe_file\n"; }
+    open $bedpe_fh, "> $bedpe_file" or die $!;
+    # print the header
+    print $bedpe_fh $self->{header};
+    print $bedpe_fh "# chr1\tstart1\tend1\tchr2\tstart2\tend2\tid/name\tbrass_score\tstrand1\tstrand2\trepeats\tnp_sample_count\ttumour_count\tnormal_count\tnp_count\tbkpt_distance\tsample\tsample_type\tnames\tcount\tbal_trans\tinv\toccL\toccH\tcopynumber_flag\trange_blat\n";
+  }
+
   my $check_count = 0;
   while (my $line = <$fh>) {
     chomp $line;
@@ -715,6 +731,8 @@ sub _print_row {
     my $self = shift;
     my($chrL,$strandL,$L5,$L3,$chrH,$strandH,$H5,$H3,$repeats,$np_sample_count,$tumour_count,$normal_count,$np_count,$distance,$sample_read_data,$rearrangement_id) = @_;
 
+    my $bedpe_fh = $self->{bedpe_out_fh};
+
     my $sample_list = $self->samples();
 
     unless ($distance) {
@@ -726,19 +744,6 @@ sub _print_row {
     my $start1 = $L5 - 1;
     my $start2 = $H5 - 1;
     my $total_read_count = $tumour_count + $normal_count + $np_count; # to put in the 'score' field of bedpe format
-
-    # open an output file handler if it isn't already set
-    my $bedpe_file = ($self->{outfile} || $self->{infile});
-    unless ($bedpe_file =~ /\.bedpe$/) { $bedpe_file .= '.bedpe'; }
-    my $bedpe_fh = $self->{bedpe_out_fh};
-
-    unless ($bedpe_fh) {
-	if ($self->{debug}) { print "opening $bedpe_file\n"; }
-	open $bedpe_fh, "> $bedpe_file" or die $!;
-        # print the header
-	print $bedpe_fh $self->{header};
-	print $bedpe_fh "# chr1\tstart1\tend1\tchr2\tstart2\tend2\tid/name\tbrass_score\tstrand1\tstrand2\trepeats\tnp_sample_count\ttumour_count\tnormal_count\tnp_count\tbkpt_distance\tsample\tsample_type\tnames\tcount\tbal_trans\tinv\toccL\toccH\tcopynumber_flag\trange_blat\n";
-    }
 
     # go through all the samples in the list, print the list of read_name and other data for each
     foreach my $sample(@$sample_list) {

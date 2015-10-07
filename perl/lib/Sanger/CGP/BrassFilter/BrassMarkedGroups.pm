@@ -89,7 +89,7 @@ sub new {
 
     bless $self,$class;
 
-    $self->{debug} = 0;
+    $self->{debug} = $args{-debug} || 0;
 
     # default filter values (if not passed in)
     $self->{min_tumour_count_high} = 4;
@@ -611,9 +611,25 @@ sub _check_row {
     print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_normal_count failed. skip\n" if ($self->{debug});
     return(0);
   }
+
+  my $is_small_foldback = 0;
+  $is_small_foldback = 1 if( $chrL eq $chrH
+                          && $strandL eq $strandH
+                          && (($H5 + $H3)/2) - (($L5 + $L3)/2) <= 5000); # gives the mid point of the group ranges
+  my $max_np_count = $self->{max_np_count};
+  $max_np_count++ if($is_small_foldback);
+
   # Susie suggested this to limit loading too much rubbish - 25/7/13
-  if ($np_count > $self->{max_np_count}) {
-    print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n" if ($self->{debug});
+  # the +1 for small foldback by Yilong
+  if ($np_count > $max_np_count) {
+    if ($self->{debug}) {
+      if($is_small_foldback) {
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+1 failed (small foldback). skip\n";
+      }
+      else {
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n";
+      }
+    }
     return(0);
   }
   # Susie suggested this to limit loading too much rubbish - 27/4/12

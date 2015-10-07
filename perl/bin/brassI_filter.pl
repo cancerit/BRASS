@@ -39,7 +39,7 @@ use lib "$FindBin::Bin/../lib";
 
 use strict;
 use warnings FATAL => 'all';
-use File::Copy qw(move);
+use File::Copy qw(copy move);
 
 use Sanger::CGP::BrassFilter::BrassMarkedGroups;
 use Sanger::CGP::BrassFilter::TransFlag;
@@ -137,7 +137,8 @@ GetOptions( 'infile:s'               => \$infile,
 	    'ref:s'                  => \$ref,
 	    'blat:s'                 => \$blat_script,
 	    'minIdentity:s'          => \$minIdentity,
-	    'help'                   => \$help);
+	    'help'                   => \$help,
+	    'debug'                  => \$debug);
 
 # check inputs
 if ($help) { usage(); }
@@ -200,7 +201,8 @@ sub process {
 						    -max_normal_count     => $MAX_NORMAL_COUNT,
 						    -max_np_sample_count  => $MAX_NP_SAMPLE_COUNT,
 						    -max_np_count         => $MAX_NP_COUNT,
-						    -discard_if_repeats   => $DISCARD_IF_REPEATS);
+						    -discard_if_repeats   => $DISCARD_IF_REPEATS,
+						    -debug => $debug,);
 
     # process it
     $file_o->process();
@@ -214,6 +216,7 @@ sub process {
 sub cleanup {
   my ($outfile) = @_;
   $outfile = "$outfile.bedpe" unless($outfile =~ m/\.bedpe$/);
+  copy($outfile, $outfile.'.preclean');
   my $new_out = "$outfile.tmp";
 
   my $cleanup = Sanger::CGP::BrassFilter::Cleanup->new(-infile  => $outfile,
@@ -354,7 +357,7 @@ options...
                              (above seq_depth threshold) (default = 4)
     -max_normal_count      : filter flag. Discard rearrangements which have more than this number of reads in the matched normal (default = 0)
     -max_np_sample_count   : filter flag. Discard rearrangements which have more than this number of unmatched normal panel samples with reads  (default = 0)
-    -max_np_count          : filter flag. Discard rearrangements which have more than this number of reads in the unmatched normal panel samples (default = 0)
+    -max_np_count          : filter flag. Discard rearrangements which have more than this number of reads in the unmatched normal panel samples (default = 0, +1 for foldback <= 5kb)
     -discard_if_repeats    : filter flag. Discard rearrangements which are associated with known repeats (default = 0)
 
     -bal_trans_field       : which number field of the bedpe output file the balanced translocation flag should go into (default = 21)

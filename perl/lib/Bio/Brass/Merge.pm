@@ -124,9 +124,6 @@ sub merge_records {
 
 sub filter_overlaps {
   my ($overlaps, $samples) = @_;
-#use Data::Dumper;
-#print Dumper(\@_);
-#exit;
   my $ret;
   # must return a single value
   # Choose the overlapping group with the highest support (most samples first, then reads)

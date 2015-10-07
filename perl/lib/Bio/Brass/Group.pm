@@ -116,7 +116,6 @@ sub parse_header {
     }
     die "ERROR: Specified tumour '$sample_chk' not found in input\n"unless(exists $self->{'tumour_idx'});
   }
-warn "@info";
   splice @info, 1, 0, "#"; # put the blank line back
   $self->{'_inputs'} = \@inputs;
   $self->{'_samples'} = \@samples;
@@ -149,7 +148,10 @@ sub new_group {
   my @read_lists = splice(@record, -$sample_count);
 
   # we can abandon construction if sample_chk is in use and the specified sample has no reads
-  return 0 if(exists $self->{'tumour_idx'} && $read_lists[$self->{'tumour_idx'}] eq q{.});
+  if(exists $self->{'tumour_idx'} && $read_lists[$self->{'tumour_idx'}] eq q{.}) {
+    return 0;
+  }
+
 
   my $repeats = pop @record;
   my @read_counts = splice(@record, -$sample_count);
@@ -157,7 +159,9 @@ sub new_group {
   # ignore close events
   if(exists $self->{'tumour_idx'}) {
     my ($lChr, $lStr, $l5p, $l3p, $hChr, $hStr, $h5p, $h3p) = @record;
-    return 0 if($lChr eq $hChr && $lStr eq q{+} && $hStr eq q{-} && ($h5p - $l3p) <= $MIN_GAP);
+    if($lChr eq $hChr && $lStr eq q{+} && $hStr eq q{-} && ($h5p - $l3p) <= $MIN_GAP) {
+      return 0;
+    }
   }
 
   #my ($lChr $lStr $l5p $l3p $hChr $hStr $h5p $h3p) = @record;

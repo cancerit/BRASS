@@ -72,7 +72,7 @@ const my $REDIR_GROUP => q{(%s) > %s};
 #/software/CGP/projects/brass/bin/brass-group  | /nfs/users/nfs_k/kr2/git/brass/perl/bin/filter_groups.pl -t PD3904a > output.rearr
 
 ## filter
-const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile %s -outfile %s};
+const my $BRASS_FILTER => q{ -seq_depth 25.1 -min_tumour_count_high 3 -blat %s -ref %s -tumour %s -infile %s -outfile %s};
 # path/to/blat, genome.fa, tumour name, groups_in, groups_out, ascat
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 

@@ -354,7 +354,7 @@ sub filter {
   $match_lib .= ' -acf '.(1 - $options->{'NormalContamination'});
   $match_lib .= ' -ploidy '.$options->{'Ploidy'};
   $match_lib .= " $remap_file";
-  $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'ngscn.abs_cn.bg.rg_cns';
+  $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns';
 
   my $final_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.preannot.bedpe');
   my $final = $^X.' '._which('collate_rg_regions.pl');

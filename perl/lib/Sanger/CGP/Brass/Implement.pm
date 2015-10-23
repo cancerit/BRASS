@@ -348,7 +348,21 @@ sub filter {
   $rg_cns .= ' '.$options->{'tumour'};
   $rg_cns .= ' '.(1 - $options->{'NormalContamination'});
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command, $met_hasting, $del_fb, $merge_grps, $abs_bkp, $remap_micro, $rg_cns], 0);
+  my $match_lib_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r6');
+  my $match_lib = $^X.' '._which('match_rg_patterns_to_library.pl');
+  $match_lib .= ' -filtered_bedpe '.$match_lib_file;
+  $match_lib .= ' -acf '.(1 - $options->{'NormalContamination'});
+  $match_lib .= ' -ploidy '.$options->{'Ploidy'};
+  $match_lib .= " $remap_file";
+  $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'ngscn.abs_cn.bg.rg_cns';
+
+  my $final_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.preannot.bedpe');
+  my $final = $^X.' '._which('collate_rg_regions.pl');
+  $final .= ' '.File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
+  $final .= ' '.$match_lib_file;
+  $final .= ' '.$final_file;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command, $met_hasting, $del_fb, $merge_grps, $abs_bkp, $remap_micro, $rg_cns, $match_lib, $final], 0);
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
@@ -359,7 +373,8 @@ sub split_filtered {
   my $tmp = $options->{'tmp'};
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
-  my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
+  #my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
+  my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.preannot.bedpe');
 
   my $split_dir = File::Spec->catdir($tmp, 'split');
   remove_tree($split_dir) if(-d $split_dir);
@@ -420,7 +435,7 @@ sub grass {
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
   my $assembled = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.assembled.bedpe');
-  my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
+  my $groups = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.preannot.bedpe');
   my $merge = sprintf '(cat %s/assemble/bedpe.* | sort -k1,1 -k 2,2n > %s)', $tmp, $assembled;
 
   my $tumour = File::Spec->catfile($tmp, $options->{'safe_tumour_name'}).'.brm.bam';

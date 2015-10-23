@@ -36,7 +36,7 @@ use strict;
 use warnings FATAL => 'all';
 use autodie qw(:all);
 use Const::Fast qw(const);
-use File::Copy qw(copy);
+use File::Copy qw(copy move);
 use File::Spec;
 use File::Which qw(which);
 use File::Path qw(make_path remove_tree);
@@ -45,6 +45,9 @@ use Capture::Tiny;
 use List::Util qw(first);
 use FindBin qw($Bin);
 use Capture::Tiny qw(capture_stdout);
+use File::ShareDir qw(module_dir);
+use Cwd qw(abs_path getcwd);
+use File::Basename;
 
 use Bio::Brass qw($VERSION);
 use File::Copy qw(move);
@@ -62,6 +65,16 @@ const my $PREP_BAM => q{ -b %s -p %s};
 # basfile[ -e exclude chrs]
 const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s};
 # out_bamname, out_bamname, out_bamname
+
+#genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
+const my $BRASS_COVERAGE => q{ %s %s %s %s %d};
+
+const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s};
+const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s};
+const my $DEL_FB_R => q{filter_small_deletions_and_fb_artefacts.R %s %s %s %s};
+
+const my $ISIZE_CHR => 5;
+const my $CLEAN_ISIZE => q{%s view -f 33 -F 3868 %s %s | %s %s > %s};
 
 ## group
 const my $BRASS_GROUP => q{ -I %s};
@@ -82,7 +95,6 @@ const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s:%s.bai
 
 ## grass
 const my $GRASS => ' -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s';
-
 
 sub input {
   my ($index, $options) = @_;
@@ -135,6 +147,84 @@ sub input {
   return 1;
 }
 
+sub cover {
+ my ($index_in, $options) = @_;
+
+  my $tmp = $options->{'tmp'};
+
+	# first handle the easy bit, skip if limit not set
+	return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
+
+
+  my @indicies = limited_indices($options, $index_in, $options->{'fai_count'});
+
+  my $tmp_cover = File::Spec->catdir($tmp, 'cover');
+  make_path($tmp_cover) unless(-e $tmp_cover);
+
+  for my $index(@indicies) {
+    # warning, extra layer of looping here, but individual success files still
+    for my $samp_type(qw(tumour normal)) {
+      next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $samp_type, $index);
+
+      my $command = "$^X ";
+      $command .= _which('compute_coverage.pl');
+      $command .= sprintf $BRASS_COVERAGE, $options->{'genome'}.'.fai', $options->{'gcbins'}, $options->{$samp_type}, $tmp_cover, $index;
+
+      PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $samp_type, $index);
+
+      PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $samp_type, $index);
+    }
+  }
+}
+
+sub merge {
+  my $options = shift;
+
+  my $tmp = $options->{'tmp'};
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+
+  my $tmp_cover = File::Spec->catdir($tmp, 'cover');
+
+  my $command_t = "$^X ";
+  $command_t .= _which('coverage_merge.pl');
+  $command_t .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_tumour_name'}, $tmp_cover;
+
+  my $command_n = "$^X ";
+  $command_n .= _which('coverage_merge.pl');
+  $command_n .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_normal_name'}, $tmp_cover;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command_t, $command_n], 0);
+  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub normcn {
+  my $options = shift;
+
+  my $tmp = $options->{'tmp'};
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+
+  my $tmp_cover = File::Spec->catdir($tmp, 'cover');
+  my $tum_fb = sprintf '%s/%s.ngscn.fb_reads.bed.gz', $tmp_cover, $options->{'safe_tumour_name'};
+  my $norm_fb = sprintf '%s/%s.ngscn.fb_reads.bed.gz', $tmp_cover, $options->{'safe_normal_name'};
+  my $normcn_stub = sprintf '%s/%s.ngscn', $tmp_cover, $options->{'safe_tumour_name'};
+
+  my $command = _which('Rscript').' ';
+  $command .= _Rpath().'/';
+  $command .= sprintf $NORM_CN_R, $tum_fb,
+                                  $norm_fb,
+                                  $options->{'Ploidy'},
+                                  1 - $options->{'NormalContamination'},
+                                  $normcn_stub;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+
+  move($normcn_stub.'.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg') || die "Move failed: $!\n";
+  move($normcn_stub.'.segments.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg') || die "Move failed: $!\n";
+  move($normcn_stub.'.diagnostic_plots.pdf', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
+
+  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
 sub group {
   my $options = shift;
 
@@ -157,6 +247,20 @@ sub group {
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
+  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub isize {
+  my $options = shift;
+
+  my $tmp = $options->{'tmp'};
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+
+  my $tumour_isize = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.insert_size_distr';
+
+  my $command = sprintf $CLEAN_ISIZE, _which('samtools'), $options->{'tumour'}, $ISIZE_CHR, $^X, _which('corrected_insertsize.pl'), $tumour_isize;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
@@ -190,7 +294,61 @@ sub filter {
                                       $filtered;
   $command .= " -ascat $options->{ascat}" if(exists $options->{'ascat'} && defined $options->{'ascat'});
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  my $bedpe = $filtered.'.bedpe';
+
+  my $met_hasting = _which('Rscript').' ';
+  $met_hasting .= _Rpath().'/';
+  $met_hasting .= sprintf $MET_HAST_R, $bedpe;
+
+  my $isize_dist = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'.insert_size_distr');
+  my $fb_art = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.is_fb_artefact.txt');
+
+  my $rfilt = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r2');
+
+  my $del_fb = _which('Rscript').' ';
+  $del_fb .= _Rpath().'/';
+  $del_fb .= sprintf $DEL_FB_R, $bedpe, $isize_dist, $fb_art, $rfilt;
+
+  my $merge_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r3');
+  my $merge_grps = $^X.' '._which('merge_double_rgs.pl');
+  $merge_grps .= " $rfilt $merge_file";
+
+  my $abs_bkp_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r4');
+  my $abs_bkp = $^X.' '._which('get_abs_bkpts_from_clipped_reads.pl');
+  $abs_bkp .= ' -fasta '.$options->{'genome'};
+  $abs_bkp .= ' -out '.$abs_bkp_file;
+  $abs_bkp .= ' '.$options->{'tumour'};
+  $abs_bkp .= ' '.$merge_file;
+
+
+  my $score_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r5.scores');
+  my $remap_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r5');
+  my $tumour_brm = File::Spec->catfile($tmp, sanitised_sample_from_bam($options->{'tumour'})).'.brm.bam';
+  my $remap_micro = $^X.' '._which('filter_with_microbes_and_remapping.pl');
+  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s',
+                          $options->{'viral'},
+                          $options->{'microbe'},
+                          $score_file,
+                          File::Spec->catdir($tmp,'remap_micro'),
+                          'ssearch36';
+  $remap_micro .= sprintf ' %s %s %s %s',
+                          $abs_bkp_file,
+                          $tumour_brm,
+                          $options->{'genome'},
+                          $remap_file;
+
+  my $abs_cn = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg';
+  my $seg_cn = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg';
+
+  my $rg_cns = _which('Rscript').' ';
+  $rg_cns .= _Rpath().'/get_rg_cns.R';
+  $rg_cns .= ' '.$remap_file;
+  $rg_cns .= ' '.$abs_cn;
+  $rg_cns .= ' '.$seg_cn;
+  $rg_cns .= ' '.$options->{'tumour'};
+  $rg_cns .= ' '.(1 - $options->{'NormalContamination'});
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command, $met_hasting, $del_fb, $merge_grps, $abs_bkp, $remap_micro, $rg_cns], 0);
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
@@ -318,10 +476,13 @@ sub split_count {
   return $split_count;
 }
 
-sub limited_split {
-  my ($options, $index_in) = @_;
-	my $split_count = split_count($options);
-	return limited_indices($options, $index_in, $split_count);
+sub fai_count {
+  my $options = shift;
+  open my $TMP, '<', $options->{'genome'}.'.fai';
+  while(<$TMP>){}
+  my $lines = $.;
+  close $TMP;
+  return $lines;
 }
 
 sub limited_indices {
@@ -386,9 +547,28 @@ sub _which {
   return $path;
 }
 
+sub _Rpath {
+  my $mod_path = dirname(abs_path($0)).'/../share';
+  $mod_path = module_dir('Sanger::CGP::Brass::Implement') unless(-e File::Spec->catdir($mod_path, 'Rscripts'));
+
+  my $rpath = File::Spec->catdir($mod_path, 'Rscripts');
+  return $rpath;
+}
+
+sub get_ascat_summary {
+  my ($options) = @_;
+  open my $SUMM, '<', $options->{'ascat_summary'};
+  while(my $line = <$SUMM>) {
+    chomp $line;
+    my ($key, $value) = split /[[:space:]]+/, $line;
+    next unless($key eq 'NormalContamination' || $key eq 'Ploidy');
+    $options->{$key} = $value;
+  }
+}
+
 sub sanitised_sample_from_bam {
   my $sample = (PCAP::Bam::sample_name(shift))[0];
-  $sample =~ s/[^a-z0-9_-]/_/ig; # sanitise sample name
+  $sample =~ s/[^.a-z0-9_-]/_/ig; # sanitise sample name
   return $sample;
 }
 

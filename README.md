@@ -54,9 +54,25 @@ There are several stages the main component being:
 
 ### Pre-requisites
 
+Perl packages:
+
 * The C++ code requires the presence of pstreams.h (and associated development libraries).  This is not handled by the `setup.sh` script.
-* [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core)
-* [cgpVcf](https://github.com/cancerit/cgpVcf)
+* [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
+* [cgpVcf](https://github.com/cancerit/cgpVcf/releases)
+* [grass](https://github.com/cancerit/grass/releases)
+
+R packages (known to work with 3.1.3), recommend install via package manager:
+
+* [GAM](https://cran.r-project.org/web/packages/gam/index.html)
+* [copynumber](https://www.bioconductor.org/packages/release/bioc/html/copynumber.html)
+* [poweRlaw](https://cran.r-project.org/web/packages/poweRlaw/index.html)
+* [RColorBrewer](https://cran.r-project.org/web/packages/RColorBrewer/index.html)
+* [VGAM](https://cran.r-project.org/web/packages/VGAM/index.html)
+* [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
+
+Please also install the ssearch36 binary from the FASTA package to your path.
+
+* [FASTA](https://github.com/wrpearson/fasta36/releases)
 
 ###
 

@@ -51,9 +51,13 @@ use PCAP::Cli;
 use Sanger::CGP::Brass::Implement;
 
 const my @REQUIRED_PARAMS => qw(species assembly protocol);
-const my @VALID_PROCESS => qw(input group filter split assemble grass tabix);
-my %index_max = ( 'input'   => 2,
+const my @VALID_PROCESS => qw(input cover merge normcn group isize filter split assemble grass tabix);
+my %index_max = ( 'input'   => 2, # input and cover can run at same time
+                  'cover' => -1,
+                  'merge' => 1,
+                  'normcn' => 1, # normcn, group and isize can run at same time
                   'group'  => 1,
+                  'isize' => 1,
                   'filter' => 1,
                   'split' => 1,
                   'assemble'   => -1,
@@ -68,22 +72,36 @@ my %index_max = ( 'input'   => 2,
 
   # register any process that can run in parallel here
   $threads->add_function('input', \&Sanger::CGP::Brass::Implement::input);
+  $threads->add_function('cover', \&Sanger::CGP::Brass::Implement::cover);
   $threads->add_function('assemble', \&Sanger::CGP::Brass::Implement::assemble);
 
   # start processes here (in correct order obviously), add conditions for skipping based on 'process' option
   $threads->run(2, 'input', $options) if(!exists $options->{'process'} || $options->{'process'} eq 'input');
 
+  if(!exists $options->{'process'} || $options->{'process'} eq 'cover') {
+    $options->{'fai_count'} = Sanger::CGP::Brass::Implement::fai_count($options);
+    my $jobs = $options->{'fai_count'};
+    $jobs = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
+    $threads->run($jobs, 'cover', $options);
+  }
+
+  Sanger::CGP::Brass::Implement::merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
+
+  Sanger::CGP::Brass::Implement::normcn($options) if(!exists $options->{'process'} || $options->{'process'} eq 'normcn');
+
   Sanger::CGP::Brass::Implement::group($options) if(!exists $options->{'process'} || $options->{'process'} eq 'group');
 
-  Sanger::CGP::Brass::Implement::filter($options) if(!exists $options->{'process'} || $options->{'process'} eq 'filter');
+  Sanger::CGP::Brass::Implement::isize($options) if(!exists $options->{'process'} || $options->{'process'} eq 'isize');
 
+  Sanger::CGP::Brass::Implement::filter($options) if(!exists $options->{'process'} || $options->{'process'} eq 'filter');
+exit 1;
   Sanger::CGP::Brass::Implement::split_filtered($options) if(!exists $options->{'process'} || $options->{'process'} eq 'split');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'assemble') {
     $options->{'splits'} = Sanger::CGP::Brass::Implement::split_count($options);
     my $jobs = $options->{'splits'};
     $jobs = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
-    $threads->run($options->{'splits'}, 'assemble', $options)
+    $threads->run($jobs, 'assemble', $options);
   }
 
   Sanger::CGP::Brass::Implement::grass($options) if(!exists $options->{'process'} || $options->{'process'} eq 'grass');
@@ -134,14 +152,18 @@ sub setup {
               'e|exclude=s' => \$opts{'exclude'},
               'p|process=s' => \$opts{'process'},
               'i|index=i' => \$opts{'index'},
+              'b|gcbins=s' => \$opts{'gcbins'},
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
+              'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
               'tn|tum_name=s' => \$opts{'tumour_name'},
               'nn|norm_name=s' => \$opts{'normal_name'},
               'pl|platform=s' => \$opts{'platform'},
               'gc|g_cache=s' => \$opts{'g_cache'},
+              'vi|viral=s' => \$opts{'viral'},
+              'mi|microbe=s' => \$opts{'microbe'},
               'l|limit=i' => \$opts{'limit'},
   ) or pod2usage(2);
 
@@ -157,10 +179,12 @@ sub setup {
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
   PCAP::Cli::file_for_reading('genome', $opts{'genome'});
+  PCAP::Cli::file_for_reading('viral', $opts{'viral'});
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
+  PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
   delete $opts{'process'} unless(defined $opts{'process'});
@@ -173,6 +197,8 @@ sub setup {
 
   die "ERROR: No '.bas' file (with content) for tumour bam has been found $opts{tumour}\n" unless(-e $opts{'tumour'}.'.bas' && -s _ > 0);
   die "ERROR: No '.bas' file (with content) for normal bam has been found $opts{normal}\n" unless(-e $opts{'normal'}.'.bas' && -s _ > 0);
+
+  die "ERROR: '-microbe' option has not been defined\n" unless(defined $opts{'microbe'});
 
   for(@REQUIRED_PARAMS) {
     pod2usage(-msg => "\nERROR: $_ is a required argument.\n", -verbose => 1, -output => \*STDERR) unless(defined $opts{$_});
@@ -198,7 +224,10 @@ sub setup {
         if(exists $opts{'limit'}) {
           $max = $opts{'limit'};
         }
-        else {
+        elsif($opts{'process'} eq 'cover') {
+          $max = Sanger::CGP::Brass::Implement::fai_count(\%opts);
+        }
+        elsif($opts{'process'} eq 'assemble') {
       	  $max = Sanger::CGP::Brass::Implement::split_count(\%opts);
       	}
       }
@@ -215,6 +244,12 @@ sub setup {
   die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
   die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
   die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
+
+  Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
+  die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'NormalContamination'});
+  die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+
+
 
   return \%opts;
 }
@@ -239,6 +274,12 @@ brass.pl [options]
     -assembly  -as  Assembly name
     -protocol  -pr  Sequencing protocol (WGS|WXS|RNA)
     -g_cache   -gc  Genome cache file.
+    -viral     -vi  Virus sequences from NCBI
+    -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'
+    -gcbins    -b   5 column bed coord file, col 4 number of non-N bases, col 5 GC fraction.
+    -sampstat  -ss  ASCAT sample statistics file or file containing
+                      NormalContamination 0.XXXXX
+                      Ploidy X.XXX
 
   Optional
     -repeats   -r   Repeat file, see 'make-repeat-file'

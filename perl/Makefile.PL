@@ -34,6 +34,8 @@
 
 use ExtUtils::MakeMaker;
 
+install_share module => 'Sanger::CGP::Brass::Implement', 'share';
+
 WriteMakefile(
   NAME          => 'brass',
   LICENSE       => 'agpl_3', # http://search.cpan.org/~dagolden/CPAN-Meta-2.142690/lib/CPAN/Meta/Spec.pm#license
@@ -53,11 +55,17 @@ WriteMakefile(
                         )],
   PREREQ_PM     => {
                      'Test::Fatal' => 0.013,
+                     'Const::Fast' => 0.014,
                      'Devel::Cover' => 1.09,
                      'Pod::Coverage' => 0.23,
                      'Graph' => 0.96,
                      'Graph::Writer::Dot' => 2.06,
                      'Template' => 2.26,
                      'IPC::Run' => 0.92,
+                     'Algorithm::NeedlemanWunsch' => 0.04,
+                     'Statistics::Basic' => 1.6611,
                    }
 );
+
+package MY;
+use File::ShareDir::Install qw( postamble );

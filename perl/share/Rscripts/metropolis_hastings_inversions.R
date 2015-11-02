@@ -170,7 +170,7 @@ run_mcmc_for_artefacts = function(rp_count, size, prev_alpha, prev_gamma_params,
 f = commandArgs(T)[1]
 s = sub("_vs_.+", "", f)
 s = sub(".+/", "", s)
-d = read.table(f, header = F, sep = "\t", stringsAsFactors = F, comment = "#")
+d = read.table(f, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 idx = d[,1] == d[,4] & d[,9] == d[,10]
 d = d[idx,]
 rp_count = d[,8]
@@ -183,8 +183,7 @@ library(RColorBrewer)
 idx = size <= 1e5
 
 # Make decision on what to plot
-pdf_file = sub(".+/", "", f)
-pdf_file = sub("\\..+", ".inversions.pdf", pdf_file)
+pdf_file = sub("\\..+", ".inversions.pdf", f)
 pdf(pdf_file, h = 10)
 layout(matrix(c(4, 4, 1, 2, 4, 4, 3, 3), ncol = 2))
 bad_groups_count = sum(size <= 1e5 & rp_count == 4)

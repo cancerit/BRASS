@@ -55,9 +55,9 @@ const my @VALID_PROCESS => qw(input cover merge normcn group isize filter split 
 my %index_max = ( 'input'   => 2, # input and cover can run at same time
                   'cover' => -1,
                   'merge' => 1,
-                  'normcn' => 1, # normcn, group and isize can run at same time
                   'group'  => 1,
                   'isize' => 1,
+                  'normcn' => 1, # normcn, group and isize can run at same time
                   'filter' => 1,
                   'split' => 1,
                   'assemble'   => -1,
@@ -87,14 +87,14 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 
   Sanger::CGP::Brass::Implement::merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
 
-  Sanger::CGP::Brass::Implement::normcn($options) if(!exists $options->{'process'} || $options->{'process'} eq 'normcn');
-
   Sanger::CGP::Brass::Implement::group($options) if(!exists $options->{'process'} || $options->{'process'} eq 'group');
 
   Sanger::CGP::Brass::Implement::isize($options) if(!exists $options->{'process'} || $options->{'process'} eq 'isize');
 
+  Sanger::CGP::Brass::Implement::normcn($options) if(!exists $options->{'process'} || $options->{'process'} eq 'normcn');
+
   Sanger::CGP::Brass::Implement::filter($options) if(!exists $options->{'process'} || $options->{'process'} eq 'filter');
-exit 1;
+
   Sanger::CGP::Brass::Implement::split_filtered($options) if(!exists $options->{'process'} || $options->{'process'} eq 'split');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'assemble') {
@@ -108,7 +108,7 @@ exit 1;
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'tabix') {
     Sanger::CGP::Brass::Implement::tabix($options);
-    cleanup($options);
+#    cleanup($options);
   }
 }
 
@@ -124,8 +124,8 @@ sub cleanup {
   unlink $basefile.'_ann.assembled.bedpe';
   unlink "$basefile.annot.vcf";
   unlink "$basefile.annot.vcf.srt";
-  unlink $basefile.'_ann.groups.filtered.vcf';
-  unlink $basefile.'_ann.groups.filtered.bedpe';
+  unlink $basefile.'_ann.groups.vcf';
+  unlink $basefile.'_ann.groups.bedpe';
 
   system("cp $tmpdir/*.brm.bam $options->{outdir}/.");
   move(File::Spec->catdir($tmpdir, 'logs'), File::Spec->catdir($options->{'outdir'}, 'logs')) || die $!;

@@ -186,6 +186,11 @@ sub assemble {
   my ($chrL, $L5, $L3, $chrH, $H5, $H3, $id, undef, $strandL, $strandH) = @_;
   $L5++; $H5++;  # Convert to 1-based [$L5,$L3], [$H5,$H3] intervals
 
+  $L5 -=99;
+  $L3 +=99;
+  $H5 -=99;
+  $H3 +=99;
+
   print "Processing variant: $id\n" if $verbose;
 
 #return undef unless($id == 1); # uncomment to investigate a single variant (update the value)

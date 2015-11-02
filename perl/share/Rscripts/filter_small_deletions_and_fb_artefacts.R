@@ -3,7 +3,7 @@ full_bam_insert_size_distribution = commandArgs(T)[2]
 foldback_artefact_classification_file = commandArgs(T)[3]
 output_file_name = commandArgs(T)[4]
 
-d = read.table(rg_file, header = F, sep = "\t", stringsAsFactors = F, comment = "#")
+d = read.table(rg_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 
 isize = read.table(full_bam_insert_size_distribution, header = F, sep = " ")
 quantile.from.freq = function(vals, freq, q) {

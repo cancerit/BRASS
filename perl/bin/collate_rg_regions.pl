@@ -1,14 +1,14 @@
 #!/usr/bin/perl
 
 use strict;
-use List::Util qw(first);
 
 my ($full_bed_pe, $rg_patt_pe, $out_file) = @ARGV;
 
-my @ids;
+my %ids;
 open my $FILT, '<', $rg_patt_pe || die $!;
 while(my $line = <$FILT>) {
-  push @ids, (split /\t/, $line)[6];
+  my ($id, $low, $high) = (split /\t/, $line)[6,12,13];
+  $ids{$id} = [$low, $high];
 }
 close $FILT;
 
@@ -23,8 +23,15 @@ while(my $line = <$MAIN>) {
     print $line;
     next;
   }
-  my $id = (split /\t/, $line)[6];
-  print $line if(first{$id == $_} @ids);
+
+  my @F = split /\t/, $line;
+  my $id = $F[6];
+  next unless(exists $ids{$id});
+  $F[1] = $ids{$id}->[0]-1;
+  $F[2] = $ids{$id}->[0];
+  $F[4] = $ids{$id}->[1]-1;
+  $F[5] = $ids{$id}->[1];
+  print join("\t", @F);
 }
 close $MAIN;
 

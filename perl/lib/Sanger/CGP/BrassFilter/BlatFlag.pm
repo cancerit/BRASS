@@ -68,6 +68,7 @@ use strict;
 use File::Copy qw(move);
 use Bio::DB::Sam;
 use File::Temp qw(tempdir);
+use File::Spec;
 
 use Bio::Brass;
 our $VERSION = Bio::Brass->VERSION;
@@ -307,7 +308,7 @@ sub _get_hits {
     my $blat = $self->{blat};
     my $minIdentity = $self->{minIdentity};
 
-    my $tempdir = tempdir( 'BlatFlagXXXXXX', CLEANUP => 1 );
+    my $tempdir = tempdir( 'BlatFlagXXXXXX', DIR => File::Spec->tmpdir(), CLEANUP => 1 );
     my $blat_outfile = "$tempdir/blatout";
 
     foreach my $name(keys %{$self->{data}}) {

@@ -269,6 +269,44 @@ sub remove_cn_bkpts_without_cn_change {
     return $changed;
 }
 
+use Try::Tiny qw(try catch);
+use Data::Dumper;
+
+sub print_rg_cns_bedpe {
+    my ($self, $fh) = @_;
+    $fh = *STDOUT unless($fh);
+    for my $seg($self->segments_array) {
+#      my $low_pos = $seg->low_end->pos;
+#      try{
+# warn "\n\n".$self->name."\n\n";
+# $seg->print;
+        print $fh join(
+            "\t",
+            $self->name,
+            $seg->low_end->pos - 1,
+            $seg->high_end->pos,
+            $seg->cn || "NA",
+            $seg->low_end->boundary,
+            $seg->high_end->boundary,
+            $seg->n_win,
+        ) . "\n";
+#      }
+#      catch {
+#warn Dumper($seg);
+#            warn "\n\n";
+#            warn $self->name."\n";
+#            warn $low_pos."\n";
+#            warn ($low_pos - 1)."\n";
+#            warn $seg->high_end->pos."\n";
+#            warn $seg->cn."\n";
+#            warn $seg->low_end->boundary."\n";
+#            warn $seg->high_end->boundary."\n";
+#            warn $seg->n_win."\n";
+#            die "\n\nAW CRAP";
+#      };
+    }
+}
+
 sub print_unique_breakpoints {
     my $self = shift;
     my %params = @_;

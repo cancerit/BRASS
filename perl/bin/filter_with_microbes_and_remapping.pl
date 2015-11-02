@@ -40,6 +40,7 @@ my $VIRUS_DB = "";
 my $BAC_DB_STUB = "";
 my $TMP_DIR = "";
 my $SCORE_ALG = "ssearch36";
+my $MIN_SUPPORT = 3;
 GetOptions(
   'blat_mapping_threshold=i' => \$BLAT_MAPPING_THRESHOLD,
   'slop_for_genomic_region=i' => \$SLOP_FOR_GENOMIC_REGION,
@@ -53,6 +54,7 @@ GetOptions(
   'bacterial_db_stub=s' => \$BAC_DB_STUB,
   'tmpdir=s' => \$TMP_DIR,
   'score_alg=s' => \$SCORE_ALG,
+  'min_support=s' => \$MIN_SUPPORT,
 );
 
 my %score_method = (emboss => \&pairwise_align_scores_emboss,
@@ -176,7 +178,7 @@ for my $i(0..$#regions) {
       $rg_id_of_read{$read_name} = $r->[6];
     }
     my ($final_score, $footprint);
-    if (@reads) {
+    if (@reads >= $MIN_SUPPORT) {
       my @low_end_score_diffs = get_remapping_score_differences(
         'low_'.$r->[6],
         \@reads,
@@ -209,7 +211,7 @@ for my $i(0..$#regions) {
     }
     $target_seq = get_fai_seq($fai, $r->[0], $l-$SLOP_FOR_GENOMIC_REGION, $l+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0));
     $source_seq = get_fai_seq($fai, $r->[3], $h-$SLOP_FOR_GENOMIC_REGION, $h+$SLOP_FOR_GENOMIC_REGION, 0);
-    if (@reads) {
+    if (@reads >= $MIN_SUPPORT) {
       my @high_end_score_diffs = get_remapping_score_differences(
         'high_'.$r->[6],
         \@reads,
@@ -370,7 +372,7 @@ sub get_remapping_score_differences {
   print($target_fh "$target_seq\n");
   $target_fh->flush();
 
-  my $target_scores = $SCORE_SUB->($target_fh_name, $seq_fh_name);
+  my $target_scores = $SCORE_SUB->($target_fh_name, $seq_fh_name, $TMP_DIR);
 
   # Source region
   my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR);
@@ -378,7 +380,7 @@ sub get_remapping_score_differences {
   print($source_fh "$source_seq\n");
   $source_fh->flush();
 
-  my $source_scores = $SCORE_SUB->($source_fh_name, $seq_fh_name);
+  my $source_scores = $SCORE_SUB->($source_fh_name, $seq_fh_name, $TMP_DIR);
 
   unlink0($seq_fh, $seq_fh_name) or die "Error unlinking seq file safely";
   unlink0($source_fh, $source_fh_name) or die "Error unlinking source file safely";
@@ -471,9 +473,13 @@ sub get_fai_seq {
 sub pairwise_align_scores_ssearch36 {
   my $target_file = shift;
   my $seq_file = shift;
-  my $scores_file = "$target_file.scores";
+  my $tmpdir = shift;
 
-  my $ssearch36 = sprintf q{%s -r '2/-2' -f '-6' -g '-1' -n -m 9 -XI -3 %s %s},
+  $target_file =~ s/^$tmpdir\///;
+  $seq_file =~ s/^$tmpdir\///;
+
+  my $ssearch36 = "cd $tmpdir;";
+  $ssearch36 .= sprintf q{%s -r '2/-2' -f '-6' -g '-1' -n -m 9 -XI -3 %s %s},
                         Sanger::CGP::Brass::Implement::_which('ssearch36'),
                         $target_file,
                         $seq_file;
@@ -488,7 +494,7 @@ sub pairwise_align_scores_ssearch36 {
     my ($sw_score) = $line =~ m/s-w opt:[[:space:]]+([[:digit:]]+)/;
     $scores{$name} = $sw_score if(!exists $scores{$name} || $scores{$name} < $sw_score);
   }
-  close $process;
+  close $process || die $!;
   return \%scores;
 }
 

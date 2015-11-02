@@ -127,10 +127,16 @@ sub mergeBedpe {
   open my $FINAL, '>', $final_bedpe;
   open my $FIXED, '<', $phaseI_bedpe;
 
-  print $FINAL join("\t", @NEW_BEDPE_HEADER),"\n";
-
   while(my $line = <$FIXED>) {
-    next if($line =~ m/^#/);
+    if($line =~ m/^#/) {
+      if($line =~ m/^# chr/) {
+        print $FINAL join("\t", @NEW_BEDPE_HEADER),"\n";
+      }
+      else {
+        print $FINAL $line;
+      }
+      next;
+    }
     chomp $line;
     my @bits = split /\t/, $line;
     my $id = $bits[6];

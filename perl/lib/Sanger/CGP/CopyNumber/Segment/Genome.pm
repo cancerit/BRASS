@@ -418,12 +418,12 @@ sub compute_connected_components {
 }
 
 sub print_rearrangements_in_bedpe {
-    my $self = shift;
-    my %params = @_;
+    my ($self, $fh, %params) = @_;
+    $fh = *STDOUT unless(defined $fh);
     my $rg;
     for (keys %{$self->rg_of_id}) {
         $rg = $self->rg_of_id->{$_};
-        print join(
+        print $fh join(
             "\t",
             @{$rg->orig_data}[0..5],
             $rg->id,
@@ -434,6 +434,13 @@ sub print_rearrangements_in_bedpe {
             ($rg->high_end->cn_across_bkpt(%params) || "NA"),
             @{$rg->orig_data}[10..$#{$rg->orig_data}],
         ) . "\n";
+    }
+}
+
+sub print_rg_cns_bedpe {
+    my ($self, $fh) = @_;
+    for my $chr (sort {$a->name cmp $b->name} values($self->chrs)) {
+        $chr->print_rg_cns_bedpe($fh);
     }
 }
 

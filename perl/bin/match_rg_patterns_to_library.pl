@@ -140,6 +140,7 @@ GetOptions(
     "naive_classification=s" => \$opts{naive_classification},
     "shard_bypassing_slop=i" => \&opt_handler,
     "skip_chrs=s" => \$opts{skip_chrs},
+    "filt_cn_out=s" => \$opts{filt_cn_out},
 );
 
 my $rgs_file = shift;
@@ -171,14 +172,22 @@ $genome_of_cn_segs->preprocess_rearrangement_and_copy_number_data(%opts);
 
 if ($opts{filtered_bedpe}) {
     print STDERR "[" . `echo -n \`date\`` . "] Outputting filtered rearrangements...\n" if $opts{verbose};
-    open FILTERED_BEDPE, ">$opts{filtered_bedpe}" or die $!;
-    select FILTERED_BEDPE;
-    $genome_of_cn_segs->print_rearrangements_in_bedpe(%opts);
-    close FILTERED_BEDPE;
+    open my $fh, '>', $opts{filtered_bedpe} || die $!;
+    $genome_of_cn_segs->print_rearrangements_in_bedpe($fh, %opts);
+    close $fh;
 }
 else {
     print STDERR "[" . `echo -n \`date\`` . "] Skipping rearrangement filtering outputting as -filtered_bedpe was not provided.\n" if $opts{verbose};
 }
+
+my $cn_fh = *STDOUT;
+if(defined $opts{filt_cn_out}) {
+  open $cn_fh, '>', $opts{filt_cn_out} || die $!;
+}
+
+$genome_of_cn_segs->print_rg_cns_bedpe($cn_fh);
+
+close $cn_fh if(defined $opts{filt_cn_out});
 
 
 #

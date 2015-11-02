@@ -33,6 +33,7 @@
 
 
 use ExtUtils::MakeMaker;
+use File::ShareDir::Install;
 
 install_share module => 'Sanger::CGP::Brass::Implement', 'share';
 
@@ -62,8 +63,9 @@ WriteMakefile(
                      'Graph::Writer::Dot' => 2.06,
                      'Template' => 2.26,
                      'IPC::Run' => 0.92,
-                     'Algorithm::NeedlemanWunsch' => 0.04,
                      'Statistics::Basic' => 1.6611,
+                     'Number::Format' => 1.75,
+                     'Math::Combinatorics' => 0.09,
                    }
 );
 

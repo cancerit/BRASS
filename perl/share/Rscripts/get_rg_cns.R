@@ -134,7 +134,7 @@ bam_file = args[4]
 bam_body = sub(".+/", "", bam_file)
 acf = as.numeric(args[5])
 if (acf > 1) acf = acf * 0.01
-rgs = read.table(rgs_file, header = F, sep = "\t", stringsAsFactors = F)
+rgs = read.table(rgs_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 if (!("cn" %in% ls())) {
     cn = read.table(cn_file, header = F, sep = "\t", colClasses = c("character", rep("numeric", 3)))
 }

@@ -264,8 +264,7 @@ else {
 }
 
 my $normalised_remap_score = $REMAPPING_SCORE_THRESHOLD * 2;
-# had to double the score/penalty values these doesn't allow floats in gap-extension
-#$normalised_remap_score *= 2 if($SCORE_ALG eq 'ssearch36' || $SCORE_ALG eq 'fasta36');
+# had to double the score/penalty values as ssearch36 doesn't allow floats in gap-extension
 
 for my $i (0..$#regions) {
   # Compile microbial mapping results
@@ -481,8 +480,8 @@ sub pairwise_align_scores_ssearch36 {
   my $ssearch36 = "cd $tmpdir;";
   $ssearch36 .= sprintf q{%s -r '2/-2' -f '-6' -g '-1' -n -m 9 -XI -3 %s %s},
                         Sanger::CGP::Brass::Implement::_which('ssearch36'),
-                        $target_file,
-                        $seq_file;
+                        $seq_file,
+                        $target_file;
 
   my %scores;
   my $pid = open my $process, q{-|}, $ssearch36 or die 'Could not fork: '.$!;

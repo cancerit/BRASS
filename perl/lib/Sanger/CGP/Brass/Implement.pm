@@ -218,11 +218,26 @@ sub normcn {
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
+  check_tsv_file($normcn_stub.'.abs_cn.bg', 5);
+  check_tsv_file($normcn_stub.'.segments.abs_cn.bg', 6);
+
+
   move($normcn_stub.'.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg') || die "Move failed: $!\n";
   move($normcn_stub.'.segments.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg') || die "Move failed: $!\n";
   move($normcn_stub.'.diagnostic_plots.pdf', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub check_tsv_file {
+  my ($file, $expect_cols) = @_;
+  open my $CHK, '<', $file || die $!;
+  while(<$CHK>) {
+    next if($_ =~ m/^#/);
+    my @F = split /\t/, $_;
+    die "FATAL: Row $. of $file does not have $expect_cols\n" if(scalar @F != $expect_cols);
+  }
+  close $CHK;
 }
 
 sub group {

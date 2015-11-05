@@ -26,10 +26,12 @@ EOF
 
 my $in_file = $ARGV[0];
 my $bedtools = Sanger::CGP::Brass::Implement::_which('bedtools');
-
-my ($stdin, $stderr, $exit) = capture{ system(sprintf 'cut -f-10 %s | $bedtools pairtopair -a stdin -b %s -slop %d -rdn', $in_file, $in_file, $SLOP); };
-
-my @lines = split "\n", ``;
+my $command = sprintf q{bash -c 'set -o pipefail; cut -f-10 %s | bedtools pairtopair -a stdin -b %s -slop %d -rdn'}, $in_file, $in_file, $SLOP;
+my ($stdin, $stderr, $exit) = capture{ system($command); };
+if($exit) {
+  die "\nFATAL: $stderr\n\tWhile executing: $command\n\n";
+}
+my @lines = split "\n", $stdin;
 
 my %id_overlaps_with;
 my %data_of_id;

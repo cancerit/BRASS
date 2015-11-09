@@ -207,28 +207,6 @@ sub is_foldback {
     }
 }
 
-sub is_small_td {
-    my $self = shift;
-
-    ## Note 2015-06-03: think the size doesn't matter here for now.
-    # my %params = @_;
-    # if (!exists($params{min_seg_size_for_cn})) {
-    #     die "Parameter 'min_seg_size_for_cn' is needed for $self\-is_small_td()";
-    # }
-
-    if (
-        # $self->low_end->segment->length < $params{min_seg_size_for_cn} &&
-        $self->low_end->dir eq "-" &&
-        defined($self->low_end->segment->high_end->bkpt) &&
-        $self->low_end->mate->eq($self->low_end->segment->high_end->bkpt)
-    ) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-
 sub is_intra_chr {
     my $self = shift;
     return $self->low_end->chr_name eq $self->high_end->chr_name;
@@ -279,7 +257,7 @@ sub is_small_del {
     my $self = shift;
     my %params = @_;
     if (!exists($params{min_seg_size_for_cn})) {
-        die "Parameter 'min_seg_size_for_cn' is needed for $self\->is_small_td()";
+        die "Parameter 'min_seg_size_for_cn' is needed for $self\->is_small_del()";
     }
 
     if (
@@ -289,6 +267,26 @@ sub is_small_del {
         defined($self->low_end->segment->next_seg->next_seg->low_end->bkpt) &&
         $self->low_end->mate->eq($self->low_end->segment->next_seg->next_seg->low_end->bkpt) &&
         $self->low_end->segment->next_seg->length < $params{min_seg_size_for_cn}
+    ) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+sub is_small_td {
+    my $self = shift;
+    my %params = @_;
+     if (!exists($params{min_seg_size_for_cn})) {
+         die "Parameter 'min_seg_size_for_cn' is needed for $self\-is_small_td()";
+    }
+
+    if (
+        $self->low_end->segment->length < $params{min_seg_size_for_cn} &&
+        $self->low_end->dir eq "-" &&
+        defined($self->low_end->segment->high_end->bkpt) &&
+        $self->low_end->mate->eq($self->low_end->segment->high_end->bkpt)
     ) {
         return 1;
     }

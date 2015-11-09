@@ -316,7 +316,7 @@ for my $i (0..$#regions) {
 }
 
 # Clean-up
-unlink0($all_reads_fh, $all_reads_file_name);
+unlink0($all_reads_fh, $all_reads_file_name) or warn "Error tempfile safely: $all_reads_file_name";;
 remove_tree($TMP_DIR) if(defined $TMP_DIR);
 exit 0;
 
@@ -381,9 +381,10 @@ sub get_remapping_score_differences {
 
   my $source_scores = $SCORE_SUB->($source_fh_name, $seq_fh_name, $TMP_DIR);
 
-  unlink0($seq_fh, $seq_fh_name) or die "Error unlinking seq file safely";
-  unlink0($source_fh, $source_fh_name) or die "Error unlinking source file safely";
-  unlink0($target_fh, $target_fh_name) or die "Error unlinking target file safely";
+  # don't die here, we can live with this as the whole tree will be deleted later
+  unlink0($seq_fh, $seq_fh_name) or warn "Error unlinking tempfile safely: $seq_fh_name";
+  unlink0($source_fh, $source_fh_name) or warn "Error unlinking tempfile safely: $source_fh_name";
+  unlink0($target_fh, $target_fh_name) or warn "Error unlinking tempfile safely: $target_fh_name";
 
   my @diffs;
   for(keys %{$source_scores}) {
@@ -521,7 +522,7 @@ sub pairwise_align_scores_emboss {
   close $IN;
 
   unlink($scores_file);
-  unlink0($dna_fh, $dna_matrix);
+  unlink0($dna_fh, $dna_matrix) or warn "Error unlinking tempfile safely: $dna_matrix";
 
   my %scores;
   for my $line(@lines) {

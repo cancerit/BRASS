@@ -616,15 +616,17 @@ sub _check_row {
   $is_small_foldback = 1 if( $chrL eq $chrH
                           && $strandL eq $strandH
                           && (($H5 + $H3)/2) - (($L5 + $L3)/2) <= 5000); # gives the mid point of the group ranges
+
   my $max_np_count = $self->{max_np_count};
-  $max_np_count++ if($is_small_foldback);
 
   # Susie suggested this to limit loading too much rubbish - 25/7/13
-  # the +1 for small foldback by Yilong
+  # the +2 for small foldback by Yilong
+  $max_np_count+=2 if($is_small_foldback);
+
   if ($np_count > $max_np_count) {
     if ($self->{debug}) {
       if($is_small_foldback) {
-        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+1 failed (small foldback). skip\n";
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+2 failed (small foldback). skip\n";
       }
       else {
         print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n";

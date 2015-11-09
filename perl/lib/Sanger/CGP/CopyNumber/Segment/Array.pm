@@ -202,8 +202,8 @@ sub merge_segment_with_next {
         $total_cn = $cur_seg->cn * $cur_seg->length +
                     $cur_seg->next_seg->cn * $cur_seg->next_seg->length;
         $cur_seg->{cn} = $total_cn / $total_len;
-        $cur_seg->{n_win} += $cur_seg->next_seg->n_win - 1;
     }
+    $cur_seg->{n_win} += $cur_seg->n_win + $cur_seg->next_seg->n_win - 1;
 
     $cur_seg->{high_end} = $cur_seg->next_seg->high_end;
     $cur_seg->high_end->{segment} = $cur_seg;
@@ -276,10 +276,6 @@ sub print_rg_cns_bedpe {
     my ($self, $fh) = @_;
     $fh = *STDOUT unless($fh);
     for my $seg($self->segments_array) {
-#      my $low_pos = $seg->low_end->pos;
-#      try{
-# warn "\n\n".$self->name."\n\n";
-# $seg->print;
         print $fh join(
             "\t",
             $self->name,
@@ -290,20 +286,6 @@ sub print_rg_cns_bedpe {
             $seg->high_end->boundary,
             $seg->n_win,
         ) . "\n";
-#      }
-#      catch {
-#warn Dumper($seg);
-#            warn "\n\n";
-#            warn $self->name."\n";
-#            warn $low_pos."\n";
-#            warn ($low_pos - 1)."\n";
-#            warn $seg->high_end->pos."\n";
-#            warn $seg->cn."\n";
-#            warn $seg->low_end->boundary."\n";
-#            warn $seg->high_end->boundary."\n";
-#            warn $seg->n_win."\n";
-#            die "\n\nAW CRAP";
-#      };
     }
 }
 

@@ -48,7 +48,8 @@ my $lib_path = "$Bin/../lib";
 
 # Add modules here that cannot be instantiated (should be extended and have no 'new')
 # or need a set of inputs - these should be tested in own test script
-use constant MODULE_SKIP => qw(Bio::Tools::Run::Velvet Bio::Brass::Location Bio::Brass::ReadSelection Bio::Brass::Group Bio::Brass::Merge);
+use constant MODULE_SKIP => qw(Bio::Tools::Run::Velvet Bio::Brass::Location Bio::Brass::ReadSelection Bio::Brass::Group Bio::Brass::Merge
+                              Sanger::CGP::CopyNumber::Segment Sanger::CGP::Rearrangement::Group);
 
 
 my $init_cwd = getcwd;

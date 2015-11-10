@@ -17,34 +17,27 @@ use PCAP::Bam;
 const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2 -F 3852 -q 1 %s %s | bedtools intersect -loj -a %s -b stdin -sorted -c > %s'};
 const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c > %s'};
 
-if(scalar @ARGV < 4) {
-  die "USAGE: ./compute_coverage.pl genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]\n";
+if(scalar @ARGV < 3) {
+  die "USAGE: ./compute_coverage.pl gc_windows.bed[.gz] in.bam out_path [chr_name]\n";
 }
 
-my ($fai, $windows, $bam, $out) = @ARGV;
-my $chr_idx;
-if(scalar @ARGV == 5) {
-  $chr_idx = $ARGV[4];
-  die "ERROR: chr_idx ($chr_idx) doesn't appear to be a number\n" unless(looks_like_number($chr_idx));
-  die "ERROR: chr_idx ($chr_idx) should be an integer\n" unless((int $chr_idx) == $chr_idx);
+my ($windows, $bam, $out) = @ARGV;
+my $chr_name;
+if(scalar @ARGV == 4) {
+  $chr_name = $ARGV[3];
 }
 
 # input checks
-die "ERROR: *.fai file must exist with non-zero size\n" unless(-e $fai && -s _);
 die "ERROR: gc_windows.bed[gz] file must exist with non-zero size\n" unless(-e $windows && -s _);
 die "ERROR: in.bam file must exist with non-zero size\n" unless(-e $bam && -s _);
 
 my $sample_name = sanitised_sample_from_bam($bam);
 
-my $chr_name = q{};
 my $cn_bed_file = qq{$out/${sample_name}.ngscn.bed.gz};
 my $cn_fb_file = qq{$out/${sample_name}.ngscn.fb_reads.bed.gz};
 my $new_windows;
-if(defined $chr_idx) {
+if(defined $chr_name) {
   # need to get windows for just this chr and write to a tmp file
-  # first use the fai to identify the chromosome by it's position
-  fai_line_chk($fai);
-  $chr_name = get_fai_chr_by_idx($fai, $chr_idx);
   # now need to capture all windows from original window file by the chr_name
   $new_windows = "$out/windows_$chr_name.bed";
   run_ext(qq{zgrep -wE '^$chr_name' $windows > $new_windows});
@@ -54,23 +47,6 @@ if(defined $chr_idx) {
 run_ext(sprintf $PROPER_INTERSECT, $bam, $chr_name, ($new_windows || $windows), $cn_bed_file);
 run_ext(sprintf $FOLDBK_INTERSECT, $bam, $bam, $chr_name, $^X, _which('brass_foldback_reads.pl'), $cn_bed_file, $cn_fb_file);
 unlink $new_windows if(-e $new_windows);
-
-sub get_fai_chr_by_idx {
-  my ($fai, $chr_idx) = @_;
-  my $fai_line = run_ext(qq{head -n $chr_idx $fai | tail -n 1});
-  chomp $fai_line;
-  my ($chr_name) = $fai_line =~ m/^([^\t]+)/;
-  return $chr_name;
-}
-
-sub fai_line_chk {
-  my ($fai) = @_;
-  my $line_count = run_ext(qq{wc -l $fai});
-  chomp $line_count;
-  my ($lines) = $line_count =~ m/^([[:digit:]]+)/;
-  die "ERROR: chr_idx ($chr_idx) exceeds the total number of references ($lines) in fai file: $fai\n" if($lines < $chr_idx);
-  return 1;
-}
 
 sub run_ext {
   my ($command) = @_;

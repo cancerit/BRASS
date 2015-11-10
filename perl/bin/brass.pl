@@ -79,7 +79,7 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
   $threads->run(2, 'input', $options) if(!exists $options->{'process'} || $options->{'process'} eq 'input');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'cover') {
-    $options->{'fai_count'} = Sanger::CGP::Brass::Implement::fai_count($options);
+    $options->{'fai_count'} = scalar Sanger::CGP::Brass::Implement::valid_seqs($options);
     my $jobs = $options->{'fai_count'};
     $jobs = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
     $threads->run($jobs, 'cover', $options);
@@ -225,7 +225,7 @@ sub setup {
           $max = $opts{'limit'};
         }
         elsif($opts{'process'} eq 'cover') {
-          $max = Sanger::CGP::Brass::Implement::fai_count(\%opts);
+          $max = scalar Sanger::CGP::Brass::Implement::valid_seqs(\%opts);
         }
         elsif($opts{'process'} eq 'assemble') {
       	  $max = Sanger::CGP::Brass::Implement::split_count(\%opts);

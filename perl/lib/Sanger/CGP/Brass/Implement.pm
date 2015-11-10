@@ -67,7 +67,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 # out_bamname, out_bamname, out_bamname
 
 #genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
-const my $BRASS_COVERAGE => q{ %s %s %s %s %d};
+const my $BRASS_COVERAGE => q{ %s %s %s %s};
 
 const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s};
 const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s};
@@ -155,7 +155,7 @@ sub cover {
 	# first handle the easy bit, skip if limit not set
 	return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
 
-
+  my @seqs = Sanger::CGP::Brass::Implement::valid_seqs($options);
   my @indicies = limited_indices($options, $index_in, $options->{'fai_count'});
 
   my $tmp_cover = File::Spec->catdir($tmp, 'cover');
@@ -168,7 +168,7 @@ sub cover {
 
       my $command = "$^X ";
       $command .= _which('compute_coverage.pl');
-      $command .= sprintf $BRASS_COVERAGE, $options->{'genome'}.'.fai', $options->{'gcbins'}, $options->{$samp_type}, $tmp_cover, $index;
+      $command .= sprintf $BRASS_COVERAGE, $options->{'gcbins'}, $options->{$samp_type}, $tmp_cover, $seqs[$index-1];
 
       PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $samp_type, $index);
 
@@ -188,10 +188,12 @@ sub merge {
   my $command_t = "$^X ";
   $command_t .= _which('coverage_merge.pl');
   $command_t .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_tumour_name'}, $tmp_cover;
+  $command_t .= ' '.$options->{'exclude'} if(exists $options->{'exclude'} && defined $options->{'exclude'});
 
   my $command_n = "$^X ";
   $command_n .= _which('coverage_merge.pl');
   $command_n .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_normal_name'}, $tmp_cover;
+  $command_n .= ' '.$options->{'exclude'} if(exists $options->{'exclude'} && defined $options->{'exclude'});
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command_t, $command_n], 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
@@ -558,15 +560,6 @@ sub split_count {
   return $split_count;
 }
 
-sub fai_count {
-  my $options = shift;
-  open my $TMP, '<', $options->{'genome'}.'.fai';
-  while(<$TMP>){}
-  my $lines = $.;
-  close $TMP;
-  return $lines;
-}
-
 sub limited_indices {
 	my ($options, $index_in, $count) = @_;
   my @indicies;
@@ -703,6 +696,29 @@ sub get_bam_info {
   $options->{'platform'} = $platform unless(defined $options->{'platform'});
 
   return $options;
+}
+
+sub valid_seqs {
+  my $options = shift;
+  my @good_seqs;
+  my $fai_seqs = capture_stdout { system('cut', '-f', 1, $options->{'genome'}.'.fai' ); };
+  my @all_seqs = split /\n/, $fai_seqs;
+  if(exists $options->{'exclude'}) {
+    my @exclude = split /,/, $options->{'exclude'};
+    my @exclude_patt;
+    for my $ex(@exclude) {
+      $ex =~ s/%/.+/;
+      push @exclude_patt, $ex;
+    }
+
+    for my $sq(@all_seqs) {
+      push @good_seqs, $sq unless(first { $sq =~ m/^$_$/ } @exclude_patt);
+    }
+  }
+  else {
+    push @good_seqs, @all_seqs;
+  }
+  return @good_seqs;
 }
 
 1;

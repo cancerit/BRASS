@@ -10,9 +10,9 @@ use Const::Fast qw(const);
 const my $FILE_PAIR => '%s.%s.ngscn.bed';
 const my $FILE_FOLD => '%s.%s.ngscn.fb_reads.bed';
 
-die "Usage: genome.fa.fai sample_name indir" unless(scalar @ARGV == 3);
+die "Usage: genome.fa.fai sample_name indir [exclude_list]" unless(scalar @ARGV == 3);
 
-my ($fai, $sample, $indir) = @ARGV;
+my ($fai, $sample, $indir, $exclude) = @ARGV;
 die "ERROR: *.fai file must exist with non-zero size\n" unless(-e $fai && -s _);
 die "ERROR: indir must exist\n" unless(-e $indir && -d _);
 
@@ -34,8 +34,9 @@ my $init_dir = getcwd;
 my $err_code = 0;
 try {
   chdir $indir;
-  cat_to_gzip($FILE_PAIR, $final_pair, $sample, \@chr_order);
-  cat_to_gzip($FILE_FOLD, $final_fold, $sample, \@chr_order);
+  my $exclude_list = exclude_patterns($exclude);
+  cat_to_gzip($FILE_PAIR, $final_pair, $sample, \@chr_order, $exclude_list);
+  cat_to_gzip($FILE_FOLD, $final_fold, $sample, \@chr_order, $exclude_list);
 } catch {
   if($_) {
     warn $_;
@@ -47,11 +48,25 @@ try {
 
 exit $err_code;
 
+sub exclude_patterns {
+  my $patt = shift;
+  my @exclude;
+  return \@exclude unless($patt);
+  @exclude = split /,/, $patt;
+  my @exclude_patt;
+  for my $ex(@exclude) {
+    $ex =~ s/%/.+/;
+    push @exclude_patt, $ex;
+  }
+  return \@exclude;
+}
+
 sub cat_to_gzip {
-  my ($format, $outfile, $sample, $chrs) = @_;
+  my ($format, $outfile, $sample, $chrs, $exclude_list) = @_;
   my @args;
   for my $chr(@{$chrs}) {
-    push @args, sprintf $format, $sample, $chr;
+    next if(first { $chr =~ m/^$_$/ } @{$exclude_list});
+    push @args, sprintf $format, $sample, $chr if(-e $args[-1]);
     die "Expected file missing $indir/$args[-1]\n" unless(-e $args[-1]);
   }
   my $command = qq{bash -c 'set -o pipefail; cat @args | gzip -c > $outfile'};

@@ -279,7 +279,7 @@ sub print_rg_cns_bedpe {
         print $fh join(
             "\t",
             $self->name,
-            $seg->low_end->pos - 1,
+            $seg->low_end->pos,
             $seg->high_end->pos,
             $seg->cn || "NA",
             $seg->low_end->boundary,

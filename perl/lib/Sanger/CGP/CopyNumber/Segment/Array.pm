@@ -3,6 +3,7 @@ package Sanger::CGP::CopyNumber::Segment::Array;
 use warnings FATAL => 'all';
 use strict;
 use Scalar::Util qw(blessed);
+use Bio::Brass qw($VERSION);
 
 sub new {
     my $class = shift;

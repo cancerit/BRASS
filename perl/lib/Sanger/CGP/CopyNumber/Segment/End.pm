@@ -3,6 +3,7 @@ package Sanger::CGP::CopyNumber::Segment::End;
 use warnings FATAL => 'all';
 use strict;
 use Scalar::Util qw(blessed);
+use Bio::Brass qw($VERSION);
 
 # Every copy number segment is modelled as two reciprocal
 # copy number segment ends, which are linked to each other.

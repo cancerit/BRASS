@@ -2,7 +2,7 @@ package Sanger::CGP::CopyNumber::Segment;
 
 use strict;
 use warnings FATAL => 'all';
-
+use Bio::Brass qw($VERSION);
 use Sanger::CGP::CopyNumber::Segment::End;
 
 sub new {

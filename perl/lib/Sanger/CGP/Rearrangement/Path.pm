@@ -2,6 +2,7 @@ package Sanger::CGP::Rearrangement::Path;
 
 use warnings FATAL => 'all';
 use strict;
+use Bio::Brass qw($VERSION);
 
 use Scalar::Util qw(blessed);
 

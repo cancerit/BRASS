@@ -2,6 +2,7 @@ package Sanger::CGP::Rearrangement;
 
 use warnings FATAL => 'all';
 use strict;
+use Bio::Brass qw($VERSION);
 
 use Sanger::CGP::Rearrangement::End;
 use Scalar::Util qw(blessed);

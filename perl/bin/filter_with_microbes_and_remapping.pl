@@ -8,7 +8,7 @@ use strict;
 use DateTime;
 use warnings FATAL => 'all';
 use Bio::DB::Sam;
-use File::Temp qw(tempfile unlink0);
+use File::Temp qw(tempfile);
 use IO::Handle;
 use List::Util qw(max sum);
 use Getopt::Long;
@@ -34,12 +34,12 @@ my $SMALL_INDEL_THRESHOLD = 1000;
 my $REMAPPING_SCORE_THRESHOLD = 40;
 my $MICROBIAL_MATCHES_MAX_FRACTION = 0.5;
 my $FOOTPRINT_SIZE_MAX = 50;
-my $SCORES_OUTPUT_FILE = "";
-my $BEDPEOUT = "";
-my $VIRUS_DB = "";
-my $BAC_DB_STUB = "";
-my $TMP_DIR = "";
-my $SCORE_ALG = "ssearch36";
+my $SCORES_OUTPUT_FILE = q{};
+my $BEDPEOUT = q{};
+my $VIRUS_DB = q{};
+my $BAC_DB_STUB = q{};
+my $TMP_DIR = q{};
+my $SCORE_ALG = 'ssearch36';
 my $MIN_SUPPORT = 3;
 GetOptions(
   'blat_mapping_threshold=i' => \$BLAT_MAPPING_THRESHOLD,
@@ -111,13 +111,13 @@ for my $i(0..$#regions) {
     $h = $r->[11];
   }
   else {
-    $l = ($r->[8] eq "+" ? ($r->[1] + 60) : ($r->[2] - 100));  # These numbers are because of how Brass apparently estimates the low and high end of the ranges
-    $h = ($r->[9] eq "+" ? ($r->[4] + 60) : ($r->[5] - 100));  # These numbers are because of how Brass apparently estimates the low and high end of the ranges
+    $l = ($r->[8] eq q{+} ? ($r->[1] + 60) : ($r->[2] - 100));  # These numbers are because of how Brass apparently estimates the low and high end of the ranges
+    $h = ($r->[9] eq q{+} ? ($r->[4] + 60) : ($r->[5] - 100));  # These numbers are because of how Brass apparently estimates the low and high end of the ranges
   }
 
   if (is_small_indel($r)) {
-    push @low_end_remap_score, "small_indel";
-    push @high_end_remap_score, "small_indel";
+    push @low_end_remap_score, 'small_indel';
+    push @high_end_remap_score, 'small_indel';
 
     my @reads = collect_reads_by_region(
       $bam,
@@ -129,7 +129,7 @@ for my $i(0..$#regions) {
       push @low_end_footprint, get_alignment_footprint(@reads);
     }
     else {
-      push @low_end_footprint, "NA";
+      push @low_end_footprint, 'NA';
     }
 
     # Deal with high end reads
@@ -143,7 +143,7 @@ for my $i(0..$#regions) {
       push @high_end_footprint, get_alignment_footprint(@reads);
     }
     else {
-      push @high_end_footprint, "NA";
+      push @high_end_footprint, 'NA';
     }
 
     for (@reads) {
@@ -159,10 +159,10 @@ for my $i(0..$#regions) {
     my $target_seq = uc(get_fai_seq($fai, $r->[3], $h-$SLOP_FOR_GENOMIC_REGION, $h+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0)));
     my $source_seq = uc(get_fai_seq($fai, $r->[0], $l-$SLOP_FOR_GENOMIC_REGION, $l+$SLOP_FOR_GENOMIC_REGION, 0));
     if ($target_seq =~ /N/ || $source_seq =~ /N/) {
-      push @low_end_remap_score, "ref_seq_has_N";
-      push @high_end_remap_score, "ref_seq_has_N";
-      push @low_end_footprint, "ref_seq_has_N";
-      push @high_end_footprint, "ref_seq_has_N";
+      push @low_end_remap_score, 'ref_seq_has_N';
+      push @high_end_remap_score, 'ref_seq_has_N';
+      push @low_end_footprint, 'ref_seq_has_N';
+      push @high_end_footprint, 'ref_seq_has_N';
       next;
     }
 
@@ -191,8 +191,8 @@ for my $i(0..$#regions) {
       $footprint = get_alignment_footprint(@reads);
     }
     else {
-      $final_score = "no_reads";
-      $footprint = "NA";
+      $final_score = 'no_reads';
+      $footprint = 'NA';
     }
     push @low_end_remap_score, $final_score;
     push @low_end_footprint, $footprint;
@@ -224,8 +224,8 @@ for my $i(0..$#regions) {
       $footprint = get_alignment_footprint(@reads);
     }
     else {
-      $final_score = "no_reads";
-      $footprint = "NA";
+      $final_score = 'no_reads';
+      $footprint = 'NA';
     }
     push @high_end_remap_score, $final_score;
     push @high_end_footprint, $footprint;
@@ -279,7 +279,7 @@ for my $i (0..$#regions) {
   }
   else {
     $microbe_counts = 0;
-    $microbes = "none";
+    $microbes = 'none';
   }
 
   if ($SCORES_FILE) {
@@ -296,17 +296,18 @@ for my $i (0..$#regions) {
     ) . "\n";
   }
 
-  if ($low_end_remap_score[$i] eq "no_reads") {
-    print STDERR "WARNING: no reads found from the BRM file for rearrangement " . $regions[$i]->[6] . "!\n";
+  if ($low_end_remap_score[$i] eq 'no_reads') {
+    print STDERR 'WARNING: no reads found from the BRM file for rearrangement ' . $regions[$i]->[6] . "!\n";
     print STDERR join("\t", @{$regions[$i]}),"\n";
   }
 
   # The actual filtering
   if (
-    $low_end_remap_score[$i] eq "no_reads" || $high_end_remap_score[$i] eq "no_reads" ||
-    $low_end_remap_score[$i] eq "ref_seq_has_N" || $high_end_remap_score[$i] eq "ref_seq_has_N" ||
-    ($low_end_remap_score[$i]  ne "small_indel" && $low_end_remap_score[$i]  <= $normalised_remap_score) ||
-    ($high_end_remap_score[$i] ne "small_indel" && $high_end_remap_score[$i] <= $normalised_remap_score) ||
+    $low_end_remap_score[$i] eq 'no_reads' || $high_end_remap_score[$i] eq 'no_reads' ||
+    $low_end_remap_score[$i] eq 'ref_seq_has_N' || $high_end_remap_score[$i] eq 'ref_seq_has_N' ||
+    $low_end_footprint[$i] eq 'NA' || $high_end_footprint[$i] eq 'NA' ||
+    ($low_end_remap_score[$i]  ne 'small_indel' && $low_end_remap_score[$i]  <= $normalised_remap_score) ||
+    ($high_end_remap_score[$i] ne 'small_indel' && $high_end_remap_score[$i] <= $normalised_remap_score) ||
     sum(split /,/, $microbe_counts) >= $regions[$i]->[7] ||
     $low_end_footprint[$i] <= $FOOTPRINT_SIZE_MAX || $high_end_footprint[$i] <= $FOOTPRINT_SIZE_MAX
   ) {
@@ -316,7 +317,7 @@ for my $i (0..$#regions) {
 }
 
 # Clean-up
-unlink0($all_reads_fh, $all_reads_file_name) or warn "Error tempfile safely: $all_reads_file_name";;
+close $all_reads_fh or warn $!;
 remove_tree($TMP_DIR) if(defined $TMP_DIR);
 exit 0;
 
@@ -346,7 +347,7 @@ sub blat_db {
     }
   }
   close $IN;
-  unlink("$blat_result");
+  unlink($blat_result);
 }
 
 sub get_remapping_score_differences {
@@ -382,9 +383,12 @@ sub get_remapping_score_differences {
   my $source_scores = $SCORE_SUB->($source_fh_name, $seq_fh_name, $TMP_DIR);
 
   # don't die here, we can live with this as the whole tree will be deleted later
-  unlink0($seq_fh, $seq_fh_name) or warn "Error unlinking tempfile safely: $seq_fh_name";
-  unlink0($source_fh, $source_fh_name) or warn "Error unlinking tempfile safely: $source_fh_name";
-  unlink0($target_fh, $target_fh_name) or warn "Error unlinking tempfile safely: $target_fh_name";
+  close $seq_fh or warn $!;
+  unlink $seq_fh_name;
+  close $source_fh or warn $!;
+  unlink $source_fh_name;
+  close $target_fh or warn $!;
+  unlink $target_fh_name;
 
   my @diffs;
   for(keys %{$source_scores}) {
@@ -522,7 +526,8 @@ sub pairwise_align_scores_emboss {
   close $IN;
 
   unlink($scores_file);
-  unlink0($dna_fh, $dna_matrix) or warn "Error unlinking tempfile safely: $dna_matrix";
+  close $dna_fh or warn $!;
+  unlink $dna_matrix;
 
   my %scores;
   for my $line(@lines) {

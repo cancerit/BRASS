@@ -231,7 +231,7 @@ our $itteration_wait = 5;
 sub map_sequences {
 	my($working_dir,$exonerate_options,$regions,@contigs) = @_;
 
-    $exonerate_options = "" unless defined $exonerate_options;
+    $exonerate_options = q{} unless defined $exonerate_options;
     my $sort_function = undef;
 
 #    local $_;
@@ -245,7 +245,7 @@ sub map_sequences {
 
     my $i = 0;
 
-    my ($FASTA, $queryfname) = tempfile("brassAssExonerateXXXXXXX", DIR => $working_dir, SUFFIX => '.fa');
+    my ($FASTA, $queryfname) = tempfile('brassAssExonerateXXXXXXX', DIR => $working_dir, SUFFIX => '.fa');
     foreach my $contig (@contigs) {
         if (ref $contig) { print $FASTA ">$i\n", $contig->seq(), "\n" or die __PACKAGE__."::map_sequences(): write $FASTA failed: $!\n";}
         else { print $FASTA ">$i\n$contig\n" or die __PACKAGE__."::map_sequences(): write $FASTA failed: $!\n";}

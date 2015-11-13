@@ -224,7 +224,7 @@ sub _check_file {
 
     my $file = $self->{infile};
 
-    unless ($file && (-e "$file")) {
+    unless ($file && (-e $file)) {
 	print "file $file not found\n";
 	return(0);
     }

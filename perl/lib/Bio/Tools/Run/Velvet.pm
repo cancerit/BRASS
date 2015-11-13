@@ -237,19 +237,19 @@ sub run {
     local $_;
 
     my $velvetg = $self->executable('velvetg');
-    my $cmd = join(" ", $velvetg,$self->tempdir(), '-shortMatePaired yes', '-read_trkg yes', '-unused_reads yes', @_);
+    my $cmd = join(' ', $velvetg,$self->tempdir(), '-shortMatePaired yes', '-read_trkg yes', '-unused_reads yes', @_);
 
-    my $warnings = "";
+    my $warnings = '';
     my $finalline;
 
     print "$cmd\n" if $self->verbose >= 0;
     open my $VELVET, "$cmd|" or $self->throw("Can't execute $velvetg: $!");
     while (<$VELVET>) {
 	print unless $self->quiet || $self->verbose < 0;
-    	$warnings .= $_ if substr($_, 0, 8) eq "WARNING:";
-	$finalline = $_ if substr($_, 0, 12) eq "Final graph ";
+    	$warnings .= $_ if substr($_, 0, 8) eq 'WARNING:';
+	$finalline = $_ if substr($_, 0, 12) eq 'Final graph ';
     }
-    close $VELVET or $self->throw("velvetg execution failed");
+    close $VELVET or $self->throw('velvetg execution failed');
 
     $self->error_string($warnings);
     if (defined $finalline && $finalline =~
@@ -349,7 +349,7 @@ sub _run_for_version {
     local $_;
 
     my $FH;
-    if ($self->io->exists_exe($executable) && open $FH, "-|", $executable) {
+    if ($self->io->exists_exe($executable) && open $FH, '-|', $executable) {
 	while (<$FH>) { return $1 if /^Version\s+(\S+)/ }
     }
 

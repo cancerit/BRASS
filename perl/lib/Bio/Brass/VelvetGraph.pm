@@ -81,7 +81,7 @@ the corresponding vertex attributes will not be set.
 sub add_graph_labels {
     my ($graph, $label, $tooltip) = @_;
 
-    $graph->set_graph_attribute("layout", "neato");
+    $graph->set_graph_attribute('layout', 'neato');
     #$graph->set_graph_attribute("name", "whatever"); # FIXME Not listened to
 
     my ($need_length, $need_contig);
@@ -97,16 +97,16 @@ sub add_graph_labels {
 	my $len = $need_length? $graph->get_vertex_contig_length($_) : 0;
 	my $ctg = $need_contig? $graph->get_vertex_contig($_) : '?';
 
-	$graph->set_vertex_attribute($_, "label",
+	$graph->set_vertex_attribute($_, 'label',
 	    sprintf($label, $_, $len, $ctg)) if defined $label;
 
-	$graph->set_vertex_attribute($_, "tooltip",
+	$graph->set_vertex_attribute($_, 'tooltip',
 	    sprintf($tooltip, $_, $len, $ctg)) if defined $tooltip;
     }
 
     foreach ($graph->edges) {
-	$graph->set_edge_attribute(@$_, "label", $graph->get_edge_weight(@$_));
-	$graph->set_edge_attribute(@$_, "fontsize", 10);
+	$graph->set_edge_attribute(@$_, 'label', $graph->get_edge_weight(@$_));
+	$graph->set_edge_attribute(@$_, 'fontsize', 10);
     }
 }
 
@@ -120,7 +120,7 @@ sub set_vertex_style {
     my $graph = shift @_;
     my $style = shift @_;
 
-    $graph->set_vertex_attribute($_, "style", $style) foreach @_;
+    $graph->set_vertex_attribute($_, 'style', $style) foreach @_;
 }
 
 =head2 view_graph
@@ -134,9 +134,9 @@ already been called for this graph.
 sub view_graph {
     my ($graph, $fname) = @_;
 
-    die "FIXME: temporary view_graph filename" unless defined $fname;
+    die 'FIXME: temporary view_graph filename' unless defined $fname;
 
-    add_graph_labels($graph, "%I %L", "%C")
+    add_graph_labels($graph, '%I %L', '%C')
 	    unless $graph->has_graph_attribute('layout');
 
     my $writer = Graph::Writer::Dot->new();
@@ -145,7 +145,7 @@ sub view_graph {
 	system("open -a Graphviz $fname") == 0 or die "Can't spawn open: $!\n";
 	}
     else {
-	open my $NEATO, "|neato -Tgtk" or die "Can't pipe to neato: $!\n";
+	open my $NEATO, '|neato -Tgtk' or die "Can't pipe to neato: $!\n";
 	$writer->write_graph($graph, $NEATO);
 	close $NEATO or die "neato execution failed\n";
     }
@@ -186,7 +186,7 @@ sub map_contigs {
     }
 
     if ($options !~ /--model/ && scalar(@vertices) > 0) {
-    	warn join(' ',"Aligning with --model affine:local for vertices:",map{$_}@vertices);
+    	warn join(' ','Aligning with --model affine:local for vertices:',map{$_}@vertices);
         foreach my $mappings (map_sequences($working_dir, "$options --model affine:local", $regions, @contigs)) {
             my $vertex = shift @vertices;
             @$mappings = sort @$mappings;

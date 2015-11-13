@@ -291,7 +291,7 @@ sub update_cn {
 sub update_blat {
     my ($file, $blat_field, $blat_script, $ref, $minIdentity) = @_;
 
-    unless ($ref && (-e "$ref")) {
+    unless ($ref && (-e $ref)) {
 	print "WARN: can not do LvH blat flagging. No valid reference file supplied\n";
 	return;
     }
@@ -299,7 +299,7 @@ sub update_blat {
     if ($blat_script) {
 	unless ((-e "$blat_script") && ($blat_script =~ /blat/)) {
 	    my $path_to_blat = which($blat_script);
-	    unless ($path_to_blat && (-e "$path_to_blat") && ($path_to_blat =~ /blat/)) {
+	    unless ($path_to_blat && (-e $path_to_blat) && ($path_to_blat =~ /blat/)) {
 		print "WARN: can not do LvH blat flagging. No valid blat executable supplied\n";
 		return;
 	    }

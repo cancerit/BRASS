@@ -422,7 +422,7 @@ sub get_sample_types {
     my $self = shift;
 
     my $file = $self->{infile};
-    return unless ($file && -e "$file");
+    return unless ($file && -e $file);
 
     # get the #SAMPLE lines out of the header
     my $output = `grep #SAMPLE $file`;
@@ -443,7 +443,7 @@ sub get_sample_types {
         push @{$self->{samples}}, [$sample, $type];
     }
 
-    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . " " . $_->[1] . "\n"; } }
+    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . q{ } . $_->[1] . "\n"; } }
 }
 #-----------------------------------------------------------------------#
 #-----------------------------------------------------------------------#
@@ -462,7 +462,7 @@ sub process {
 
   my $infile = $self->{infile};
 
-  unless ($infile && -e "$infile") {
+  unless ($infile && -e $infile) {
     print "can not process. brassI marked groups infile (infile) not set or not found\n";
     die $!;
   }
@@ -616,15 +616,17 @@ sub _check_row {
   $is_small_foldback = 1 if( $chrL eq $chrH
                           && $strandL eq $strandH
                           && (($H5 + $H3)/2) - (($L5 + $L3)/2) <= 5000); # gives the mid point of the group ranges
+
   my $max_np_count = $self->{max_np_count};
-  $max_np_count++ if($is_small_foldback);
 
   # Susie suggested this to limit loading too much rubbish - 25/7/13
-  # the +1 for small foldback by Yilong
+  # the +2 for small foldback by Yilong
+  $max_np_count+=2 if($is_small_foldback);
+
   if ($np_count > $max_np_count) {
     if ($self->{debug}) {
       if($is_small_foldback) {
-        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+1 failed (small foldback). skip\n";
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+2 failed (small foldback). skip\n";
       }
       else {
         print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n";
@@ -772,7 +774,7 @@ sub _print_row {
 	my $names = '';
 	if ($sample_read_data->{$sample}->{read_names} && @{$sample_read_data->{$sample}->{read_names}}) {
 	    $count = scalar(@{$sample_read_data->{$sample}->{read_names}});
-	    $names = join ",", @{$sample_read_data->{$sample}->{read_names}};
+	    $names = join ',', @{$sample_read_data->{$sample}->{read_names}};
 	}
 
         # output just the tumour entries in bedpe format (zero referenced start positions)

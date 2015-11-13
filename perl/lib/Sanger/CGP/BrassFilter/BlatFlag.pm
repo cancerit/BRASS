@@ -68,6 +68,7 @@ use strict;
 use File::Copy qw(move);
 use Bio::DB::Sam;
 use File::Temp qw(tempdir);
+use File::Spec;
 
 use Bio::Brass;
 our $VERSION = Bio::Brass->VERSION;
@@ -223,7 +224,7 @@ sub process {
 sub _check_file {
     my ($self, $file, $ref) = @_;
 
-    unless ($file && (-e "$file")) {
+    unless ($file && (-e $file)) {
 	print "file $file not found\n";
 	return(0);
     }
@@ -307,7 +308,7 @@ sub _get_hits {
     my $blat = $self->{blat};
     my $minIdentity = $self->{minIdentity};
 
-    my $tempdir = tempdir( 'BlatFlagXXXXXX', CLEANUP => 1 );
+    my $tempdir = tempdir( 'BlatFlagXXXXXX', DIR => File::Spec->tmpdir(), CLEANUP => 1 );
     my $blat_outfile = "$tempdir/blatout";
 
     foreach my $name(keys %{$self->{data}}) {
@@ -327,7 +328,7 @@ sub _get_hits {
 	close $fhh;
 
 	my $output = `$blat $Lfile $Hfile -minIdentity=$minIdentity  $blat_outfile`;
-	if ($output && $self->{debug}) { print "$output"; }
+	if ($output && $self->{debug}) { print $output; }
 
 	# get top score
 	open my $fh,  "<$blat_outfile" or die $!;
@@ -342,7 +343,7 @@ sub _get_hits {
 
   my $score = 0;
   if(defined $line) {
-	  my @hit = split " ", $line; # take the top blat hit
+	  my @hit = split q{ }, $line; # take the top blat hit
 	  $score = $hit[0] - $hit[1];
 	}
 	$self->{data}->{$name}->{score} = $score;

@@ -13,7 +13,7 @@ sub new {
     my $class = shift;
     my %params = @_;
     my $rg_low_end = Sanger::CGP::Rearrangement::End->new(
-        end => "low",
+        end => 'low',
         dir => $params{low_end_dir},
         min_reads_pos => $params{reads_pos}->[0],
         min_reads_clip => $params{reads_clip}->[0],
@@ -21,7 +21,7 @@ sub new {
         max_reads_clip => $params{reads_clip}->[1],
     );
     my $rg_high_end = Sanger::CGP::Rearrangement::End->new(
-        end => "high",
+        end => 'high',
         dir => $params{high_end_dir},
         min_reads_pos => $params{reads_pos}->[2],
         min_reads_clip => $params{reads_clip}->[2],
@@ -105,7 +105,7 @@ sub orig_data {
 #
 sub to_s {
     my $self = shift;
-    return $self->id . "\t" . $self->low_end->to_s . "\t" . $self->high_end->to_s . "\t" . (defined($self->component) ? $self->component : "Component: undef");
+    return $self->id . "\t" . $self->low_end->to_s . "\t" . $self->high_end->to_s . "\t" . (defined($self->component) ? $self->component : 'Component: undef');
 }
 
 sub print {
@@ -117,7 +117,7 @@ sub add_reciprocal_rgs {
     my $self = shift;
 
     for (@_) {
-        if (!defined($_) || Scalar::Util::blessed($_) ne "Sanger::CGP::Rearrangement") {
+        if (!defined($_) || Scalar::Util::blessed($_) ne 'Sanger::CGP::Rearrangement') {
             die "A argument of type 'Sanger::CGP::Rearrangement' is needed for $self\->add_reciprocal_rg()";
         }
 
@@ -136,7 +136,7 @@ sub set_component {
     if (!defined($component)) {
         die "Argument for component is needed for $self\->set_component()";
     }
-    if (!defined(Scalar::Util::blessed $component) or Scalar::Util::blessed($component) ne "Sanger::CGP::Rearrangement::ConnectedComponent") {
+    if (!defined(Scalar::Util::blessed $component) or Scalar::Util::blessed($component) ne 'Sanger::CGP::Rearrangement::ConnectedComponent') {
         die "Argument must be of type 'Sanger::CGP::Rearrangement::ConnectedComponent' in $self\->set_component()";
     }
     $self->{component} = $component;
@@ -161,7 +161,7 @@ sub is_foldback {
         return 0;
     }
 
-    if ($self->low_end->dir eq "+" && $self->high_end->dir eq "+") {
+    if ($self->low_end->dir eq '+' && $self->high_end->dir eq '+') {
         if ($self->low_end->segment->is_bal_rg_overlap(%params)) {
             # Is a balanced rearrangement -> can't be fold-back
             return 0;
@@ -182,7 +182,7 @@ sub is_foldback {
             $self->low_end->segment->next_seg->length + $self->low_end->segment->next_seg->next_seg->length <= $params{max_foldback_distance};
         return($is_normal_fb || $is_fb_with_overlap_bal);
     }
-    elsif ($self->low_end->dir eq "-" && $self->high_end->dir eq "-") {
+    elsif ($self->low_end->dir eq '-' && $self->high_end->dir eq '-') {
         if ($self->high_end->segment->is_bal_rg_overlap(%params)) {
             # Is a balanced rearrangement -> can't be fold-back
             return 0;
@@ -262,7 +262,7 @@ sub is_small_del {
     }
 
     if (
-        $self->low_end->dir eq "+" &&
+        $self->low_end->dir eq '+' &&
         defined($self->low_end->segment->next_seg) &&
         defined($self->low_end->segment->next_seg->next_seg) &&
         defined($self->low_end->segment->next_seg->next_seg->low_end->bkpt) &&
@@ -285,7 +285,7 @@ sub is_small_td {
 
     if (
         $self->low_end->segment->length < $params{min_seg_size_for_cn} &&
-        $self->low_end->dir eq "-" &&
+        $self->low_end->dir eq '-' &&
         defined($self->low_end->segment->high_end->bkpt) &&
         $self->low_end->mate->eq($self->low_end->segment->high_end->bkpt)
     ) {
@@ -323,7 +323,7 @@ sub is_shard_bypassing {
             ## Detect complete bridges
             if (grep { $_ == $cur_rg_end->mate } @target_rg_ends) {
                 if ($params{verbose} >= 2) {
-                    print STDERR "Found shard bypassing rearrangement: " . $self->to_s . "\n";
+                    print STDERR 'Found shard bypassing rearrangement: ' . $self->to_s . "\n";
                 }
                 return 1;
             }
@@ -341,7 +341,7 @@ sub weighted_avg_cn_change_across_rg {
     # are handled separately.
     if ($self->is_foldback(%params)) {
         my($cn_before, $cn_after);
-        if ($self->low_end->dir eq "+") {
+        if ($self->low_end->dir eq '+') {
             $cn_before = $self->low_end->segment->cn;
             $cn_after = $self->high_end->segment_end_neighbour->segment->cn;
         }
@@ -408,7 +408,7 @@ sub weighted_avg_cn_change_var_across_rg {
 sub is_reciprocal_with {
     my $self = shift;
     my $target = shift;
-    if (!defined($target) || Scalar::Util::blessed($target) ne "Sanger::CGP::Rearrangement") {
+    if (!defined($target) || Scalar::Util::blessed($target) ne 'Sanger::CGP::Rearrangement') {
         die "A argument of type 'Sanger::CGP::Rearrangement' is needed for $self\->is_reciprocal_with()";
     }
 

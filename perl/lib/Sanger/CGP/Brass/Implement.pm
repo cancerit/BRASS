@@ -215,7 +215,7 @@ sub normcn {
   $command .= sprintf $NORM_CN_R, $tum_fb,
                                   $norm_fb,
                                   $options->{'Ploidy'},
-                                  1 - $options->{'NormalContamination'},
+                                  $options->{'Acf'},
                                   $normcn_stub;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
@@ -365,13 +365,13 @@ sub filter {
   $rg_cns .= ' '.$abs_cn;
   $rg_cns .= ' '.$seg_cn;
   $rg_cns .= ' '.$options->{'tumour'};
-  $rg_cns .= ' '.(1 - $options->{'NormalContamination'});
+  $rg_cns .= ' '.$options->{'Acf'};
 
   my $match_lib_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r6');
   my $filtered_cn = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.cn_filtered');
   my $match_lib = $^X.' '._which('match_rg_patterns_to_library.pl');
   $match_lib .= ' -filtered_bedpe '.$match_lib_file;
-  $match_lib .= ' -acf '.(1 - $options->{'NormalContamination'});
+  $match_lib .= ' -acf '.$options->{'Acf'};
   $match_lib .= ' -ploidy '.$options->{'Ploidy'};
   $match_lib .= ' -filt_cn_out '.$filtered_cn;
   $match_lib .= " $remap_file";
@@ -520,6 +520,9 @@ sub grass {
   $combine_cmd .= ' '.$annot_phaseI_prefix;
   $combine_cmd .= ' '.$annot_phaseII_prefix;
   $combine_cmd .= ' '.$final;
+  $combine_cmd .= ' '.$options->{'Ploidy'};
+  $combine_cmd .= ' '.$options->{'Acf'};
+  $combine_cmd .= ' '.$options->{'AscatFailure'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'),
                                             [ $merge,
@@ -636,14 +639,19 @@ sub get_ascat_summary {
   while(my $line = <$SUMM>) {
     chomp $line;
     my ($key, $value) = split /[[:space:]]+/, $line;
-    next unless($key eq 'NormalContamination' || $key eq 'Ploidy');
+    next unless($key eq 'rho' || $key eq 'Ploidy');
     $options->{$key} = $value;
   }
 
   if($options->{'Ploidy'} eq '?') {
     $options->{'Ploidy'} = 2;
-    $options->{'NormalContamination'} = 0.25;
+    $options->{'Acf'} = 0.75;
     $options->{'AscatFailure'} = 1;
+  }
+  else {
+    $options->{'Acf'} = $options->{'rho'};
+    delete $options->{'rho'};
+    $options->{'AscatFailure'} = 0;
   }
 }
 

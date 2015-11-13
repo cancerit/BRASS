@@ -6,11 +6,12 @@ use warnings FATAL => 'all';
 use Cwd;
 use Try::Tiny qw(try catch finally);
 use Const::Fast qw(const);
+use List::Util qw(first);
 
 const my $FILE_PAIR => '%s.%s.ngscn.bed';
 const my $FILE_FOLD => '%s.%s.ngscn.fb_reads.bed';
 
-die "Usage: genome.fa.fai sample_name indir [exclude_list]" unless(scalar @ARGV == 3);
+die "Usage: genome.fa.fai sample_name indir [exclude_list]" unless(scalar @ARGV >= 3);
 
 my ($fai, $sample, $indir, $exclude) = @ARGV;
 die "ERROR: *.fai file must exist with non-zero size\n" unless(-e $fai && -s _);
@@ -66,10 +67,10 @@ sub cat_to_gzip {
   my @args;
   for my $chr(@{$chrs}) {
     next if(first { $chr =~ m/^$_$/ } @{$exclude_list});
-    push @args, sprintf $format, $sample, $chr if(-e $args[-1]);
+    push @args, sprintf $format, $sample, $chr;
     die "Expected file missing $indir/$args[-1]\n" unless(-e $args[-1]);
   }
   my $command = qq{bash -c 'set -o pipefail; cat @args | gzip -c > $outfile'};
-  warn $command;
+  warn $command."\n";
   system($command) == 0 or die "Failed to merge files to $outfile: $!\n";
 }

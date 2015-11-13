@@ -67,10 +67,10 @@ sub segment {
 sub bounded_by {
     my $self = shift;
     if (defined($self->bkpt)) {
-        return("rg");
+        return('rg');
     }
     elsif ($self->boundary =~ /tel$/) {
-        return("telomere");
+        return('telomere');
     }
     else {
         return($self->boundary);
@@ -81,10 +81,10 @@ sub is_bounded_by_rg {
     my $rg = shift;
 
     if (defined($rg)) {
-        if ($self->bounded_by ne "rg") {
+        if ($self->bounded_by ne 'rg') {
             return 0;
         }
-        elsif (ref($rg) eq "SCALAR") {
+        elsif (ref($rg) eq 'SCALAR') {
             return $self->bkpt->id eq $rg;
         }
         elsif (defined(Scalar::Util::blessed($rg))) {
@@ -99,11 +99,11 @@ sub is_bounded_by_rg {
         }
     }
 
-    return $self->bounded_by eq "rg";
+    return $self->bounded_by eq 'rg';
 }
-sub is_bounded_by_cn_bkpt { return $_[0]->bounded_by eq "cn_bkpt"; }
-sub is_bounded_by_tel     { return $_[0]->bounded_by eq "telomere"; }
-sub is_bounded_by_cen     { return $_[0]->bounded_by eq "centromere"; }
+sub is_bounded_by_cn_bkpt { return $_[0]->bounded_by eq 'cn_bkpt'; }
+sub is_bounded_by_tel     { return $_[0]->bounded_by eq 'telomere'; }
+sub is_bounded_by_cen     { return $_[0]->bounded_by eq 'centromere'; }
 
 
 1;

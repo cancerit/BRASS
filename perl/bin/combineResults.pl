@@ -5,21 +5,25 @@ use warnings FATAL => 'all';
 use autodie;
 use Const::Fast qw(const);
 
-const my @NEW_BEDPE_HEADER => ('# chr1','start1','end1','chr2','start2','end2','id/name','brass_score','assembly_score','strand1','strand2','sample','readpair names','readpair count','bal_trans','inv','occL','occH','copynumber_flag','range_blat','Brass Notation','non-template','micro-homology','assembled readnames','assembled read count','gene','gene_id','transcript_id','strand','end_phase','region','region_number','total_region_count','first/last','gene','gene_id','transcript_id','strand','phase','region','region_number','total_region_count','first/last','fusion_flag');
+const my @NEW_BEDPE_HEADER => ('# chr1','start1','end1','chr2','start2','end2','id/name','brass_score','strand1','strand2','sample','svclass','bkdist','assembly_score','readpair names','readpair count','bal_trans','inv','occL','occH','copynumber_flag','range_blat','Brass Notation','non-template','micro-homology','assembled readnames','assembled read count','gene','gene_id','transcript_id','strand','end_phase','region','region_number','total_region_count','first/last','gene','gene_id','transcript_id','strand','phase','region','region_number','total_region_count','first/last','fusion_flag');
 
-if(scalar @ARGV != 3) {
-  warn "USAGE: combineResults.pl X_ann.groups X_ann.assembled X.final\n";
+if(scalar @ARGV < 3) {
+  warn "USAGE: combineResults.pl X_ann.groups X_ann.assembled X.final ploidy Acf [ascat_failure]\n";
   warn "\tX.final is a prefix, relevant suffixes will be added for VCF and BEDPE outputs\n";
   exit 1;
 }
-my ($groups_prefix, $assembled_prefix, $final_prefix) = @ARGV;
+my ($groups_prefix, $assembled_prefix, $final_prefix, $ploidy, $acf, $ascat_failed) = @ARGV;
 
+my $cn_state = 'REAL';
+$cn_state = 'DEFAULTS' if(defined $ascat_failed && $ascat_failed == 1);
+my $ascat_info = sprintf "Ploidy=%s,Acf=%s,CnState=%s", $ploidy, $acf, $cn_state;
 
-mergeVcf($groups_prefix, $assembled_prefix, $final_prefix);
-mergeBedpe($groups_prefix, $assembled_prefix, $final_prefix);
+my $svclass_bkpt_dist = mergeBedpe($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info);
+mergeVcf($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info, $svclass_bkpt_dist);
+
 
 sub mergeVcf {
-  my ($groups_prefix, $assembled_prefix, $final_prefix) = @_;
+  my ($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info, $svclass_bkpt_dist) = @_;
 
   my $assembled_vcf = "$assembled_prefix.vcf";
   my $phaseI_vcf = "$groups_prefix.vcf";
@@ -44,6 +48,7 @@ sub mergeVcf {
 
   my $info_found = 0;
   my $format_found = 0;
+  my $sample_found = 0;
 
   open my $FINAL, '>', $final_vcf;
   open my $FIXED, '<', $phaseI_vcf;
@@ -52,7 +57,14 @@ sub mergeVcf {
 
   while(my $line = <$FIXED>) {
     if(@ends == 2) {
-      svclass(\@ends);
+      my $id = $ends[0]->[2];
+      my ($id_base) = (split q{_}, $id)[0];
+      for my $end(@ends) {
+        $end->[7] =~ s/BKDIST=[[:digit:]]+//;
+        $end->[7] .= ';BKDIST='.$svclass_bkpt_dist->{$id_base}->{'bkptdist'};
+        $end->[7] .= ';SVCLASS='.$svclass_bkpt_dist->{$id_base}->{'svclass'};
+        $end->[7] =~ s/;{2}/;/g;
+      }
       print $FINAL join("\t",@{$ends[0]}), "\n";
       print $FINAL join("\t",@{$ends[1]}), "\n";
       @ends = ();
@@ -66,12 +78,19 @@ sub mergeVcf {
         print $FINAL $new_format,"\n";
         $format_found = 1;
       }
+      if($sample_found == 0 && $line =~ m/^##SAMPLE.*=TUMOUR,/) {
+        chomp $line;
+        my $trailer = chop $line;
+        $line = sprintf "%s,%s%s\n", $line, $ascat_info, $trailer;
+        $sample_found = 1;
+      }
       print $FINAL $line;
       next;
     }
     chomp $line;
     my @bits = split /\t/, $line;
     my $id = $bits[2];
+
     if(!exists $orig_data{$id}) {
       $bits[-3] .= ':PS';
       $bits[-2] = '0:'.$bits[-2]; # normal is always 0:0
@@ -98,7 +117,14 @@ sub mergeVcf {
     }
   }
   if(@ends == 2) {
-    svclass(\@ends);
+    my $id = $ends[0]->[2];
+    my ($id_base) = (split q{_}, $id)[0];
+    for my $end(@ends) {
+      $end->[7] =~ s/BKDIST=[[:digit:]]+//;
+      $end->[7] .= ';BKDIST='.$svclass_bkpt_dist->{$id_base}->{'bkptdist'};
+      $end->[7] .= ';SVCLASS='.$svclass_bkpt_dist->{$id_base}->{'svclass'};
+      $end->[7] =~ s/;{2}/;/g;
+    }
     print $FINAL join("\t",@{$ends[0]}), "\n";
     print $FINAL join("\t",@{$ends[1]}), "\n";
   }
@@ -108,7 +134,8 @@ sub mergeVcf {
 }
 
 sub mergeBedpe {
-  my ($groups_prefix, $assembled_prefix, $final_prefix) = @_;
+  my ($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info) = @_;
+  my %svclass_bkpt_dist;
   my $assembled_bedpe = "$assembled_prefix.bedpe";
   my $phaseI_bedpe= "$groups_prefix.bedpe";
   my $final_bedpe = "$final_prefix.bedpe";
@@ -127,6 +154,8 @@ sub mergeBedpe {
   open my $FINAL, '>', $final_bedpe;
   open my $FIXED, '<', $phaseI_bedpe;
 
+  print $FINAL sprintf "##%s\n", $ascat_info;
+
   while(my $line = <$FIXED>) {
     if($line =~ m/^#/) {
       if($line =~ m/^# chr/) {
@@ -140,6 +169,7 @@ sub mergeBedpe {
     chomp $line;
     my @bits = split /\t/, $line;
     my $id = $bits[6];
+    my @new;
     if(index($id, ',') != -1) {
       my @ids = split /,/, $id;
       my @multi_record;
@@ -151,69 +181,56 @@ sub mergeBedpe {
         warn "$line\n";
         warn Dumper(\@multi_record);
       }
-      die "merged events correlate with assembled results, don't know what to do";
+      die q{merged events correlate with assembled results, don't know what to do};
     }
     elsif(!exists $orig_data{$id}) {
-      my @new;
+      # did not assemble
       push @new, @bits[0..7]; # 1-8
-      push @new, q{_}; # 9
-      push @new, @bits[8..9]; # 10-11
-      push @new, $bits[16]; # 12
-      push @new, @bits[18..25]; # 13-20
-      push @new, q{_},q{_},q{_},q{_},q{_}; # 21-25
-      push @new, @bits[26..44]; # 26-44
-
-      print $FINAL join("\t", @new),"\n";
-      next;
+      push @new, @bits[8..9]; # 9-10
+      push @new, $bits[16]; # 11
+      push @new, svclass_bedpd(@new[0,3,9,10]); # 12
+      push @new, svdist_bedpd(@new[0..5,9,10]); # 13
+      push @new, q{_}; # 14 assembly_score
+      push @new, @bits[18..25]; # 15-22
+      push @new, q{_},q{_},q{_},q{_},q{_}; # 23-27
+      push @new, @bits[26..44]; # 28-46
     }
     else {
       my @old_brass_II = @{$orig_data{$id}};
-      my @new;
       push @new, @old_brass_II[0..6]; # 1-7
-      push @new, q{_}; # 8
-      push @new, @old_brass_II[7..10]; # 9-12
-      push @new, @bits[18..25]; # 13-20
-      push @new, @old_brass_II[11..14]; # 21-24
-      push @new, scalar (split /,/, $new[-1]); # 25 # assembled read count
-      push @new, @bits[26..44]; # 26-44
-
-      print $FINAL join("\t", @new),"\n";
-      next;
+      # original brass_score here!!
+      push @new, $bits[7]; # 8
+      push @new, @old_brass_II[8..10]; # 9-11
+      push @new, svclass_bedpd(@new[0,3,9,10]); # 12
+      push @new, svdist_bedpd(@new[0..5,9,10]); # 13
+      push @new, $old_brass_II[7]; # 14 assembly_score
+      push @new, @bits[18..25]; # 15-22
+      push @new, @old_brass_II[11..14]; # 23-26
+      push @new, scalar (split /,/, $new[-1]); # 27 # assembled read count
+      push @new, @bits[26..44]; # 28-46
     }
+    print $FINAL join("\t", @new),"\n";
+    $svclass_bkpt_dist{$id} = { 'svclass' => $new[12],
+                                'bkptdist' =>$new[13],};
   }
-
 
   close $FIXED;
   close $FINAL;
 
-  return;
+  return \%svclass_bkpt_dist;
 }
 
+sub svclass_bedpd {
+  my ($chrL, $chrH, $strL, $strH) = @_;
+  return 'translocation' if($chrL ne $chrH);
+  return 'inversion' if($strL ne $strH);
+  return 'deletion' if($strL eq '+' && $strH eq '+');
+  return 'tandem-duplication' if($strL eq '-' && $strH eq '-');
+}
 
-sub svclass {
-  my ($end_a, $end_b) = @{$_[0]};
-  die "Record IDs out of sync at:\n",join("\t",@{$end_a}),"\n",join("\t",@{$end_b}),"\n" if($end_a->[2] !~ m/_[12]$/ || $end_b->[2] !~ m/_[12]$/);
-  my $class;
-  if($end_a->[0] ne $end_b->[0]) {
-    $class = 'translocation';
-  }
-  elsif($end_a->[4] =~ m/^[[:upper:]]\[/) {
-    # ++
-    $class = 'deletion';
-  }
-  elsif($end_a->[4] =~ m/^[[:upper:]]\]/ || $end_a->[4] =~ m/\[[[:upper:]]$/) {
-    # +- / -+
-    $class = 'inversion';
-  }
-  elsif($end_a->[4] =~ m/\][[:upper:]]$/) {
-    # --
-    $class = 'tandem-duplication';
-  }
-  else {
-    die "Unknown rearrangement syntax: $end_a->[4]\n";
-  }
-  $end_a->[7] .= ';SVCLASS='.$class;
-  $end_b->[7] .= ';SVCLASS='.$class;
-  return;
+sub svdist_bedpd {
+  my ($chrL, $startL, $endL, $chrH, $startH, $endH, $strL, $strH) = @_;
+  return -1 if($chrL ne $chrH);
+  return abs $startH - $endL;
 }
 

@@ -29,7 +29,7 @@ sub end {
     if (!defined($self->{end})) {
         die "Attempted to call $self\->end() to get undefined $self\->{end}!";
     }
-    if ($self->{end} ne "low" && $self->{end} ne "high") {
+    if ($self->{end} ne 'low' && $self->{end} ne 'high') {
         die "Attempted to call $self\->end() with the value $self\->{end} eq '$self->{end}' - expected 'low' or 'high'";
     }
     return $self->{end};
@@ -40,7 +40,7 @@ sub dir {
     if (!defined($self->{dir})) {
         die "Attempted to call dir() to get undefined $self\->{dir}!";
     }
-    if ($self->{dir} ne "+" && $self->{dir} ne "-") {
+    if ($self->{dir} ne '+' && $self->{dir} ne '-') {
         die "Attempted to call $self\->dir() but $self\->{dir} is neither '+' nor '-'!";
     }
     return $self->{dir};
@@ -48,12 +48,12 @@ sub dir {
 
 sub is_l {
     my $self = shift;
-    return $self->dir eq "low";
+    return $self->dir eq 'low';
 }
 
 sub is_h {
     my $self = shift;
-    return $self->dir eq "high";
+    return $self->dir eq 'high';
 }
 
 sub is_fwd {
@@ -155,10 +155,10 @@ sub pos {
 
 sub segment_end_neighbour {
     my $self = shift;
-    if ($self->segment_end->end eq "high") {
+    if ($self->segment_end->end eq 'high') {
         return $self->segment->next_seg->low_end;
     }
-    elsif ($self->segment_end->end eq "low") {
+    elsif ($self->segment_end->end eq 'low') {
         return $self->segment->prev_seg->high_end;
     }
     else {
@@ -183,7 +183,7 @@ sub mate {
 
 sub to_s {
     my $self = shift;
-    return $self->chr_name . ":" . $self->pos . ":" . $self->dir;
+    return $self->chr_name . ':' . $self->pos . ':' . $self->dir;
 }
 
 sub print {
@@ -232,7 +232,7 @@ sub shard_partner {
         die "Attempted to call $self\->shard_partner() on a $self that is not on a shard";
     }
 
-    if ($self->dir eq "+") {
+    if ($self->dir eq '+') {
         return $self->segment->low_end->bkpt;
     }
     else {
@@ -639,10 +639,10 @@ sub neighbours_array {
 sub closest_us_rg_end {
     my $self = shift;
     my %params = @_;
-    if (!exists($params{"within"})) {
+    if (!exists($params{'within'})) {
         die "Parameter 'within' is required for $self\->closest_us_rg_end()";
     }
-    if (!exists($params{"exclude_rgs"})) {
+    if (!exists($params{'exclude_rgs'})) {
         die "Parameter 'exclude_rgs' is required for $self\->closest_us_rg_end()";
         # $params{exclude_rgs} = [];
     }
@@ -652,7 +652,7 @@ sub closest_us_rg_end {
         defined($self->segment->low_end->bkpt) &&
         !(grep { $self->segment->low_end->bkpt->rg->id eq $_ } @{$params{exclude_rgs}})
     ) {
-        if ($self->segment_end->pos - $self->segment_end->segment->low_end->pos > $params{"within"}) {
+        if ($self->segment_end->pos - $self->segment_end->segment->low_end->pos > $params{'within'}) {
             return undef;
         }
         return $self->segment_end->segment->low_end->bkpt;
@@ -667,7 +667,7 @@ sub closest_us_rg_end {
         if (defined($cur_seg->high_end->bkpt)) {
             $rg_end = $cur_seg->high_end->bkpt;
             if (!(grep { $rg_end->rg->id eq $_ } @{$params{exclude_rgs}})) {
-                if ($self->segment_end->pos - $rg_end->segment_end->pos > $params{"within"}) {
+                if ($self->segment_end->pos - $rg_end->segment_end->pos > $params{'within'}) {
                     return undef;
                 }
                 return $rg_end;
@@ -676,7 +676,7 @@ sub closest_us_rg_end {
         if (defined($cur_seg->low_end->bkpt)) {
             $rg_end = $cur_seg->low_end->bkpt;
             if (!(grep { $rg_end->rg->id eq $_ } @{$params{exclude_rgs}})) {
-                if ($self->segment_end->pos - $rg_end->segment_end->pos > $params{"within"}) {
+                if ($self->segment_end->pos - $rg_end->segment_end->pos > $params{'within'}) {
                     return undef;
                 }
                 return $rg_end;
@@ -690,10 +690,10 @@ sub closest_us_rg_end {
 sub closest_ds_rg_end {
     my $self = shift;
     my %params = @_;
-    if (!exists($params{"within"})) {
+    if (!exists($params{'within'})) {
         die "Parameter 'within' is required for $self\->closest_ds_rg_end()";
     }
-    if (!exists($params{"exclude_rgs"})) {
+    if (!exists($params{'exclude_rgs'})) {
         die "Parameter 'exclude_rgs' is required for $self\->closest_ds_rg_end()";
         # $params{exclude_rgs} = [];
     }
@@ -703,7 +703,7 @@ sub closest_ds_rg_end {
         defined($self->segment->high_end->bkpt) &&
         !(grep { $self->segment->high_end->bkpt->rg->id eq $_ } @{$params{exclude_rgs}})
     ) {
-        if ($self->segment_end->segment->high_end->pos - $self->segment_end->pos > $params{"within"}) {
+        if ($self->segment_end->segment->high_end->pos - $self->segment_end->pos > $params{'within'}) {
             return undef;
         }
         return $self->segment_end->segment->high_end->bkpt;
@@ -718,7 +718,7 @@ sub closest_ds_rg_end {
         if (defined($cur_seg->low_end->bkpt)) {
             $rg_end = $cur_seg->low_end->bkpt;
             if (!(grep { $rg_end->rg->id eq $_ } @{$params{exclude_rgs}})) {
-                if ($rg_end->segment_end->pos - $self->segment_end->pos > $params{"within"}) {
+                if ($rg_end->segment_end->pos - $self->segment_end->pos > $params{'within'}) {
                     return undef;
                 }
                 return $rg_end;
@@ -727,7 +727,7 @@ sub closest_ds_rg_end {
         if (defined($cur_seg->high_end->bkpt)) {
             $rg_end = $cur_seg->high_end->bkpt;
             if (!(grep { $rg_end->rg->id eq $_ } @{$params{exclude_rgs}})) {
-                if ($rg_end->segment_end->pos - $self->segment_end->pos > $params{"within"}) {
+                if ($rg_end->segment_end->pos - $self->segment_end->pos > $params{'within'}) {
                     return undef;
                 }
                 return $rg_end;

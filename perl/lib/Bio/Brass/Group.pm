@@ -116,7 +116,7 @@ sub parse_header {
     }
     die "ERROR: Specified tumour '$sample_chk' not found in input\n"unless(exists $self->{'tumour_idx'});
   }
-  splice @info, 1, 0, "#"; # put the blank line back
+  splice @info, 1, 0, '#'; # put the blank line back
   $self->{'_inputs'} = \@inputs;
   $self->{'_samples'} = \@samples;
   $self->{'_sample_count'} = (scalar @samples);
@@ -209,7 +209,7 @@ sub high_3p {
 sub update_input {
   my ($self, $new_input) = @_;
   # can only be applied if a single input, i.e. the header of brass_np.bam file can be replaces with brass_np.groups
-  die "update_input is only possible if input count = 1" unless(scalar @{$self->inputs} == 1);
+  die 'update_input is only possible if input count = 1' unless(scalar @{$self->inputs} == 1);
   $self->{'_inputs'} = [$new_input];
 }
 

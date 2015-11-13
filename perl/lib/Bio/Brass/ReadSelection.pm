@@ -91,7 +91,7 @@ sub new {
 	undef $bam;  undef $bai;
     }
     else {
-	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= ".bai";
+	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= '.bai';
 	if (-e $bam && -e $bai) {
 	    # Index file is .bai, so Bio::DB::Sam will need symlinks
 	}

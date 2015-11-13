@@ -183,7 +183,7 @@ sub get_normalised_rg_patterns {
 
         ## And for each combination of orders...
         for (0..(2**scalar(@involved_chrs)-1)) {
-            @chr_is_inverted = split "", sprintf("%0" . scalar(@cur_chr_ordering) . "b", $_);
+            @chr_is_inverted = split '', sprintf("%0" . scalar(@cur_chr_ordering) . 'b', $_);
             @segs_per_chr = ();  ## Counts number of segments in each chromosome in current ordering.
             @rg_buckets = %bucket_idx_of_rg = ();
             $seg_idx = 0;  ## Index for every segment (across all chromosomes)
@@ -202,7 +202,7 @@ sub get_normalised_rg_patterns {
                         # Deal with low end
                         if (defined($seg->low_end->bkpt) && exists($involved_rgs->{$seg->low_end->bkpt->id})) {
                             $cur_rg_end = $seg->low_end->bkpt;
-                            if ($cur_rg_end->end eq "high" && $cur_rg_end->is_foldback(%params)) {
+                            if ($cur_rg_end->end eq 'high' && $cur_rg_end->is_foldback(%params)) {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
@@ -230,7 +230,7 @@ sub get_normalised_rg_patterns {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
-                            if ($cur_rg_end->end eq "high" && $cur_rg_end->is_foldback(%params)) {
+                            if ($cur_rg_end->end eq 'high' && $cur_rg_end->is_foldback(%params)) {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
@@ -279,7 +279,7 @@ sub get_normalised_rg_patterns {
                         # Deal with high end
                         if (defined($seg->high_end->bkpt) && exists($involved_rgs->{$seg->high_end->bkpt->id})) {
                             $cur_rg_end = $seg->high_end->bkpt;
-                            if ($cur_rg_end->end eq "low" && $cur_rg_end->is_foldback(%params)) {
+                            if ($cur_rg_end->end eq 'low' && $cur_rg_end->is_foldback(%params)) {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
@@ -307,7 +307,7 @@ sub get_normalised_rg_patterns {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
-                            if ($cur_rg_end->end eq "low" && $cur_rg_end->is_foldback(%params)) {
+                            if ($cur_rg_end->end eq 'low' && $cur_rg_end->is_foldback(%params)) {
                                 $seg_idx--;
                                 $segs_per_chr[-1]--;
                             }
@@ -360,9 +360,9 @@ sub get_normalised_rg_patterns {
             @rg_buckets = sort { substr($a->[0], 0, -1) <=> substr($b->[0], 0, -1) || substr($b->[0], -1) cmp substr($a->[0], -1) } @rg_buckets;
             $rg_string = join(
                 '/',
-                map( {$_->[0] . "," . $_->[1]} @rg_buckets )
+                map( {$_->[0] . ',' . $_->[1]} @rg_buckets )
             );
-            $segs_per_chr_string = join("/", @segs_per_chr);
+            $segs_per_chr_string = join('/', @segs_per_chr);
 
             ## If the current rearrangement string is lexicographically
             ## smaller than all the earlier ones then replace
@@ -371,7 +371,7 @@ sub get_normalised_rg_patterns {
                 @best_patterns == 0 ||
                 (
                     "$rg_string $segs_per_chr_string" lt
-                    ($best_patterns[0]->{rg_string} . " " . $best_patterns[0]->{segs_per_chr_string})
+                    ($best_patterns[0]->{rg_string} . ' ' . $best_patterns[0]->{segs_per_chr_string})
                 )
             ) {
                 @best_patterns = ({
@@ -385,7 +385,7 @@ sub get_normalised_rg_patterns {
             }
             elsif (
                 "$rg_string $segs_per_chr_string" eq
-                ($best_patterns[0]->{rg_string} . " " . $best_patterns[0]->{segs_per_chr_string})
+                ($best_patterns[0]->{rg_string} . ' ' . $best_patterns[0]->{segs_per_chr_string})
             ) {
                 push @best_patterns, {
                     rg_string => $rg_string,
@@ -409,16 +409,16 @@ sub print_normalised_rg_patterns {
     }
 
     for my $p (@{$self->{best_patterns}}) {
-        print("rg pattern: " . $p->{rg_string} . " " . $p->{segs_per_chr_string} . " (rearrangements segments_per_chr)\n");
-        print "  " . join(" ", map( { if (!defined) { " NA" } else { sprintf("% .3f", $_) } } @{$p->{cn_changes}})) . " (cn change over rg)\n";
-        print "  " . join(" ", map( { if (!defined) { " NA" } else { sprintf("% .3f", $_) } } @{$p->{cn_change_variances}})) . " (variance of cn change)\n";
+        print('rg pattern: ' . $p->{rg_string} . ' ' . $p->{segs_per_chr_string} . " (rearrangements segments_per_chr)\n");
+        print '  ' . join(' ', map( { if (!defined) { ' NA' } else { sprintf('% .3f', $_) } } @{$p->{cn_changes}})) . " (cn change over rg)\n";
+        print '  ' . join(' ', map( { if (!defined) { ' NA' } else { sprintf('% .3f', $_) } } @{$p->{cn_change_variances}})) . " (variance of cn change)\n";
     }
 }
 
 sub unique_string {
     my $self = shift;
     return join(
-        "+",
+        '+',
         $self->target_component,
         sort(grep {$_ ne $self->target_component} keys(%{$self->components})),
     );

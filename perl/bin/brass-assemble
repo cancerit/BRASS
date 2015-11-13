@@ -59,7 +59,7 @@ $0 =~ s{.*/}{};
 
 my %output_filename;
 my $output_format = 'tab';
-my $basedir = "working";
+my $basedir = 'working';
 my $extreme_bed;
 my $verbose = 0;
 my $clean = 0;
@@ -266,7 +266,7 @@ system("wc -l $fname");
     next unless $score >= $score_cutoff;
     next unless scalar(@quintets) == 1;
     my @quintet = @{$quintets[0]};
-    print "Feature ", format_quintet(@quintet), " (lengths ", join(", ", map { $graph->get_vertex_contig_length($_) } @quintet), ")\n";
+    print 'Feature ', format_quintet(@quintet), ' (lengths ', join(', ', map { $graph->get_vertex_contig_length($_) } @quintet), ")\n";
     print ">L1\n", $graph->get_vertex_contig($quintet[1]), "\n" if $verbose;
     print ">R3\n", $graph->get_vertex_contig($quintet[3]), "\n" if $verbose;
 
@@ -276,7 +276,7 @@ system("wc -l $fname");
     my $Lregion =  "$chrL:".($L5-($L1len+500)).'-'.($L3+500+$L1len);
     my $Rregion =  "$chrH:".($H5-($R3len+500)).'-'.($H3+500+$R3len);
 
-    map_contigs($directory,"--percent 80", $graph, [$Lregion,$Rregion] ,$quintet[1], $quintet[3]);
+    map_contigs($directory,'--percent 80', $graph, [$Lregion,$Rregion] ,$quintet[1], $quintet[3]);
 
     my ($rawchrL, $prettychrL, $aligned_L5, $aligned_L3, $aligned_Lstrand,
         $text, $gap,
@@ -355,7 +355,7 @@ system("wc -l $fname");
     }
 
     my $reads_file = join('/',$directory,'CnyUnifiedSeq.names');
-    open(my $reads_file_fh,"<",$reads_file) or die "Cannot open |$reads_file| for reading: $!";
+    open(my $reads_file_fh,'<',$reads_file) or die "Cannot open |$reads_file| for reading: $!";
 
     while(<$reads_file_fh>){
       chomp;
@@ -390,7 +390,7 @@ system("wc -l $fname");
 
     open FMT, ">$directory/features.txt" or die "Can't write $directory/features.txt: $!\n";
     binmode FMT, ":utf8";
-    print FMT "Feature: ", format_quintet(@quintet), "\n",
+    print FMT 'Feature: ', format_quintet(@quintet), "\n",
       format_quintet_alignment($graph, @{$_}), "\n\n" foreach @quintets;
     close FMT;
 

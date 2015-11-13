@@ -57,7 +57,7 @@ sub add_rgs {
             die "Attempted to add a non-Rearrangement object in $self\->add_rgs()";
         }
         if (exists($self->{rgs}->{$_->id})) {
-            warn "Trying to add pre-existing rearrangement " . $_->id . " into $self\->{rgs}.\n";
+            warn 'Trying to add pre-existing rearrangement ' . $_->id . " into $self\->{rgs}.\n";
         }
         $self->{rgs}->{$_->id} = $_;
     }
@@ -138,26 +138,26 @@ sub naive_classification {
 
         ## Reciprocal shards
         if ($rg->is_part_of_shard_cycle(%params)) {
-            return "shard_cycle";
+            return 'shard_cycle';
         }
 
         if ($rg->low_end->chr_name eq $rg->high_end->chr_name) {
             if ($rg->is_foldback(%params)) {
-                return "fb";
+                return 'fb';
             }
             if ($rg->low_end->dir eq $rg->high_end->dir) {
-                return "fb_like";  ## Fix definition
+                return 'fb_like';  ## Fix definition
             }
             if ($rg->low_end->is_fwd && $rg->high_end->is_rev) {
-                return "del";
+                return 'del';
             }
             if ($rg->low_end->is_rev && $rg->high_end->is_fwd) {
-                return "td";
+                return 'td';
             }
             die;  ## Shouldn't get this far
         }
         else {
-            return "ut";
+            return 'ut';
         }
     }
     elsif ($self->size == 2) {
@@ -172,7 +172,7 @@ sub naive_classification {
             $rg1->high_end->has_balanced_bkpt_partner_rg_end(%params) &&
             $rg1->high_end->balanced_bkpt_partner_rg_end(%params) == $rg2->high_end
         ) {
-            return "inv";
+            return 'inv';
         }
 
         ## Balanced translocation
@@ -183,7 +183,7 @@ sub naive_classification {
             $rg1->high_end->has_balanced_bkpt_partner_rg_end(%params) &&
             $rg1->high_end->balanced_bkpt_partner_rg_end(%params) == $rg2->high_end
         ) {
-            return "bt";
+            return 'bt';
         }
 
         ## The two different inverted duplications
@@ -191,15 +191,15 @@ sub naive_classification {
             two_rgs_form_inverted_duplication($rg1, $rg2, %params) ||
             two_rgs_form_inverted_duplication($rg2, $rg1, %params)
         ) {
-            return "id";
+            return 'id';
         }
 
-        return "complex";
+        return 'complex';
     }
     else {
         ## Automatically complex if the component consists of more than
         ## 2 rearrangements.
-        return "complex";
+        return 'complex';
     }
 }
 #

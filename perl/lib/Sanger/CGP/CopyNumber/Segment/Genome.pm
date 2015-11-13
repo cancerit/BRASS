@@ -61,18 +61,18 @@ sub new_from_BEDPE_and_CN_BED {
         ## NOTE: below has to be removed later
         if ($low_end_bkpt =~ /:/ && !exists($rg_of_id{substr($low_end_bkpt, 0, -2)})) {
             warn "Rearrangement $low_end_bkpt in CN file not found in RG file. Changing into cn_bkpt";
-            $low_end_bkpt = "cn_bkpt";
+            $low_end_bkpt = 'cn_bkpt';
         }
         if ($high_end_bkpt =~ /:/ && !exists($rg_of_id{substr($high_end_bkpt, 0, -2)})) {
             warn "Rearrangement $high_end_bkpt in CN file not found in RG file. Changing into cn_bkpt";
-            $high_end_bkpt = "cn_bkpt";
+            $high_end_bkpt = 'cn_bkpt';
         }
 
         if (!(exists $segments_of_chr{$chr})) {
             $segments_of_chr{$chr} = Sanger::CGP::CopyNumber::Segment::Array->new(name => $chr);
         }
 
-        if ($n_win eq "NA") {
+        if ($n_win eq 'NA') {
             print STDERR "Warning: encountered segment $chr:$start_pos-$end_pos (size: " . ($end_pos - $start_pos + 1) . ") with n_win 'NA'. n_win set to 1.\n" if $params{verbose} >= 2;
             $n_win = 1;
         }
@@ -81,7 +81,7 @@ sub new_from_BEDPE_and_CN_BED {
                 chr           => $segments_of_chr{$chr},
                 start         => $start_pos,
                 end           => $end_pos,
-                cn            => ($cn eq "NA" ? undef : $cn),
+                cn            => ($cn eq 'NA' ? undef : $cn),
                 n_win         => $n_win,
                 low_end_bkpt  => $low_end_bkpt,
                 high_end_bkpt => $high_end_bkpt,
@@ -185,11 +185,11 @@ sub delete_rg {
     my $rg_id = shift;
     my $cur_rg = $self->rg_of_id->{$rg_id};
     $cur_rg->low_end->segment_end->{bkpt} = undef;
-    $cur_rg->low_end->segment_end->{boundary} = "cn_bkpt";
-    $cur_rg->low_end->segment_end_neighbour->{boundary} = "cn_bkpt";
+    $cur_rg->low_end->segment_end->{boundary} = 'cn_bkpt';
+    $cur_rg->low_end->segment_end_neighbour->{boundary} = 'cn_bkpt';
     $cur_rg->high_end->segment_end->{bkpt} = undef;
-    $cur_rg->high_end->segment_end->{boundary} = "cn_bkpt";
-    $cur_rg->high_end->segment_end_neighbour->{boundary} = "cn_bkpt";
+    $cur_rg->high_end->segment_end->{boundary} = 'cn_bkpt';
+    $cur_rg->high_end->segment_end_neighbour->{boundary} = 'cn_bkpt';
     delete($self->rg_of_id->{$rg_id});
 }
 
@@ -250,8 +250,8 @@ sub filter_rgs_by_no_cn_change {
         }
         elsif (
             !$has_cn_change &&
-            !($cur_rg->low_end->dir eq "+" && defined($cur_rg->high_end->balanced_bkpt_partner_rg_end(%params))) &&
-            !($cur_rg->low_end->dir eq "-" && defined($cur_rg->low_end->balanced_bkpt_partner_rg_end(%params)))
+            !($cur_rg->low_end->dir eq '+' && defined($cur_rg->high_end->balanced_bkpt_partner_rg_end(%params))) &&
+            !($cur_rg->low_end->dir eq '-' && defined($cur_rg->low_end->balanced_bkpt_partner_rg_end(%params)))
         ) {
             push @rgs_to_delete, $rg_id;
         }
@@ -430,8 +430,8 @@ sub print_rearrangements_in_bedpe {
             $rg->orig_data->[7],
             $rg->low_end->dir,
             $rg->high_end->dir,
-            ($rg->low_end->cn_across_bkpt(%params) || "NA"),
-            ($rg->high_end->cn_across_bkpt(%params) || "NA"),
+            ($rg->low_end->cn_across_bkpt(%params) || 'NA'),
+            ($rg->high_end->cn_across_bkpt(%params) || 'NA'),
             @{$rg->orig_data}[10..$#{$rg->orig_data}],
         ) . "\n";
     }
@@ -463,7 +463,7 @@ sub print_naive_classifications {
                     $_->high_end->chr_name,
                     $_->high_end->pos - 1,
                     $_->high_end->pos,
-                    ("$event_id:" . $_->id . ":chromothripsis"),
+                    ("$event_id:" . $_->id . ':chromothripsis'),
                     1,
                     $_->low_end->dir,
                     $_->high_end->dir,
@@ -567,7 +567,7 @@ sub find_rg_pattern_motifs {
             }
 
             return(
-                join(",", sort(keys %included_rgs)),
+                join(',', sort(keys %included_rgs)),
                 Sanger::CGP::Rearrangement::Group->new(
                     components => [map { $_->component } values(%included_rgs)]
                 )

@@ -122,8 +122,8 @@ sub _read_graph {
 				last if $_ !~ /^-?\d/;
 				chomp;
 				my ($id, $offset, $start, $end, $endOffset) = split /\s+/, $_;
-				my $seq_pos = $G->get_vertex_attribute($id,  "seq_positions") || {};
-				$G->set_vertex_attribute($id,  "seq_positions", $seq_pos) unless(scalar keys %$seq_pos);
+				my $seq_pos = $G->get_vertex_attribute($id,  'seq_positions') || {};
+				$G->set_vertex_attribute($id,  'seq_positions', $seq_pos) unless(scalar keys %$seq_pos);
 				push(@{$seq_pos->{$seqId}},[$offset, $start, $end, $endOffset]);
 		    }
 		    $unget = $_;
@@ -131,12 +131,12 @@ sub _read_graph {
 		elsif (/^NR\s/) {
 		    my (undef, $id, $shortReadCount) = split /\s+/, $_;
 
-		    $G->set_vertex_attribute($id,  "short_read_count", $shortReadCount);
-			$G->set_vertex_attribute(-$id, "short_read_count",  $shortReadCount);
+		    $G->set_vertex_attribute($id,  'short_read_count', $shortReadCount);
+			$G->set_vertex_attribute(-$id, 'short_read_count',  $shortReadCount);
 
 		    my $short_reads = [];
-		    $G->set_vertex_attribute($id, "short_reads", $short_reads);
-		    $G->set_vertex_attribute(-$id, "short_reads", $short_reads);
+		    $G->set_vertex_attribute($id, 'short_reads', $short_reads);
+		    $G->set_vertex_attribute(-$id, 'short_reads', $short_reads);
 
 		    while (<$FILE>) {
 				last if $_ !~ /^-?\d/;
@@ -147,7 +147,7 @@ sub _read_graph {
 		    $unget = $_;
 		}
 		else {
-		    warn "unknown velvet line \"$_\"\n";
+		    warn qq{unknown velvet line "$_"\n};
 		}
     }
 

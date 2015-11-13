@@ -59,7 +59,7 @@ sub print {
     my $start = ($_[0] or 0);
     my $end   = ($_[1] or $#{$self->segments});
     my $i = $start;
-    print "[ Chromosome " . $self->name . "]\n";
+    print '[ Chromosome ' . $self->name . "]\n";
     while ($i <= $end) {
         $self->segments->[$i]->print;
         $i++;
@@ -76,7 +76,7 @@ sub print {
 sub add_copy_number_segment {
     my $self = shift;
     my $new_seg = shift;
-    if (!defined(Scalar::Util::blessed $new_seg) or Scalar::Util::blessed($new_seg) ne "Sanger::CGP::CopyNumber::Segment") {
+    if (!defined(Scalar::Util::blessed $new_seg) or Scalar::Util::blessed($new_seg) ne 'Sanger::CGP::CopyNumber::Segment') {
         die "Attempted to call $self\->add_copy_number_segment() without an argument of class 'Sanger::CGP::CopyNumber::Segment'";
     }
     push @{$self->segments}, $new_seg;
@@ -282,7 +282,7 @@ sub print_rg_cns_bedpe {
             $self->name,
             $seg->low_end->pos,
             $seg->high_end->pos,
-            $seg->cn || "NA",
+            $seg->cn || 'NA',
             $seg->low_end->boundary,
             $seg->high_end->boundary,
             $seg->n_win,
@@ -307,7 +307,7 @@ sub print_unique_breakpoints {
 #             }
 
             if ($seg->high_end->bkpt->is_foldback(%params)) {
-                if ($seg->high_end->bkpt->end eq "high") {
+                if ($seg->high_end->bkpt->end eq 'high') {
                     die;
                 }
 
@@ -315,7 +315,7 @@ sub print_unique_breakpoints {
                     "\t",
                     $self->name,
                     $seg->next_seg->centre,
-                    ($seg->high_end->bkpt->id . "+," . $seg->high_end->bkpt->id . "+")
+                    ($seg->high_end->bkpt->id . '+,' . $seg->high_end->bkpt->id . '+')
                 ) . "\n";
 
                 if ($seg->high_end->bkpt->mate->segment->is_bal_rg_overlap(%params)) {
@@ -327,7 +327,7 @@ sub print_unique_breakpoints {
                             "\t",
                             $self->name,
                             $seg->next_seg->next_seg->next_seg->centre,
-                            ($seg->high_end->mate->segment->low_end->bkpt->id . "-," . $seg->high_end->mate->segment->low_end->bkpt->id . "-")
+                            ($seg->high_end->mate->segment->low_end->bkpt->id . '-,' . $seg->high_end->mate->segment->low_end->bkpt->id . '-')
                         ) . "\n";
                         $seg = $seg->next_seg->next_seg->next_seg->next_seg;
                     }
@@ -336,7 +336,7 @@ sub print_unique_breakpoints {
                             "\t",
                             $self->name,
                             $seg->next_seg->next_seg->high_end->pos,
-                            $seg->next_seg->next_seg->high_end->bkpt->id . "+"
+                            $seg->next_seg->next_seg->high_end->bkpt->id . '+'
                         ) . "\n";
                         $seg = $seg->next_seg->next_seg->next_seg;
                     }
@@ -355,13 +355,13 @@ sub print_unique_breakpoints {
                             "\t",
                             $self->name,
                             $seg->low_end->pos,
-                            $seg->high_end->bkpt->id . "+"
+                            $seg->high_end->bkpt->id . '+'
                         ) . "\n";
                         print join(
                             "\t",
                             $self->name,
                             $seg->next_seg->centre,
-                            ($seg->low_end->bkpt->id . "-," . $seg->low_end->bkpt->id . "-")
+                            ($seg->low_end->bkpt->id . '-,' . $seg->low_end->bkpt->id . '-')
                         ) . "\n";
                         $seg = $seg->next_seg->next_seg;
                     }
@@ -370,7 +370,7 @@ sub print_unique_breakpoints {
                             "\t",
                             $self->name,
                             $seg->centre,
-                            ($seg->high_end->bkpt->id . "+," . $seg->low_end->bkpt->id . "-")
+                            ($seg->high_end->bkpt->id . '+,' . $seg->low_end->bkpt->id . '-')
                         ) . "\n";
                         $seg = $seg->next_seg;
                     }
@@ -380,7 +380,7 @@ sub print_unique_breakpoints {
                         "\t",
                         $self->name,
                         $seg->next_seg->centre,
-                        ($seg->high_end->bkpt->id . "+," . $seg->next_seg->next_seg->low_end->bkpt->id . "-")
+                        ($seg->high_end->bkpt->id . '+,' . $seg->next_seg->next_seg->low_end->bkpt->id . '-')
                     ) . "\n";
                     $seg = $seg->next_seg;
                 }
@@ -393,7 +393,7 @@ sub print_unique_breakpoints {
                     "\t",
                     $self->name,
                     $seg->high_end->pos,
-                    ($seg->high_end->bkpt->id . "+")
+                    ($seg->high_end->bkpt->id . '+')
                 ) . "\n";
                 $seg = $seg->next_seg;
             }
@@ -415,7 +415,7 @@ sub print_unique_breakpoints {
                     "\t",
                     $self->name,
                     $seg->next_seg->centre,
-                    ($seg->next_seg->low_end->bkpt->id . "-," . $seg->next_seg->next_seg->low_end->bkpt->id . "-")
+                    ($seg->next_seg->low_end->bkpt->id . '-,' . $seg->next_seg->next_seg->low_end->bkpt->id . '-')
                 ) . "\n";
                 $seg = $seg->next_seg->next_seg;
             }
@@ -424,7 +424,7 @@ sub print_unique_breakpoints {
                     "\t",
                     $self->name,
                     $seg->next_seg->low_end->pos,
-                    ($seg->next_seg->low_end->bkpt->id . "-")
+                    ($seg->next_seg->low_end->bkpt->id . '-')
                 ) . "\n";
                 $seg = $seg->next_seg;
             }

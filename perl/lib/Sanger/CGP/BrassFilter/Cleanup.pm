@@ -152,33 +152,6 @@ warn 'loaded: '.$counts{'Groups Total'};
   }
   close $OUT;
 
-
-#   my @groups;
-#   for my $key(keys %chr_strand_grps) {
-#     warn "Merging groups from set: $key (".(scalar @{$chr_strand_grps{$key}}).")\n";
-#     push @groups, @{merge_groups( $chr_strand_grps{$key} )};
-#   }
-#   $counts{'Discard - merged'} = $end_occ_count - scalar @groups;
-#
-#   @groups = @{filter_groups(\@groups, \%counts)};
-#
-#   $counts{'Groups Kept'} = scalar @groups;
-#
-# #  # now fix the occL/H values
-# #  occX(\@groups);
-#
-#   my $col_max = (scalar (keys %name_by_loc))-1;
-#   open my $OUT, '>', $out_file;
-#   print $OUT join("\n", @headers), "\n";
-#   for my $group(@groups) {
-#     for my $i(0..$col_max) {
-#       print $OUT $group->{ $name_by_loc{$i} };
-#       print $OUT "\t" if($i != $col_max);
-#     }
-#     print $OUT "\n";
-#   }
-#   close $OUT;
-
   for(sort keys %counts) {
     warn "$_:\t$counts{$_}\n";
   }

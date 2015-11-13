@@ -15,14 +15,14 @@ const my $SLOP => 3;
 my $SLOP_LEFT_FOR_GETTING_READS = 900;
 my $SLOP_RIGHT_FOR_GETTING_READS = 100;
 my $CLIPPED_READS_NEEDED = 2;
-my $fa_file = "";
-my $out_file = "";
+my $fa_file = '';
+my $out_file = '';
 GetOptions(
-  "slop_left_for_getting_reads=i" => \$SLOP_LEFT_FOR_GETTING_READS,
-  "slop_right_for_getting_reads=i" => \$SLOP_RIGHT_FOR_GETTING_READS,
-  "clipped_reads_needed=i" => \$CLIPPED_READS_NEEDED,
-  "fasta=s" => \$fa_file,
-  "out=s" => \$out_file,
+  'slop_left_for_getting_reads=i' => \$SLOP_LEFT_FOR_GETTING_READS,
+  'slop_right_for_getting_reads=i' => \$SLOP_RIGHT_FOR_GETTING_READS,
+  'clipped_reads_needed=i' => \$CLIPPED_READS_NEEDED,
+  'fasta=s' => \$fa_file,
+  'out=s' => \$out_file,
 );
 
 my $bam_file = shift;
@@ -49,13 +49,13 @@ my (%plus_rg_bkpts_of_chr, %minus_rg_bkpts_of_chr);
 
 for (@lines) {
   my @F = @{$_};
-  if ($F[8] eq "+") {
+  if ($F[8] eq '+') {
     push @{$plus_rg_bkpts_of_chr{$F[0]}}, int(($F[1]+1+$F[2])/2);
   }
   else {
     push @{$minus_rg_bkpts_of_chr{$F[0]}}, int(($F[1]+1+$F[2])/2);
   }
-  if ($F[9] eq "+") {
+  if ($F[9] eq '+') {
     push @{$plus_rg_bkpts_of_chr{$F[3]}}, int(($F[4]+1+$F[5])/2);
   }
   else {
@@ -130,7 +130,7 @@ for my $i (0..($#lines - 1)) {
     # Now try to find out whether we should use the low or high end as 'anchoring region'
     if (abs($F1[1]/2 + $F1[2]/2 - $F2[1]/2 - $F2[2]/2) >= abs($F1[4]/2 + $F1[5]/2 - $F2[4]/2 - $F2[5]/2)) {
       # Use low end as anchor
-      if ($F1[8] eq "+") {
+      if ($F1[8] eq '+') {
         # The low end is '+' orientation
         if ($F1[1]/2 + $F1[2]/2 <= $F2[1]/2 + $F2[2]/2) {
           # @F1 corresponds to lower group
@@ -251,7 +251,7 @@ for my $i (0..($#lines - 1)) {
     }
     else {
       # Use high end as anchor
-      if ($F1[9] eq "+") {
+      if ($F1[9] eq '+') {
         # The high end is '+' orientation
         if ($F1[4]/2 + $F1[5]/2 <= $F2[4]/2 + $F2[5]/2) {
           # @F1 corresponds to lower group
@@ -390,7 +390,7 @@ for (@lines) {
   my ($low_end_low_clip_pos, $low_end_low_clip_count) = mode_of_low_clip_pos_of_reads(@{$low_end_reads_of_rg{$F[6]}});
   my ($low_end_high_clip_pos, $low_end_high_clip_count) = mode_of_high_clip_pos_of_reads(@{$low_end_reads_of_rg{$F[6]}});
   my $low_end_bkpt;
-  if ($F[8] eq "+") {
+  if ($F[8] eq '+') {
     $low_end_bkpt = ($low_end_high_clip_count >= $CLIPPED_READS_NEEDED ? $low_end_high_clip_pos : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}));
   }
   else {
@@ -400,7 +400,7 @@ for (@lines) {
   my ($high_end_low_clip_pos, $high_end_low_clip_count) = mode_of_low_clip_pos_of_reads(@{$high_end_reads_of_rg{$F[6]}});
   my ($high_end_high_clip_pos, $high_end_high_clip_count) = mode_of_high_clip_pos_of_reads(@{$high_end_reads_of_rg{$F[6]}});
   my $high_end_bkpt;
-  if ($F[9] eq "+") {
+  if ($F[9] eq '+') {
     $high_end_bkpt = ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? $high_end_high_clip_pos : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}));
   }
   else {
@@ -412,16 +412,16 @@ for (@lines) {
     @F,
     $low_end_bkpt,
     $high_end_bkpt,
-    ($low_end_low_clip_count   >= $CLIPPED_READS_NEEDED ? "$low_end_low_clip_pos ($low_end_low_clip_count)"   : lowest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . " (0)"),
-    ($low_end_high_clip_count  >= $CLIPPED_READS_NEEDED ? "$low_end_high_clip_pos ($low_end_high_clip_count)"   : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . " (0)"),
-    ($high_end_low_clip_count  >= $CLIPPED_READS_NEEDED ? "$high_end_low_clip_pos ($high_end_low_clip_count)"   : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . " (0)"),
-    ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? "$high_end_high_clip_pos ($high_end_high_clip_count)" : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . " (0)"),
-    join(",", unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}})),
+    ($low_end_low_clip_count   >= $CLIPPED_READS_NEEDED ? "$low_end_low_clip_pos ($low_end_low_clip_count)"   : lowest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)'),
+    ($low_end_high_clip_count  >= $CLIPPED_READS_NEEDED ? "$low_end_high_clip_pos ($low_end_high_clip_count)"   : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)'),
+    ($high_end_low_clip_count  >= $CLIPPED_READS_NEEDED ? "$high_end_low_clip_pos ($high_end_low_clip_count)"   : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)'),
+    ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? "$high_end_high_clip_pos ($high_end_high_clip_count)" : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)'),
+    join(',', unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}})),
     scalar(unique(@{$low_end_reads_of_rg{$F[6]}})),
-    ($F[8] eq "+" ? $low_end_high_clip_count : $low_end_low_clip_count),
-    join(",", unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}})),
+    ($F[8] eq '+' ? $low_end_high_clip_count : $low_end_low_clip_count),
+    join(',', unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}})),
     scalar(unique(@{$high_end_reads_of_rg{$F[6]}})),
-    ($F[9] eq "+" ? $high_end_high_clip_count : $high_end_low_clip_count),
+    ($F[9] eq '+' ? $high_end_high_clip_count : $high_end_low_clip_count),
   ),"\n";
 }
 close $outfh if($out_file ne q{});
@@ -435,7 +435,7 @@ sub collect_reads_by_region {
   my($bam, $chr, $pos, $dir, $mate_chr, $mate_pos, $mate_dir, $ignore_mate_pos) = @_;
   my ($start, $end, $mate_start, $mate_end);
   # Adjust regions of expected read positions based on BEDPE intervals
-  if ($dir eq "+") {
+  if ($dir eq '+') {
     $start = $pos - $SLOP_LEFT_FOR_GETTING_READS;
     $end   = $pos + $SLOP_RIGHT_FOR_GETTING_READS;
   }
@@ -443,7 +443,7 @@ sub collect_reads_by_region {
     $start = $pos - $SLOP_RIGHT_FOR_GETTING_READS;
     $end   = $pos + $SLOP_LEFT_FOR_GETTING_READS;
   }
-  if ($mate_dir eq "+") {
+  if ($mate_dir eq '+') {
     $mate_start = $mate_pos - $SLOP_LEFT_FOR_GETTING_READS;
     $mate_end   = $mate_pos + $SLOP_RIGHT_FOR_GETTING_READS;
   }
@@ -458,17 +458,17 @@ sub collect_reads_by_region {
   $mate_end = int($mate_end);
 
   # Change strands to Perl-Sam format
-  $dir = ($dir eq "+" ? 1 : -1);
-  $mate_dir = ($mate_dir eq "+" ? 1 : -1);
+  $dir = ($dir eq '+' ? 1 : -1);
+  $mate_dir = ($mate_dir eq '+' ? 1 : -1);
 
   my @aln = $bam->get_features_by_location($chr, $start, $end);
   @aln = grep {
     # !is_supplementary($_->flag) &&
-    $_->get_tag_values("FLAGS") =~ /PAIRED/ &&
-    $_->get_tag_values("FLAGS") !~ /UNMAPPED/ &&
+    $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
+    $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
     $_->strand eq $dir &&
     (
-      ( $ignore_mate_pos && $_->get_tag_values("FLAGS") =~ /MAP_PAIR/ ) ||
+      ( $ignore_mate_pos && $_->get_tag_values('FLAGS') =~ /MAP_PAIR/ ) ||
       ( $chr ne $mate_chr || $dir != $mate_dir ) ||
       ( $pos <= $mate_pos && $_->start <= $_->mate_start ) ||
       ( $pos  > $mate_pos && $_->start >= $_->mate_start )

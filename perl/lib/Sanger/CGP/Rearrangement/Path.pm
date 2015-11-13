@@ -90,7 +90,7 @@ sub last_node {
 sub to_s {
     my $self = shift;
     my %params = @_;
-    my $output = "Target: " . $self->target_rg->to_s . "\n";
+    my $output = 'Target: ' . $self->target_rg->to_s . "\n";
     my ($mate, $shard_count);
     for (@{$self->path}) {
         ($mate, $shard_count) = $_->traverse_across_shards(%params);
@@ -116,7 +116,7 @@ sub p { $_[0]->print; }
 sub extend_and_clone {
     my $self = shift;
     my $next_rg_end = shift;
-    if (!defined(Scalar::Util::blessed $next_rg_end) || Scalar::Util::blessed($next_rg_end) ne "Sanger::CGP::Rearrangement::End") {
+    if (!defined(Scalar::Util::blessed $next_rg_end) || Scalar::Util::blessed($next_rg_end) ne 'Sanger::CGP::Rearrangement::End') {
         die "Argument of type 'Sanger::CGP::Rearrangement::End' is needed for $self\->extend_and_clone()";
     }
 

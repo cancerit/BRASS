@@ -115,20 +115,70 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 sub cleanup {
   my $options = shift;
   my $tmpdir = $options->{'tmp'};
-  my $basefile = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+  my $outdir = $options->{'outdir'};
 
-  unlink "$basefile.groups";
-  unlink "$basefile.groups.filtered.bedpe";
-  unlink "$basefile.assembled.bedpe";
-  unlink $basefile.'_ann.assembled.vcf';
-  unlink $basefile.'_ann.assembled.bedpe';
-  unlink "$basefile.annot.vcf";
-  unlink "$basefile.annot.vcf.srt";
-  unlink $basefile.'_ann.groups.vcf';
-  unlink $basefile.'_ann.groups.bedpe';
+  my $intdir = File::Spec->catdir($outdir, 'intermediates/.');
+  make_path($intdir) unless(-d $intdir);
 
-  system("cp $tmpdir/*.brm.bam $options->{outdir}/.");
-  move(File::Spec->catdir($tmpdir, 'logs'), File::Spec->catdir($options->{'outdir'}, 'logs')) || die $!;
+  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
+  my @to_gzip = ( $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg',
+                  $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns',
+                  $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg',
+                  $basefile.'.groups',
+                );
+
+  for my $file(@to_gzip) {
+    if(-e $file) {
+      system(qq{gzip $file}) and die $!;
+    }
+    if(-e "$file.gz") {
+      move("$file.gz", $intdir);
+    }
+  }
+
+  # move the BRM files
+  my @brm = glob qq{$tmpdir/*.brm.bam*};
+  for(@brm) {
+    move($_, "$outdir/.");
+  }
+
+  # read counts
+  for my $sample($options->{'safe_tumour_name'}, $options->{'safe_normal_name'}) {
+    for my $type(qw(.ngscn.bed.gz .ngscn.fb_reads.bed.gz)) {
+      my $source = $tmpdir.'/cover/'.$sample.$type;
+      move($source, $intdir) if(-e $source);
+    }
+  }
+
+  my @base_delete = qw( _ann.assembled.bedpe
+                        _ann.assembled.vcf
+                        _ann.groups.clean.bedpe
+                        _ann.groups.clean.vcf
+                        .annot.vcf
+                        .annot.vcf.srt
+                        .assembled.bedpe
+                        .groups.filtered.bedpe.preclean
+                    );
+  for my $to_del(@base_delete) {
+    my $file = $basefile.$to_del;
+    unlink $file if(-e $file);
+  }
+  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.ascat*};
+  push @base_move,  "$basefile.groups",
+                    "$basefile.groups.filtered.bedpe",
+                    "$basefile.is_fb_artefact.txt",
+                    "$basefile.groups.clean.bedpe",
+                    "$basefile.cn_filtered";
+
+  for my $to_move(@base_move) {
+    move($to_move, $intdir);
+  }
+
+  my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
+  if(-e $tmplogs) {
+    move($tmplogs, File::Spec->catdir($outdir, 'logs')) or die $!;
+  }
 
   remove_tree $tmpdir if(-e $tmpdir);
 	return 0;
@@ -175,6 +225,12 @@ sub setup {
     exit 0;
   }
 
+  PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $final_logs) {
+    die "ERROR: Presence of logs directory suggests successful complete analysis, please delete to proceed: $final_logs\n";
+  }
+
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
@@ -185,7 +241,7 @@ sub setup {
   PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
   PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
-  PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
@@ -210,6 +266,7 @@ sub setup {
   my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpBrass');
   make_path($tmpdir) unless(-d $tmpdir);
   $opts{'tmp'} = $tmpdir;
+
   my $progress = File::Spec->catdir($tmpdir, 'progress');
   make_path($progress) unless(-d $progress);
   my $logs = File::Spec->catdir($tmpdir, 'logs');
@@ -246,7 +303,7 @@ sub setup {
   die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
 
   Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
-  die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'NormalContamination'});
+  die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
   die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
 
 

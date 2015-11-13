@@ -71,50 +71,50 @@ my %opts = (
 );
 sub opt_handler {
     my ($opt_name, $opt_value) = @_;
-    if ($opt_name eq "acf") {
+    if ($opt_name eq 'acf') {
         if ($opt_value < 0 || $opt_value > 100) {
             pod2usage("-acf value must be between 0 and 100!\n");
         }
         if ($opt_value > 1) { $opt_value /= 100; }
         $opts{acf} = $opt_value;
     }
-    elsif ($opt_name eq "ploidy") {
+    elsif ($opt_name eq 'ploidy') {
         if ($opt_value <= 0) {
             pod2usage("-ploidy must be larger than 0!\n");
         }
         $opts{ploidy} = $opt_value;
     }
-    elsif ($opt_name eq "max_balanced_rg_dist") {
+    elsif ($opt_name eq 'max_balanced_rg_dist') {
         # if ($opt_value <= 0) {
         #     pod2usage("-max_balanced_rg_dist must be a non-negative integer!\n");
         # }
         $opts{max_balanced_rg_dist} = $opt_value;
     }
-    elsif ($opt_name eq "max_foldback_distance") {
+    elsif ($opt_name eq 'max_foldback_distance') {
         if ($opt_value <= 0) {
             pod2usage("-max_foldback_distance must be a non-negative integer!\n");
         }
         $opts{max_foldback_distance} = $opt_value;
     }
-    elsif ($opt_name eq "min_seg_size_for_cn") {
+    elsif ($opt_name eq 'min_seg_size_for_cn') {
         if ($opt_value <= 0) {
             pod2usage("-min_seg_size_for_cn must be a non-negative integer!\n");
         }
         $opts{min_seg_size_for_cn} = $opt_value;
     }
-    elsif ($opt_name eq "min_cn_change") {
+    elsif ($opt_name eq 'min_cn_change') {
         if ($opt_value <= 0) {
             pod2usage("-min_cn_change must be non-negative!\n");
         }
         $opts{min_cn_change} = $opt_value;
     }
-    elsif ($opt_name eq "min_cn_bkpt_seg_size") {
+    elsif ($opt_name eq 'min_cn_bkpt_seg_size') {
         if ($opt_value <= 0) {
             pod2usage("-min_cn_bkpt_seg_size must be non-negative!\n");
         }
         $opts{min_cn_bkpt_seg_size} = $opt_value;
     }
-    elsif ($opt_name eq "shard_bypassing_slop") {
+    elsif ($opt_name eq 'shard_bypassing_slop') {
         if ($opt_value <= 0) {
             pod2usage("-shard_bypassing_slop must be non-negative!\n");
         }
@@ -125,22 +125,22 @@ sub opt_handler {
     }
 }
 GetOptions(
-    "acf=f" => \&opt_handler,
-    "ploidy=f" => \&opt_handler,
-    "verbose:1" => \$opts{verbose},
-    "help" => \$opts{help},
-    "max_balanced_rg_dist=i" => \&opt_handler,
-    "max_foldback_distance=i" => \&opt_handler,
-    "min_seg_size_for_cn=i" => \&opt_handler,
-    "min_cn_change=f" => \&opt_handler,
-    "min_cn_bkpt_seg_size=i" => \&opt_handler,
-    "max_depth=i" => \$opts{max_depth},
-    "filtered_bedpe=s" => \$opts{filtered_bedpe},
-    "unique_bkpts=s" => \$opts{unique_bkpts},
-    "naive_classification=s" => \$opts{naive_classification},
-    "shard_bypassing_slop=i" => \&opt_handler,
-    "skip_chrs=s" => \$opts{skip_chrs},
-    "filt_cn_out=s" => \$opts{filt_cn_out},
+    'acf=f' => \&opt_handler,
+    'ploidy=f' => \&opt_handler,
+    'verbose:1' => \$opts{verbose},
+    'help' => \$opts{help},
+    'max_balanced_rg_dist=i' => \&opt_handler,
+    'max_foldback_distance=i' => \&opt_handler,
+    'min_seg_size_for_cn=i' => \&opt_handler,
+    'min_cn_change=f' => \&opt_handler,
+    'min_cn_bkpt_seg_size=i' => \&opt_handler,
+    'max_depth=i' => \$opts{max_depth},
+    'filtered_bedpe=s' => \$opts{filtered_bedpe},
+    'unique_bkpts=s' => \$opts{unique_bkpts},
+    'naive_classification=s' => \$opts{naive_classification},
+    'shard_bypassing_slop=i' => \&opt_handler,
+    'skip_chrs=s' => \$opts{skip_chrs},
+    'filt_cn_out=s' => \$opts{filt_cn_out},
 );
 
 my $rgs_file = shift;
@@ -161,23 +161,23 @@ my(@F);
 #
 
 # First read in all rearrangement and copy number data into a genome.
-print STDERR "[" . `echo -n \`date\`` . "] Reading data in...\n" if $opts{verbose};
+print STDERR '[' . `echo -n \`date\`` . "] Reading data in...\n" if $opts{verbose};
 my $genome_of_cn_segs = Sanger::CGP::CopyNumber::Segment::Genome->new_from_BEDPE_and_CN_BED($rgs_file, $cn_file, %opts);
 
-print STDERR "[" . `echo -n \`date\`` . "] Sorting segments on each chromosome...\n" if $opts{verbose};
+print STDERR '[' . `echo -n \`date\`` . "] Sorting segments on each chromosome...\n" if $opts{verbose};
 $genome_of_cn_segs->sort_segments;
 
-print STDERR "[" . `echo -n \`date\`` . "] Removing redundant breakpoints and filtering rearrangements...\n" if $opts{verbose};
+print STDERR '[' . `echo -n \`date\`` . "] Removing redundant breakpoints and filtering rearrangements...\n" if $opts{verbose};
 $genome_of_cn_segs->preprocess_rearrangement_and_copy_number_data(%opts);
 
 if ($opts{filtered_bedpe}) {
-    print STDERR "[" . `echo -n \`date\`` . "] Outputting filtered rearrangements...\n" if $opts{verbose};
+    print STDERR '[' . `echo -n \`date\`` . "] Outputting filtered rearrangements...\n" if $opts{verbose};
     open my $fh, '>', $opts{filtered_bedpe} || die $!;
     $genome_of_cn_segs->print_rearrangements_in_bedpe($fh, %opts);
     close $fh;
 }
 else {
-    print STDERR "[" . `echo -n \`date\`` . "] Skipping rearrangement filtering outputting as -filtered_bedpe was not provided.\n" if $opts{verbose};
+    print STDERR '[' . `echo -n \`date\`` . "] Skipping rearrangement filtering outputting as -filtered_bedpe was not provided.\n" if $opts{verbose};
 }
 
 my $cn_fh = *STDOUT;
@@ -310,7 +310,7 @@ sub generate_rearrangement_groups {
     my $components_analysed = 0;
     for $component (@{$genome->connected_components}) {
         if ($opts{verbose} >= 2) {
-            print STDERR "Number of groups is now: " . scalar(keys(%rg_groups)) . ", components analysed: " . $components_analysed++ . "\n";
+            print STDERR 'Number of groups is now: ' . scalar(keys(%rg_groups)) . ', components analysed: ' . $components_analysed++ . "\n";
             print STDERR "Rearrangement paths and groups for:\n";
             print STDERR $component->to_s;
         }

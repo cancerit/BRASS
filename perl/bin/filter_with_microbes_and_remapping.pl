@@ -274,8 +274,8 @@ for my $i (0..$#regions) {
   my @cur_microbes = sort keys(%count_of_microbe);
   my ($microbe_counts, $microbes);
   if (@cur_microbes) {
-    $microbe_counts = join(",", @count_of_microbe{@cur_microbes});
-    $microbes = join(",", @cur_microbes);
+    $microbe_counts = join(',', @count_of_microbe{@cur_microbes});
+    $microbes = join(',', @cur_microbes);
   }
   else {
     $microbe_counts = 0;
@@ -368,7 +368,7 @@ sub get_remapping_score_differences {
 
   # Target region sequence
   my($target_fh, $target_fh_name) = tempfile('target_'.$identifier.'_XXXX', DIR => $TMP_DIR);
-  print($target_fh ">$tgt_chr:" . ($tgt_pos-$SLOP_FOR_GENOMIC_REGION) . "-" . ($tgt_pos+$SLOP_FOR_GENOMIC_REGION) . ":" . $tgt_dir . "\n");
+  print($target_fh ">$tgt_chr:" . ($tgt_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($tgt_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $tgt_dir . "\n");
   print($target_fh "$target_seq\n");
   $target_fh->flush();
 
@@ -376,7 +376,7 @@ sub get_remapping_score_differences {
 
   # Source region
   my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR);
-  print($source_fh ">$src_chr:" . ($src_pos-$SLOP_FOR_GENOMIC_REGION) . "-" . ($src_pos+$SLOP_FOR_GENOMIC_REGION) . ":" . $src_dir . "\n");
+  print($source_fh ">$src_chr:" . ($src_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($src_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $src_dir . "\n");
   print($source_fh "$source_seq\n");
   $source_fh->flush();
 
@@ -403,7 +403,7 @@ sub collect_reads_by_region {
   my($bam, $chr, $pos, $dir, $mate_chr, $mate_pos, $mate_dir) = @_;
   my ($start, $end, $mate_start, $mate_end);
   # Adjust regions of expected read positions based on BEDPE intervals
-  if ($dir eq "+") {
+  if ($dir eq '+') {
     $start = $pos - $SLOP_FOR_GETTING_READS;
     $end   = $pos + $SLOP_FOR_GETTING_READS;
   }
@@ -411,7 +411,7 @@ sub collect_reads_by_region {
     $start = $pos - $SLOP_FOR_GETTING_READS;
     $end   = $pos + $SLOP_FOR_GETTING_READS;
   }
-  if ($mate_dir eq "+") {
+  if ($mate_dir eq '+') {
     $mate_start = $mate_pos - $SLOP_FOR_GETTING_READS;
     $mate_end   = $mate_pos + $SLOP_FOR_GETTING_READS;
   }
@@ -421,15 +421,15 @@ sub collect_reads_by_region {
   }
 
   # Change strands to Perl-Sam format
-  $dir = ($dir eq "+" ? 1 : -1);
-  $mate_dir = ($mate_dir eq "+" ? 1 : -1);
+  $dir = ($dir eq '+' ? 1 : -1);
+  $mate_dir = ($mate_dir eq '+' ? 1 : -1);
 
   my @aln = $bam->get_features_by_location($chr, $start, $end);
 
   @aln = grep {
     !is_supplementary($_->flag) &&
-    $_->get_tag_values("FLAGS") =~ /PAIRED/ &&
-    $_->get_tag_values("FLAGS") !~ /UNMAPPED/ &&
+    $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
+    $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
     $_->strand    eq $dir &&
     $_->mate_seq_id eq $mate_chr &&
     (
@@ -449,7 +449,7 @@ sub print_read_seqs_to_file {
   for (@_) {
     my $read_name = $_->query->name;
     $read_name =~ s/:/_/g;
-    print($fh ">", $read_name, q{ }, $_->get_tag_values("FLAGS"), ":l\n");
+    print($fh '>', $read_name, q{ }, $_->get_tag_values('FLAGS'), ":l\n");
     print($fh $_->query->dna . "\n");
   }
   $fh->flush();
@@ -547,7 +547,7 @@ sub is_small_indel {
   my($chr1, $start1, $end1, $chr2, $start2, $end2, $dir1, $dir2) = @{$_[0]}[0..5, 8, 9];
   return(
     $chr1 eq $chr2 &&
-    $dir1 eq "+" && $dir2 eq "-" && # $dir1 ne $dir2 &&
+    $dir1 eq '+' && $dir2 eq '-' && # $dir1 ne $dir2 &&
     $start2 - $end1 <= $SMALL_INDEL_THRESHOLD
   );
 }

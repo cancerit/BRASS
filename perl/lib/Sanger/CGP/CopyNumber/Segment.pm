@@ -13,15 +13,15 @@ sub new {
 
     my $low_end = Sanger::CGP::CopyNumber::Segment::End->new(
         pos => $params{start},
-        end => "low",
+        end => 'low',
     );
     if ($params{low_end_bkpt} =~ /^(.+):([12])$/) {
         if (!exists($rg_of_id{$1})) {
             die "Rearrangement $1 found in RG_CNS file not found in the RG_BEDPE file!";
         }
-        $rg_end = ($2 == 1 ? "low_end" : "high_end");
-        $low_end->{boundary} = "rg";
-        if ($rg_of_id{$1}->{$rg_end}->dir eq "-") {
+        $rg_end = ($2 == 1 ? 'low_end' : 'high_end');
+        $low_end->{boundary} = 'rg';
+        if ($rg_of_id{$1}->{$rg_end}->dir eq '-') {
             $low_end->{bkpt} = $rg_of_id{$1}->{$rg_end};
             $rg_of_id{$1}->{$rg_end}->{segment_end} = $low_end;
         }
@@ -32,15 +32,15 @@ sub new {
 
     my $high_end = Sanger::CGP::CopyNumber::Segment::End->new(
         pos => $params{end},
-        end => "high",
+        end => 'high',
     );
     if ($params{high_end_bkpt} =~ /^(.+):([12])$/) {
         if (!exists($rg_of_id{$1})) {
             die "Rearrangement $1 found in RG_CNS file not found in the RG_BEDPE file!";
         }
-        $rg_end = ($2 == 1 ? "low_end" : "high_end");
-        $high_end->{boundary} = "rg";
-        if ($rg_of_id{$1}->{$rg_end}->dir eq "+") {
+        $rg_end = ($2 == 1 ? 'low_end' : 'high_end');
+        $high_end->{boundary} = 'rg';
+        if ($rg_of_id{$1}->{$rg_end}->dir eq '+') {
             $high_end->{bkpt} = $rg_of_id{$1}->{$rg_end};
             $rg_of_id{$1}->{$rg_end}->{segment_end} = $high_end;
         }
@@ -242,7 +242,7 @@ sub is_on_q_arm {
 
 sub segment_position {
     my $self = shift;
-    return $self->chr_name . ":" . $self->low_end->pos . "-" . $self->high_end->pos;
+    return $self->chr_name . ':' . $self->low_end->pos . '-' . $self->high_end->pos;
 }
 
 sub print {
@@ -258,16 +258,16 @@ sub print {
         "\t",
         $self->segment_position,
         sprintf("%.1f", ($self->high_end->pos - $self->low_end->pos + 1)/1000),
-        (defined($self->cn) ? sprintf("%.2f", $self->cn) : "NA"),
+        (defined($self->cn) ? sprintf("%.2f", $self->cn) : 'NA'),
         $self->n_win,
         (
             defined($self->low_end->bkpt) ?
-            get_matching_pattern('\d+$', $self->low_end->bkpt->id) . ":" . $self->low_end->bkpt->dir . ":" . substr($self->low_end->bkpt->end, 0, 1) :
+            get_matching_pattern('\d+$', $self->low_end->bkpt->id) . ':' . $self->low_end->bkpt->dir . ':' . substr($self->low_end->bkpt->end, 0, 1) :
             $self->low_end->boundary
         ),
         (
             defined($self->high_end->bkpt) ?
-            get_matching_pattern('\d+$', $self->high_end->bkpt->id) . ":" . $self->high_end->bkpt->dir . ":" . substr($self->high_end->bkpt->end, 0, 1) :
+            get_matching_pattern('\d+$', $self->high_end->bkpt->id) . ':' . $self->high_end->bkpt->dir . ':' . substr($self->high_end->bkpt->end, 0, 1) :
             $self->high_end->boundary
         )
     ) . "\n";

@@ -422,7 +422,7 @@ sub get_sample_types {
     my $self = shift;
 
     my $file = $self->{infile};
-    return unless ($file && -e "$file");
+    return unless ($file && -e $file);
 
     # get the #SAMPLE lines out of the header
     my $output = `grep #SAMPLE $file`;
@@ -443,7 +443,7 @@ sub get_sample_types {
         push @{$self->{samples}}, [$sample, $type];
     }
 
-    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . " " . $_->[1] . "\n"; } }
+    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . q{ } . $_->[1] . "\n"; } }
 }
 #-----------------------------------------------------------------------#
 #-----------------------------------------------------------------------#
@@ -462,7 +462,7 @@ sub process {
 
   my $infile = $self->{infile};
 
-  unless ($infile && -e "$infile") {
+  unless ($infile && -e $infile) {
     print "can not process. brassI marked groups infile (infile) not set or not found\n";
     die $!;
   }
@@ -774,7 +774,7 @@ sub _print_row {
 	my $names = '';
 	if ($sample_read_data->{$sample}->{read_names} && @{$sample_read_data->{$sample}->{read_names}}) {
 	    $count = scalar(@{$sample_read_data->{$sample}->{read_names}});
-	    $names = join ",", @{$sample_read_data->{$sample}->{read_names}};
+	    $names = join ',', @{$sample_read_data->{$sample}->{read_names}};
 	}
 
         # output just the tumour entries in bedpe format (zero referenced start positions)

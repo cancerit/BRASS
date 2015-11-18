@@ -378,7 +378,7 @@ sub _which {
 
 sub sanitised_sample_from_bam {
   my $sample = (PCAP::Bam::sample_name(shift))[0];
-  $sample =~ s/[^a-z0-9_-]/_/ig; # sanitise sample name
+  $sample =~ s/[^a-z0-9_\-.]/_/ig; # sanitise sample name
   return $sample;
 }
 

@@ -27,4 +27,4 @@ requires:
   Statistics::Basic: '1.6611'
   Template: '2.26'
   Test::Fatal: '0.013'
-version: v3.0.3
+version: v3.0.4

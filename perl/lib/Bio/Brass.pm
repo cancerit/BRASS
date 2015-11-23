@@ -46,7 +46,7 @@ our @EXPORT = qw(find_breakpoints find_dusty_vertices
 		 is_dusty get_isolated_bp_alignment get_isolated_bp_surrounding_region
 		 $VERSION);
 
-our $VERSION = '3.0.4';
+our $VERSION = '4.0.0';
 
 =head1 NAME
 
@@ -316,7 +316,7 @@ sub quintet_score {
 	print "Number of quintets: $nquintets\n" if $^D;
 	print "Quintet: @q" if $^D;
 
-	$g->set_vertex_attribute($_, "style", "filled") foreach @q;
+	$g->set_vertex_attribute($_, 'style', 'filled') foreach @q;
 
 	my %touched;
 	$touched{abs $_}++ foreach @q;
@@ -325,12 +325,12 @@ sub quintet_score {
 	    my @loop = _cruft($g, ($v >= 0)? $q[$v] : -$q[-$v]);
 	    next unless @loop;
 
-	    print " with v", abs $v, " cruft @loop" if $^D;
+	    print ' with v', abs $v, " cruft @loop" if $^D;
 	    $touched{abs $_}++ foreach @loop;
-	    $g->set_vertex_attribute($_, "style", "filled") foreach @loop;
-	    $g->set_vertex_attribute($loop[0], "fillcolor", "salmon");
-	    $g->set_vertex_attribute($loop[1], "fillcolor", "salmon");
-	    $g->set_vertex_attribute($loop[2], "fillcolor", "darksalmon");
+	    $g->set_vertex_attribute($_, 'style', 'filled') foreach @loop;
+	    $g->set_vertex_attribute($loop[0], 'fillcolor', 'salmon');
+	    $g->set_vertex_attribute($loop[1], 'fillcolor', 'salmon');
+	    $g->set_vertex_attribute($loop[2], 'fillcolor', 'darksalmon');
 	    $score -= 3;
 	}
 	print "\n" if $^D;
@@ -658,8 +658,8 @@ sub _get_alignment_summary {
     my ($graph, $v, $end) = @_;
 
     my $mappings = $graph->get_vertex_attribute($v, 'mappings');
-    return ("???", undef) unless ref($mappings) eq 'ARRAY';
-    return ("", undef) if scalar(@$mappings) == 0;
+    return ('???', undef) unless ref($mappings) eq 'ARRAY';
+    return ('', undef) if scalar(@$mappings) == 0;
     my $aln = $$mappings[0];
 
     my $chr = $aln->target->prettyname;
@@ -675,7 +675,7 @@ sub _get_alignment_summary {
     my $n = scalar(@$mappings) - 1;
     if ($n > 0) {
 	local $_ = ($n > 1)? 's' : '';
-	$chr .= " [score:" . $aln->score . ", $n other$_]";
+	$chr .= ' [score:' . $aln->score . ", $n other$_]";
     }
 
     return ($chr, $aln);
@@ -711,14 +711,14 @@ sub _breakpoint_summary {
 	$L = _compress_range($clipleft->end, $left->target->end);
 #$L .='{'._compress_range($left->target->end - $clip, $left->target->end).'}';
     }
-    else { $L = "unmappable" }
+    else { $L = 'unmappable' }
 
     if (defined $right) {
 	my $clipright = $right->target->clone()->trim($clip, 0);
 	$R = _compress_range($right->target->start, $clipright->start);
 #$R .='{'._compress_range($right->target->start, $right->target->start + $clip).'}';
     }
-    else { $R = "unmappable" }
+    else { $R = 'unmappable' }
 
     substr($text, 17) = "..." if length($text) > 20; # FIXME NUKE-ME
 
@@ -738,7 +738,7 @@ sub get_bp_alignment_text {
     my $category = (defined $aln1 && defined $aln3 &&
 		    $aln1->target->name   eq $aln3->target->name &&
 		    $aln1->target->strand eq $aln3->target->strand)?
-		   "indel" : "rearrangement";
+		   'indel' : 'rearrangement';
 
     local $_ = $name1 . _breakpoint_summary($text, $gap, $aln1, $aln3) . $name3;
     return wantarray? ($_, $category) : $_;
@@ -794,11 +794,11 @@ sub _breakpoint_summary_iso {
     my ($text, $gap, $left, $right) = @_;
     my ($tleft, $tright) = ($left->target, $right->target);
 
-    substr($text, 17) = "..." if length($text) > 20; # FIXME NUKE-ME
+    substr($text, 17) = '...' if length($text) > 20; # FIXME NUKE-ME
 
     if ($gap >= 0) {
 	$text = " $text " if $gap > 0;
-	return "  ". $tleft->end ."]$text\[". $tright->start ."  ";
+	return '  '. $tleft->end ."]$text\[". $tright->start .'  ';
     }
     else {
 	my $overlap = -$gap;
@@ -851,7 +851,7 @@ sub get_isolated_bp_alignment {
 	$left = $right;
     }
 
-    my $category = (scalar(keys %targets) > 1)? "rearrangement" : "indel";
+    my $category = (scalar(keys %targets) > 1)? 'rearrangement' : 'indel';
     return wantarray? ($output, $category) : $output;
 }
 
@@ -859,9 +859,9 @@ sub get_isolated_bp_surrounding_region {
     my ($graph, $v) = @_;
 
     my $mappings = $graph->get_vertex_attribute($v, 'mappings');
-    return "???" unless ref($mappings) eq 'ARRAY';
+    return '???' unless ref($mappings) eq 'ARRAY';
     my @mappings = @$mappings;
-    return "unmappable" if scalar(@mappings) == 0;
+    return 'unmappable' if scalar(@mappings) == 0;
     return undef if scalar(@mappings) < 2;
 
     my $query_text = $graph->get_vertex_contig($v);

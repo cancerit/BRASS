@@ -89,7 +89,7 @@ sub new {
 
     bless $self,$class;
 
-    $self->{debug} = 0;
+    $self->{debug} = $args{-debug} || 0;
 
     # default filter values (if not passed in)
     $self->{min_tumour_count_high} = 4;
@@ -392,8 +392,7 @@ sub samples {
 =cut
 
 sub sample_type {
-    my $self = shift;
-    my $sample = shift if @_;
+    my ($self, $sample) = @_;
     my $sample_type = '';
 
     foreach my $entry(@{$self->{samples}}) {
@@ -422,7 +421,7 @@ sub get_sample_types {
     my $self = shift;
 
     my $file = $self->{infile};
-    return unless ($file && -e "$file");
+    return unless ($file && -e $file);
 
     # get the #SAMPLE lines out of the header
     my $output = `grep #SAMPLE $file`;
@@ -443,7 +442,7 @@ sub get_sample_types {
         push @{$self->{samples}}, [$sample, $type];
     }
 
-    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . " " . $_->[1] . "\n"; } }
+    if ($self->{debug}) { foreach (@{$self->{samples}}) { print $_->[0] . q{ } . $_->[1] . "\n"; } }
 }
 #-----------------------------------------------------------------------#
 #-----------------------------------------------------------------------#
@@ -462,7 +461,7 @@ sub process {
 
   my $infile = $self->{infile};
 
-  unless ($infile && -e "$infile") {
+  unless ($infile && -e $infile) {
     print "can not process. brassI marked groups infile (infile) not set or not found\n";
     die $!;
   }
@@ -611,9 +610,27 @@ sub _check_row {
     print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_normal_count failed. skip\n" if ($self->{debug});
     return(0);
   }
+
+  my $is_small_foldback = 0;
+  $is_small_foldback = 1 if( $chrL eq $chrH
+                          && $strandL eq $strandH
+                          && (($H5 + $H3)/2) - (($L5 + $L3)/2) <= 5000); # gives the mid point of the group ranges
+
+  my $max_np_count = $self->{max_np_count};
+
   # Susie suggested this to limit loading too much rubbish - 25/7/13
-  if ($np_count > $self->{max_np_count}) {
-    print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n" if ($self->{debug});
+  # the +2 for small foldback by Yilong
+  $max_np_count+=2 if($is_small_foldback);
+
+  if ($np_count > $max_np_count) {
+    if ($self->{debug}) {
+      if($is_small_foldback) {
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count+2 failed (small foldback). skip\n";
+      }
+      else {
+        print "$chrL, $strandL, $L5, $L3, $chrH, $strandH, $H5, $H3. max_np_count failed. skip\n";
+      }
+    }
     return(0);
   }
   # Susie suggested this to limit loading too much rubbish - 27/4/12
@@ -673,14 +690,16 @@ sub _process_reads_and_repeats {
 
     next if($read_list =~ m/^[\.\-]$/);
 
-    my @read_list;
-    @read_list = split ';', $read_list if ($read_list);
-
     # make sure the same readname does not appear twice in the readlist
-    my $reads_hash = {};
-    foreach (@read_list) { $reads_hash->{$_} = 1; }
-    my @read_list2 = (sort {$a cmp $b} keys %$reads_hash);
-    $sample_read_data->{$sample2}->{read_names} = \@read_list2;
+    my %reads_hash;
+    if($read_list) {
+      for(split /;/, $read_list) {
+        $reads_hash{$_} = 1;
+      }
+    }
+    my @read_list = (sort {$a cmp $b} keys %reads_hash);
+    $sample_read_data->{$sample2}->{read_names} = \@read_list;
+
   }
   return($sample_read_data, $repeats);
 }
@@ -756,7 +775,7 @@ sub _print_row {
 	my $names = '';
 	if ($sample_read_data->{$sample}->{read_names} && @{$sample_read_data->{$sample}->{read_names}}) {
 	    $count = scalar(@{$sample_read_data->{$sample}->{read_names}});
-	    $names = join ",", @{$sample_read_data->{$sample}->{read_names}};
+	    $names = join ',', @{$sample_read_data->{$sample}->{read_names}};
 	}
 
         # output just the tumour entries in bedpe format (zero referenced start positions)

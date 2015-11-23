@@ -39,7 +39,7 @@ use lib "$FindBin::Bin/../lib";
 
 use strict;
 use warnings FATAL => 'all';
-use File::Copy qw(move);
+use File::Copy qw(copy move);
 
 use Sanger::CGP::BrassFilter::BrassMarkedGroups;
 use Sanger::CGP::BrassFilter::TransFlag;
@@ -83,6 +83,8 @@ my $max_normal_count = 0;
 my $max_np_sample_count = 0;
 my $max_np_count = 0;
 my $discard_if_repeats = 0;
+my $augment_off = 0;
+my $augment_only = 0;
 my $tumour = '';
 
 # for occurence counts
@@ -111,6 +113,8 @@ GetOptions( 'infile:s'               => \$infile,
 	    'occurs_only'            => \$occur_only,
 	    'cn_only'                => \$copyn_only,
 	    'blat_only'              => \$rblat_only,
+	    'augment_only'              => \$augment_only,
+	    'augment_off'               => \$augment_off,
 	    'seq_depth:s'            => \$seq_depth,
 	    'seq_depth_threshold:s'  => \$seq_depth_threshold,
 	    'distance_threshold:s'   => \$distance_threshold,
@@ -137,7 +141,8 @@ GetOptions( 'infile:s'               => \$infile,
 	    'ref:s'                  => \$ref,
 	    'blat:s'                 => \$blat_script,
 	    'minIdentity:s'          => \$minIdentity,
-	    'help'                   => \$help);
+	    'help'                   => \$help,
+	    'debug'                  => \$debug);
 
 # check inputs
 if ($help) { usage(); }
@@ -159,10 +164,18 @@ const my $DISCARD_IF_REPEATS => $discard_if_repeats;
 
 my $do_process = 1;
 
-if ($trans_only) { $do_process = 0; $do_trans = 1; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 0; }
-if ($occur_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 1; $do_copynumber = 0; $do_range_blat = 0; }
-if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 1; $do_range_blat = 0; }
-if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
+if($augment_only) {
+  $do_process = 0;
+}
+if($augment_off) {
+  ($do_trans,$do_occurrences,$do_copynumber,$do_range_blat) = (0,0,0,0);
+}
+else {
+  if ($trans_only) { $do_process = 0; $do_trans = 1; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 0; }
+  if ($occur_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 1; $do_copynumber = 0; $do_range_blat = 0; }
+  if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 1; $do_range_blat = 0; }
+  if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
+}
 
 # process core information and print to outfile
 if ($do_process) {
@@ -170,17 +183,16 @@ if ($do_process) {
   cleanup($outfile);
 }
 
-# check for translocations
-if ($do_trans) { update_translocations($outfile, $bal_trans_field, $inv_field, $bal_distance, $inv_distance); }
-
-# count the occurrences fields
-if ($do_occurrences) { update_occurrences($outfile, $occL_field, $occH_field, $occurs_within); }
-
-# check for copynumber changepoints
-if ($do_copynumber)  { update_cn($outfile, $cn_field, $cn_within, $infile_ascat, $infile_ngs, $infile_bb, $cn_one_end_hit); }
-
-# check for L v H range blat scores
-if ($do_range_blat)  { update_blat($outfile, $blat_field, $blat_script, $ref, $minIdentity); }
+unless($augment_off) {
+  # check for translocations
+  if ($do_trans) { update_translocations($outfile, $bal_trans_field, $inv_field, $bal_distance, $inv_distance); }
+  # count the occurrences fields
+  if ($do_occurrences) { update_occurrences($outfile, $occL_field, $occH_field, $occurs_within); }
+  # check for copynumber changepoints
+  if ($do_copynumber)  { update_cn($outfile, $cn_field, $cn_within, $infile_ascat, $infile_ngs, $infile_bb, $cn_one_end_hit); }
+  # check for L v H range blat scores
+  if ($do_range_blat)  { update_blat($outfile, $blat_field, $blat_script, $ref, $minIdentity); }
+}
 
 #-----------------------------------------------------------------------------#
 sub process {
@@ -200,7 +212,8 @@ sub process {
 						    -max_normal_count     => $MAX_NORMAL_COUNT,
 						    -max_np_sample_count  => $MAX_NP_SAMPLE_COUNT,
 						    -max_np_count         => $MAX_NP_COUNT,
-						    -discard_if_repeats   => $DISCARD_IF_REPEATS);
+						    -discard_if_repeats   => $DISCARD_IF_REPEATS,
+						    -debug => $debug,);
 
     # process it
     $file_o->process();
@@ -214,6 +227,7 @@ sub process {
 sub cleanup {
   my ($outfile) = @_;
   $outfile = "$outfile.bedpe" unless($outfile =~ m/\.bedpe$/);
+  copy($outfile, $outfile.'.preclean');
   my $new_out = "$outfile.tmp";
 
   my $cleanup = Sanger::CGP::BrassFilter::Cleanup->new(-infile  => $outfile,
@@ -288,7 +302,7 @@ sub update_cn {
 sub update_blat {
     my ($file, $blat_field, $blat_script, $ref, $minIdentity) = @_;
 
-    unless ($ref && (-e "$ref")) {
+    unless ($ref && (-e $ref)) {
 	print "WARN: can not do LvH blat flagging. No valid reference file supplied\n";
 	return;
     }
@@ -296,7 +310,7 @@ sub update_blat {
     if ($blat_script) {
 	unless ((-e "$blat_script") && ($blat_script =~ /blat/)) {
 	    my $path_to_blat = which($blat_script);
-	    unless ($path_to_blat && (-e "$path_to_blat") && ($path_to_blat =~ /blat/)) {
+	    unless ($path_to_blat && (-e $path_to_blat) && ($path_to_blat =~ /blat/)) {
 		print "WARN: can not do LvH blat flagging. No valid blat executable supplied\n";
 		return;
 	    }
@@ -354,7 +368,7 @@ options...
                              (above seq_depth threshold) (default = 4)
     -max_normal_count      : filter flag. Discard rearrangements which have more than this number of reads in the matched normal (default = 0)
     -max_np_sample_count   : filter flag. Discard rearrangements which have more than this number of unmatched normal panel samples with reads  (default = 0)
-    -max_np_count          : filter flag. Discard rearrangements which have more than this number of reads in the unmatched normal panel samples (default = 0)
+    -max_np_count          : filter flag. Discard rearrangements which have more than this number of reads in the unmatched normal panel samples (default = 0, +1 for foldback <= 5kb)
     -discard_if_repeats    : filter flag. Discard rearrangements which are associated with known repeats (default = 0)
 
     -bal_trans_field       : which number field of the bedpe output file the balanced translocation flag should go into (default = 21)

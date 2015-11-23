@@ -59,6 +59,8 @@ sub run {
   my @header;
   my $header_done = 0;
   my @good_seqs;
+  my $p;
+  $p = $options->{'prefix'} if(exists $options->{'prefix'});
   while(my $r1 = <>) {
     if($r1 =~ m/^\@/) {
       push @header, $r1;
@@ -79,18 +81,23 @@ sub run {
     next unless(first { $rnext eq $_ } @good_seqs);
     my $mapq2 = (split /\t/, $r2)[4];
     next if($mapq2 < $MIN_MAPQ);
+
     if($options->{'np'}) { # clear pbq to save space
       my @info = split /\t/, $r1;
       $info[10] = '*';
-      print join qq{\t}, @info;
+      $r1 = join qq{\t}, @info;
       @info = split /\t/, $r2;
       $info[10] = '*';
-      print join qq{\t}, @info;
+      $r2 = join qq{\t}, @info;
     }
-    else {
-      print $r1;
-      print $r2;
+
+    if($p) {
+      $r1 =~ s/(\tRG:Z:)([^\t]+)/${1}${p}${2}/;
+      $r2 =~ s/(\tRG:Z:)([^\t]+)/${1}${p}${2}/;
     }
+
+    print $r1;
+    print $r2;
   }
 }
 
@@ -174,6 +181,12 @@ sub process_header {
       $row =~ s/\tSM:[^\t]+/\tSM:NP_$sample/;
     }
 
+    # now all correlation with BAS file complete we can modify the RGID if requested
+    if(exists $options->{'prefix'}) {
+      my $p = $options->{'prefix'};
+      $row =~ s/(\tID:)([^\t]+)/${1}${p}${2}/;
+    }
+
     $new_header .= $row;
   }
 
@@ -202,6 +215,7 @@ sub setup {
   GetOptions( 'h|help'        => \$opts{'h'},
               'm|man'         => \$opts{'m'},
               'b|bas=s'       => \$opts{'bas'},
+              'p|prefix:s'       => \$opts{'prefix'},
               'np|norm_panel' => \$opts{'np'},
               'e|exclude:s'   => \$opts{'exclude'},
   ) or pod2usage(1);
@@ -213,6 +227,7 @@ sub setup {
   pod2usage(-message => qq{Empty file: $opts{bas}}, -verbose => 1) unless(-s $opts{'bas'});
 
   delete $opts{'exclude'} unless(defined $opts{'exclude'});
+  delete $opts{'prefix'} unless(defined $opts{'prefix'});
 
   return \%opts;
 }
@@ -229,7 +244,7 @@ Add max insert and exclude reads not mapped to expected refs.
 brassI_prep_bam.pl [options]
 
   Example
-    brassI_prep_bam.pl -c 4 -r some/genome.fa[.gz] -o myout -t tumour.bam -n normal.bam
+   ... | brassI_prep_bam.pl -b my.bam.bas -e NC_007605,hs37d5,GL% | <some digesting process>
 
 =head1 OPTIONS
 
@@ -237,6 +252,7 @@ brassI_prep_bam.pl [options]
     -bas          -b    Bas statistics file for BAM being streamed
 
   Optional
+    -prefix       -p    Prefix all readgroup IDs with this text to force unique between samples, (e.g. T, N)
     -exclude      -e    Exclude reads where self and mate are mapped to this ref name (or unmapped).
                          - csv, allows wild card of '%'
     -norm_panel   -np   For generation of normal panel input only

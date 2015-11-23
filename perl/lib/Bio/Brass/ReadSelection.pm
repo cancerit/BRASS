@@ -82,6 +82,7 @@ sub new {
     $self->{aligner_mode} = $aligner_mode;
 
     my ($bam, $bai) = split /:/, $filename;
+    my $bas;
     if (defined $bai && -e $bam && -e $bai) {
 	# If both files exist, treat this as BAMFILE:BAIFILE explicit syntax
     }
@@ -90,7 +91,7 @@ sub new {
 	undef $bam;  undef $bai;
     }
     else {
-	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= ".bai";
+	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= '.bai';
 	if (-e $bam && -e $bai) {
 	    # Index file is .bai, so Bio::DB::Sam will need symlinks
 	}
@@ -101,6 +102,7 @@ sub new {
     }
 
     if (defined $bam) {
+  $bas = File::Spec->rel2abs($bam.'.bas') if(-e $bam.'.bas');
 	$bam = File::Spec->rel2abs($bam);
 	$bai = File::Spec->rel2abs($bai);
 
@@ -114,6 +116,11 @@ sub new {
 	    unlink "$base.bam";  # Ignore errors during destruction
 	    croak "can't symlink $bai to $base.bam.bai: $!";
 	}
+	unless (symlink $bas, "$base.bam.bas") {
+	    unlink "$base.bam";  # Ignore errors during destruction
+	    unlink "$base.bam.bai";  # Ignore errors during destruction
+	    croak "can't symlink $bas to $base.bam.bas: $!";
+  }
 
 	$self->{unlink_base} = $base;
 	$filename = "$base.bam";

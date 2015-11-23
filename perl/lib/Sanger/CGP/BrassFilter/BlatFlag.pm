@@ -68,6 +68,7 @@ use strict;
 use File::Copy qw(move);
 use Bio::DB::Sam;
 use File::Temp qw(tempdir);
+use File::Spec;
 
 use Bio::Brass;
 our $VERSION = Bio::Brass->VERSION;
@@ -223,7 +224,7 @@ sub process {
 sub _check_file {
     my ($self, $file, $ref) = @_;
 
-    unless ($file && (-e "$file")) {
+    unless ($file && (-e $file)) {
 	print "file $file not found\n";
 	return(0);
     }
@@ -275,9 +276,6 @@ sub _read_data {
 
     my $data = {};
 
-    # load an indexed fasta file
-    my $fai = Bio::DB::Sam::Fai->load( $self->{ref} );
-
     open my $fh, "<$file" or die $!;
     while (my $line = <$fh>) {
 	next if ($line =~ /^\s*#/);
@@ -286,75 +284,62 @@ sub _read_data {
 	my ($chr1,$start1,$end1,$chr2,$start2,$end2,$name,$score,$strand1,$strand2) = $self->_check_line($line);
 	return(0) unless ($chr1);
 
-	my $Lrange = "$chr1:" . ($start1 + 1) . "-$end1";
-	my $Hrange = "$chr2:" . ($start2 + 1) . "-$end2";
-
-	my $Lseq = $fai->fetch("$Lrange");
-	my $Hseq = $fai->fetch("$Hrange");
-	$self->{data}->{$name}->{Lseq} = $Lseq;
-	$self->{data}->{$name}->{Hseq} = $Hseq;
-	$self->{data}->{$name}->{Lrange} = $Lrange;
-	$self->{data}->{$name}->{Hrange} = $Hrange;
+	$self->{data}->{$name}->{Lrange} = "$chr1:" . ($start1 + 1) . "-$end1";
+	$self->{data}->{$name}->{Hrange} = "$chr2:" . ($start2 + 1) . "-$end2";
     }
     close($fh);
 
     return(1);
 }
 #--------------------------------------------------------------------------------------#
+
 sub _get_hits {
-    my $self = shift;
+  my $self = shift;
 
-    my $blat = $self->{blat};
-    my $minIdentity = $self->{minIdentity};
+  my $blat = $self->{blat};
+  my $minIdentity = $self->{minIdentity};
 
-    my $tempdir = tempdir( 'BlatFlagXXXXXX', CLEANUP => 1 );
-    my $blat_outfile = "$tempdir/blatout";
+  my $tempdir = tempdir( 'BlatFlagXXXXXX', DIR => File::Spec->tmpdir(), CLEANUP => 1 );
+  my $Lfile = "$tempdir/Lrange.fa";
+  my $Hfile = "$tempdir/Hrange.fa";
 
-    foreach my $name(keys %{$self->{data}}) {
+  # load an indexed fasta file
+  my $fai = Bio::DB::Sam::Fai->load( $self->{ref} );
 
-	my $Lseq = $self->{data}->{$name}->{Lseq};
-	my $Hseq = $self->{data}->{$name}->{Hseq};
-	my $Lrange = $self->{data}->{$name}->{Lrange};
-	my $Hrange = $self->{data}->{$name}->{Hrange};
+  foreach my $name(keys %{$self->{data}}) {
+    my $Lrange = $self->{data}->{$name}->{Lrange};
+    my $Hrange = $self->{data}->{$name}->{Hrange};
 
-	my $Lfile = "$tempdir/Lrange.fa";
-	my $Hfile = "$tempdir/Hrange.fa";
-	open my $fhl, ">$Lfile" or die $!;
-	open my $fhh, ">$Hfile" or die $!;
-	print $fhl ">$Lrange\n" . $Lseq . "\n";
-	print $fhh ">$Hrange\n" . $Hseq . "\n";
-	close $fhl;
-	close $fhh;
+    open my $fhl, ">$Lfile" or die $!;
+    print $fhl sprintf ">%s\n%s\n", $Lrange, $fai->fetch($Lrange);
+    close $fhl;
 
-	my $output = `$blat $Lfile $Hfile -minIdentity=$minIdentity  $blat_outfile`;
-	if ($output && $self->{debug}) { print "$output"; }
+    open my $fhh, ">$Hfile" or die $!;
+    print $fhh sprintf ">%s\n%s\n", $Hrange, $fai->fetch($Hrange);
+    close $fhh;
 
-	# get top score
-	open my $fh,  "<$blat_outfile" or die $!;
-	my $line;
-	while($line = <$fh>) {
-	    next unless ($line =~ /$Lrange/);
-	    chomp $line;
-	    last;
-	}
-	close $fh or die $!;
+    my $command = "$blat $Lfile $Hfile -noHead -minIdentity=$minIdentity /dev/stdout";
+    my $score = 0;
+    my ($pid, $process);
+    $pid = open $process, q{-|}, $command or die 'Could not fork: '.$!;
+    while(my $line = <$process>) {
+      next unless($line =~ m/$Lrange/);
+      my @hit = split /\t/, $line; # take the top blat hit
+      $score = $hit[0] - $hit[1];
+      last;
+    }
+    close $process;
 
-
-  my $score = 0;
-  if(defined $line) {
-	  my @hit = split " ", $line; # take the top blat hit
-	  $score = $hit[0] - $hit[1];
-	}
-	$self->{data}->{$name}->{score} = $score;
-	if ($self->{debug}) { print "$name | SCORE:$score\n"; }
-
-	unlink $blat_outfile or die $!;
+    $self->{data}->{$name}->{score} = $score;
+    if ($self->{debug}) { print "$name | SCORE:$score\n"; }
+  }
+  # save some file ops, only delete the L/H files at end of loop
 	unlink $Lfile or die $!;
 	unlink $Hfile or die $!;
-    }
 
-    return(1);
+  return(1);
 }
+
 #-----------------------------------------------------------------------#
 
 sub _print_file {

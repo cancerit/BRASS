@@ -82,6 +82,7 @@ if [ "$#" -ne "1" ] ; then
 fi
 
 INST_PATH=$1
+PERL_ONLY=$2
 
 CPU=`grep -c ^processor /proc/cpuinfo`
 if [ $? -eq 0 ]; then

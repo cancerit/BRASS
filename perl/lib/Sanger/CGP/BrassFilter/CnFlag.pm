@@ -270,7 +270,7 @@ sub process {
 sub _check_file {
     my ($self, $file, $cn) = @_;
 
-    unless ($file && (-e "$file")) {
+    unless ($file && (-e $file)) {
 	print "file $file not found\n";
 	return(0);
     }

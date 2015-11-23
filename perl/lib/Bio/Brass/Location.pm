@@ -91,7 +91,7 @@ sub clone {
 sub to_string {
     my ($self) = @_;
     my $len = CORE::length $$self[_SEQ];
-    my $name = exists $$self[_NAME]? "$$self[_NAME]: " : "";
+    my $name = exists $$self[_NAME]? "$$self[_NAME]: " : q{};
     my ($start, $end) = ($self->start, $self->end);
     return "{$name$start--$end $$self[_OFFSET]+[$$self[_POS],$$self[_LIM]) ${len}bp}";
 }
@@ -120,7 +120,7 @@ sub seq {
 sub prettyname {
     my ($self, $prefix) = @_;
 
-    local $_ = (defined $prefix)? $prefix : "Chr.";
+    local $_ = (defined $prefix)? $prefix : 'Chr.';
     $_ .= $$self[_NAME];
     $_ .= '-' unless $self->_isforward();
     return $_;

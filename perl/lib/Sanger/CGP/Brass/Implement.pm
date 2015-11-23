@@ -55,7 +55,7 @@ use File::Copy qw(move);
 use PCAP::Threaded;
 use PCAP::Bam;
 
-const my $ASSEMBLE_SPLIT => 30;
+const my $ASSEMBLE_SPLIT => 40;
 
 ## input
 const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
@@ -85,7 +85,7 @@ const my $REDIR_GROUP => q{(%s) > %s};
 #/software/CGP/projects/brass/bin/brass-group  | /nfs/users/nfs_k/kr2/git/brass/perl/bin/filter_groups.pl -t PD3904a > output.rearr
 
 ## filter
-const my $BRASS_FILTER => q{ -seq_depth 25.1 -min_tumour_count_high 3 -blat %s -ref %s -tumour %s -infile %s -outfile %s};
+const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile %s -outfile %s -min_tumour_count_high %d};
 # path/to/blat, genome.fa, tumour name, groups_in, groups_out, ascat
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 
@@ -254,7 +254,8 @@ sub group {
 
   my $command = _which('brass-group');
   $command .= sprintf $BRASS_GROUP, $options->{'depth'};
-  $command .= ' -F '. $options->{'repeats'} if(exists $options->{'repeats'});
+  $command .= ' -n '.$options->{'mingroup'};
+  $command .= ' -F '.$options->{'repeats'} if(exists $options->{'repeats'});
   $command .= " $tumour $normal";
   $command .= ' | ';
   $command .= "$^X ";
@@ -307,7 +308,9 @@ sub filter {
                                       $decomp,
                                       $options->{'safe_tumour_name'},
                                       $groups,
-                                      $filtered;
+                                      $filtered,
+                                      $options->{'minkeep'};
+  $brassI_filter .= ' -augment_off';
   $brassI_filter .= " -ascat $options->{ascat}" if(exists $options->{'ascat'} && defined $options->{'ascat'});
 
   my $bedpe = $filtered.'.bedpe';
@@ -344,12 +347,13 @@ sub filter {
   my $remap_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r5');
   my $tumour_brm = File::Spec->catfile($tmp, sanitised_sample_from_bam($options->{'tumour'})).'.brm.bam';
   my $remap_micro = $^X.' '._which('filter_with_microbes_and_remapping.pl');
-  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s',
+  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d',
                           $options->{'viral'},
                           $options->{'microbe'},
                           $score_file,
                           File::Spec->catdir($tmp,'remap_micro'),
-                          'ssearch36';
+                          'ssearch36',
+                          $options->{'threads'};
   $remap_micro .= sprintf ' %s %s %s %s',
                           $abs_bkp_file,
                           $tumour_brm,
@@ -373,6 +377,7 @@ sub filter {
   $match_lib .= ' -filtered_bedpe '.$match_lib_file;
   $match_lib .= ' -acf '.$options->{'Acf'};
   $match_lib .= ' -ploidy '.$options->{'Ploidy'};
+  $match_lib .= ' -min_cn_change 0.3';
   $match_lib .= ' -filt_cn_out '.$filtered_cn;
   $match_lib .= " $remap_file";
   $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns';
@@ -382,6 +387,17 @@ sub filter {
   $final .= ' '.File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
   $final .= ' '.$match_lib_file;
   $final .= ' '.$final_file;
+
+  my $add_blat = "$^X ";
+  $add_blat .= _which('brassI_filter.pl');
+  $add_blat .= sprintf $BRASS_FILTER, $blat,
+                                      $decomp,
+                                      $options->{'safe_tumour_name'},
+                                      $final_file,
+                                      $final_file,
+                                      $options->{'minkeep'};
+  $add_blat .= ' -augment_only';
+  $add_blat .= " -ascat $options->{ascat}" if(exists $options->{'ascat'} && defined $options->{'ascat'});
 
   #[$brassI_filter, $met_hasting, $del_fb, $merge_grps, $abs_bkp, $remap_micro, $rg_cns, $match_lib, $final]
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'brassI_filter')) {
@@ -433,6 +449,11 @@ sub filter {
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'final')) {
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $final, 'final');
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'final');
+    sleep 5;
+  }
+  unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'add_blat')) {
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $add_blat, 'add_blat');
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'add_blat');
     sleep 5;
   }
 }

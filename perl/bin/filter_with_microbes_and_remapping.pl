@@ -40,6 +40,7 @@ my $VIRUS_DB = q{};
 my $BAC_DB_STUB = q{};
 my $TMP_DIR = q{};
 my $SCORE_ALG = 'ssearch36';
+my $SEARCH_CORES = 1;
 my $MIN_SUPPORT = 3;
 GetOptions(
   'blat_mapping_threshold=i' => \$BLAT_MAPPING_THRESHOLD,
@@ -54,6 +55,7 @@ GetOptions(
   'bacterial_db_stub=s' => \$BAC_DB_STUB,
   'tmpdir=s' => \$TMP_DIR,
   'score_alg=s' => \$SCORE_ALG,
+  'search_cores=i' => \$SEARCH_CORES,
   'min_support=s' => \$MIN_SUPPORT,
 );
 
@@ -96,7 +98,7 @@ close $IN;
 # viral genomes.
 print STDERR "Performing abnormally paired reads remapping...\n";
 my (@low_end_remap_score, @high_end_remap_score, @low_end_footprint, @high_end_footprint);
-my ($all_reads_fh, $all_reads_file_name) = tempfile('allreads_XXXXXX', DIR => $TMP_DIR);
+my ($all_reads_fh, $all_reads_file_name) = tempfile('allreads_XXXXXX', DIR => $TMP_DIR, UNLINK=>1);
 my %rg_id_of_read;
 
 for my $i(0..$#regions) {
@@ -318,7 +320,7 @@ for my $i (0..$#regions) {
 
 # Clean-up
 close $all_reads_fh or warn $!;
-remove_tree($TMP_DIR) if(defined $TMP_DIR);
+#remove_tree($TMP_DIR) if(defined $TMP_DIR);
 exit 0;
 
 sub blat_db {
@@ -363,11 +365,11 @@ sub get_remapping_score_differences {
   # Source region and reads are never revcomped. Target region
   # is revcomped if strands are the same in source and target.
 
-  my($seq_fh, $seq_fh_name) = tempfile('seq_'.$identifier.'_XXXX', DIR => $TMP_DIR);
+  my($seq_fh, $seq_fh_name) = tempfile('seq_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
   print_read_seqs_to_file($seq_fh, @{$reads_ref});
 
   # Target region sequence
-  my($target_fh, $target_fh_name) = tempfile('target_'.$identifier.'_XXXX', DIR => $TMP_DIR);
+  my($target_fh, $target_fh_name) = tempfile('target_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
   print($target_fh ">$tgt_chr:" . ($tgt_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($tgt_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $tgt_dir . "\n");
   print($target_fh "$target_seq\n");
   $target_fh->flush();
@@ -375,7 +377,7 @@ sub get_remapping_score_differences {
   my $target_scores = $SCORE_SUB->($target_fh_name, $seq_fh_name, $TMP_DIR);
 
   # Source region
-  my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR);
+  my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
   print($source_fh ">$src_chr:" . ($src_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($src_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $src_dir . "\n");
   print($source_fh "$source_seq\n");
   $source_fh->flush();
@@ -384,11 +386,8 @@ sub get_remapping_score_differences {
 
   # don't die here, we can live with this as the whole tree will be deleted later
   close $seq_fh or warn $!;
-  unlink $seq_fh_name;
   close $source_fh or warn $!;
-  unlink $source_fh_name;
   close $target_fh or warn $!;
-  unlink $target_fh_name;
 
   my @diffs;
   for(keys %{$source_scores}) {
@@ -483,20 +482,31 @@ sub pairwise_align_scores_ssearch36 {
   $seq_file =~ s/^$tmpdir\///;
 
   my $ssearch36 = "cd $tmpdir;";
-  $ssearch36 .= sprintf q{%s -r '2/-2' -f '-6' -g '-1' -n -m 9 -XI -3 %s %s},
+  $ssearch36 .= sprintf q{%s -r '2/-2' -f '-6' -g '-1' -n -m 9 -XI -3 -T %d %s %s},
                         Sanger::CGP::Brass::Implement::_which('ssearch36'),
+                        $SEARCH_CORES,
                         $seq_file,
                         $target_file;
 
   my %scores;
+  warn $ssearch36."\n";
   my $pid = open my $process, q{-|}, $ssearch36 or die 'Could not fork: '.$!;
   while(my $line = <$process>) {
-    next unless($line =~ m/^>>([^>][^[:space:]]+)/);
+    next unless($line =~ m/^>>>(.+),/);
+    my @lines = ($line);
     my $name = $1;
-    $line = <$process>;
+    $line = <$process>; # blank line
+    push @lines, $line;
+    $line = <$process>; # '>>' line
+    push @lines, $line;
+    $line = <$process>; # 'sw-opt' line
+    push @lines, $line;
+
+    die qq{Failed to parse ssearch36 output, expected:\n>>>...\n\n>>...\n s-opt...\n\ngot:\n}.(join q{}, @lines)."\n" unless($lines[-2] =~ m/^>>[^>]/ && $lines[-1] =~ m/^ s-w opt:[[:space:]]+([[:digit:]]+)/);
     chomp $line;
     my ($sw_score) = $line =~ m/s-w opt:[[:space:]]+([[:digit:]]+)/;
     $scores{$name} = $sw_score if(!exists $scores{$name} || $scores{$name} < $sw_score);
+
   }
   close $process || die $!;
   return \%scores;
@@ -507,7 +517,7 @@ sub pairwise_align_scores_emboss {
   my $seq_file = shift;
   my $scores_file = "$target_file.scores";
 
-  my ($dna_fh, $dna_matrix) = tempfile('dnaMat_XXXXXX', DIR => $TMP_DIR);
+  my ($dna_fh, $dna_matrix) = tempfile('dnaMat_XXXXXX', DIR => $TMP_DIR, UNLINK=>1);
   print $dna_fh $DNA_MAT;
   $dna_fh->flush;
 
@@ -527,7 +537,6 @@ sub pairwise_align_scores_emboss {
 
   unlink($scores_file);
   close $dna_fh or warn $!;
-  unlink $dna_matrix;
 
   my %scores;
   for my $line(@lines) {

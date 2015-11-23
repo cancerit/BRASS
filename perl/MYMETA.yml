@@ -23,8 +23,10 @@ requires:
   Graph: '0.96'
   Graph::Writer::Dot: '2.06'
   IPC::Run: '0.92'
+  Math::Combinatorics: '0.09'
+  Number::Format: '1.75'
   Pod::Coverage: '0.23'
   Statistics::Basic: '1.6611'
   Template: '2.26'
   Test::Fatal: '0.013'
-version: v3.0.4
+version: v4.0.0

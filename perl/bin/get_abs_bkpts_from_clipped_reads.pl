@@ -63,6 +63,8 @@ for (@lines) {
   }
 }
 
+my %no_end_reads;
+
 print STDERR "Collecting supporting read pairs for each region...\n";
 my (%low_end_reads_of_rg, %high_end_reads_of_rg);
 for (@lines) {
@@ -78,7 +80,8 @@ for (@lines) {
       $F[3], $h, $F[9],
     );
   if (@reads == 0) {
-    die "No low_end reads for record $F[6]\n";
+    $no_end_reads{$F[6]}{'low'} = 1;
+    warn "No low_end reads for record $F[6]\n";
   }
   $low_end_reads_of_rg{$F[6]} = [@reads];
 
@@ -89,7 +92,8 @@ for (@lines) {
     $F[0], $l, $F[8],
   );
   if (@reads == 0) {
-    die "No high_end reads for record $F[6]\n";
+    $no_end_reads{$F[6]}{'high'} = 1;
+    warn "No high_end reads for record $F[6]\n";
   }
   $high_end_reads_of_rg{$F[6]} = [@reads];
 }
@@ -407,20 +411,51 @@ for (@lines) {
     $high_end_bkpt = ($high_end_low_clip_count >= $CLIPPED_READS_NEEDED ? $high_end_low_clip_pos : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}));
   }
 
+  my ($low_end_low_clip, $low_end_high_clip, $low_end_read_uniq, $low_end_read_count);
+  my ($high_end_low_clip, $high_end_high_clip, $high_end_read_uniq, $high_end_read_count);
+
+  if(exists $no_end_reads{$F[6]}{'low'}) {
+    $low_end_bkpt = int abs (($F[1] + $F[2])/2);
+    $low_end_low_clip = $low_end_bkpt.' (0)';
+    $low_end_high_clip = $low_end_bkpt.' (0)';
+    $low_end_read_uniq = q{};
+    $low_end_read_count = 0;
+  }
+  else {
+    $low_end_low_clip = ($low_end_low_clip_count   >= $CLIPPED_READS_NEEDED ? "$low_end_low_clip_pos ($low_end_low_clip_count)"   : lowest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)');
+    $low_end_high_clip = ($low_end_high_clip_count  >= $CLIPPED_READS_NEEDED ? "$low_end_high_clip_pos ($low_end_high_clip_count)"   : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)');
+    $low_end_read_uniq = join(',', unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}}));
+    $low_end_read_count = scalar(unique(@{$low_end_reads_of_rg{$F[6]}}));
+  }
+
+  if(exists $no_end_reads{$F[6]}{'high'}) {
+    $high_end_bkpt = int abs (($F[4] + $F[5])/2);
+    $high_end_low_clip = $high_end_bkpt.' (0)';
+    $high_end_high_clip = $high_end_bkpt.' (0)';
+    $high_end_read_uniq = q{};
+    $high_end_read_count = 0;
+  }
+  else {
+    $high_end_low_clip = ($high_end_low_clip_count  >= $CLIPPED_READS_NEEDED ? "$high_end_low_clip_pos ($high_end_low_clip_count)"   : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)');
+    $high_end_high_clip = ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? "$high_end_high_clip_pos ($high_end_high_clip_count)" : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)');
+    $high_end_read_uniq = join(',', unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}}));
+    $high_end_read_count = scalar(unique(@{$high_end_reads_of_rg{$F[6]}}));
+  }
+
   print $outfh join(
     "\t",
     @F,
     $low_end_bkpt,
     $high_end_bkpt,
-    ($low_end_low_clip_count   >= $CLIPPED_READS_NEEDED ? "$low_end_low_clip_pos ($low_end_low_clip_count)"   : lowest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)'),
-    ($low_end_high_clip_count  >= $CLIPPED_READS_NEEDED ? "$low_end_high_clip_pos ($low_end_high_clip_count)"   : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)'),
-    ($high_end_low_clip_count  >= $CLIPPED_READS_NEEDED ? "$high_end_low_clip_pos ($high_end_low_clip_count)"   : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)'),
-    ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? "$high_end_high_clip_pos ($high_end_high_clip_count)" : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)'),
-    join(',', unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}})),
-    scalar(unique(@{$low_end_reads_of_rg{$F[6]}})),
+    $low_end_low_clip,
+    $low_end_high_clip,
+    $high_end_low_clip,
+    $high_end_high_clip,
+    $low_end_read_uniq,
+    $low_end_read_count,
     ($F[8] eq '+' ? $low_end_high_clip_count : $low_end_low_clip_count),
-    join(',', unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}})),
-    scalar(unique(@{$high_end_reads_of_rg{$F[6]}})),
+    $high_end_read_uniq,
+    $high_end_read_count,
     ($F[9] eq '+' ? $high_end_high_clip_count : $high_end_low_clip_count),
   ),"\n";
 }
@@ -487,7 +522,9 @@ sub collect_reads_by_region {
 }
 
 sub lowest_pos_of_reads {
-  return min(map { $_->start } @{ shift @_ });
+  my $r = shift @_;
+  return min(map { $_->start } @{ $r }) if(@{$r} > 0);
+  return 0;
 }
 
 sub mode_of_low_clip_pos_of_reads {
@@ -509,7 +546,9 @@ sub mode_of_low_clip_pos_of_reads {
 }
 
 sub highest_pos_of_reads {
-  return max(map { $_->end } @{ shift @_ });
+  my $r = shift @_;
+  return max(map { $_->end } @{ $r }) if(@{$r} > 0);
+  return 0;
 }
 
 sub mode_of_high_clip_pos_of_reads {

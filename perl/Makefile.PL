@@ -43,15 +43,24 @@ WriteMakefile(
   VERSION_FROM  => 'lib/Bio/Brass.pm',
   EXE_FILES     => [qw(
                         bin/brass-assemble
+                        bin/brass_foldback_reads.pl
                         bin/brassI_filter.pl
                         bin/brassI_np_in.pl
                         bin/brassI_pre_filter.pl
                         bin/brassI_prep_bam.pl
                         bin/brass.pl
+                        bin/collate_rg_regions.pl
                         bin/combineResults.pl
+                        bin/compute_coverage.pl
+                        bin/corrected_insertsize.pl
+                        bin/coverage_merge.pl
+                        bin/filter_with_microbes_and_remapping.pl
                         bin/findbp
                         bin/findbp-all
+                        bin/get_abs_bkpts_from_clipped_reads.pl
                         bin/make-repeat-file
+                        bin/match_rg_patterns_to_library.pl
+                        bin/merge_double_rgs.pl
                         bin/rearr2bedpe
                         )],
   PREREQ_PM     => {

@@ -72,7 +72,7 @@ R packages (known to work with 3.1.3), recommend install via package manager:
 R Bioconductor packages (known to work with 3.1.3)
 * [copynumber](https://www.bioconductor.org/packages/release/bioc/html/copynumber.html)
 
-Please also install the ssearch36 binary from the FASTA package to your path.
+Please also install the **ssearch36** binary from the FASTA package to your path.
 
 * [FASTA](https://github.com/wrpearson/fasta36/releases)
 

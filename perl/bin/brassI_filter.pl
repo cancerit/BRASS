@@ -83,6 +83,8 @@ my $max_normal_count = 0;
 my $max_np_sample_count = 0;
 my $max_np_count = 0;
 my $discard_if_repeats = 0;
+my $augment_off = 0;
+my $augment_only = 0;
 my $tumour = '';
 
 # for occurence counts
@@ -111,6 +113,8 @@ GetOptions( 'infile:s'               => \$infile,
 	    'occurs_only'            => \$occur_only,
 	    'cn_only'                => \$copyn_only,
 	    'blat_only'              => \$rblat_only,
+	    'augment_only'              => \$augment_only,
+	    'augment_off'               => \$augment_off,
 	    'seq_depth:s'            => \$seq_depth,
 	    'seq_depth_threshold:s'  => \$seq_depth_threshold,
 	    'distance_threshold:s'   => \$distance_threshold,
@@ -160,10 +164,18 @@ const my $DISCARD_IF_REPEATS => $discard_if_repeats;
 
 my $do_process = 1;
 
-if ($trans_only) { $do_process = 0; $do_trans = 1; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 0; }
-if ($occur_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 1; $do_copynumber = 0; $do_range_blat = 0; }
-if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 1; $do_range_blat = 0; }
-if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
+if($augment_only) {
+  $do_process = 0;
+}
+if($augment_off) {
+  ($do_trans,$do_occurrences,$do_copynumber,$do_range_blat) = (0,0,0,0);
+}
+else {
+  if ($trans_only) { $do_process = 0; $do_trans = 1; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 0; }
+  if ($occur_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 1; $do_copynumber = 0; $do_range_blat = 0; }
+  if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 1; $do_range_blat = 0; }
+  if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
+}
 
 # process core information and print to outfile
 if ($do_process) {
@@ -171,17 +183,16 @@ if ($do_process) {
   cleanup($outfile);
 }
 
-# check for translocations
-if ($do_trans) { update_translocations($outfile, $bal_trans_field, $inv_field, $bal_distance, $inv_distance); }
-
-# count the occurrences fields
-if ($do_occurrences) { update_occurrences($outfile, $occL_field, $occH_field, $occurs_within); }
-
-# check for copynumber changepoints
-if ($do_copynumber)  { update_cn($outfile, $cn_field, $cn_within, $infile_ascat, $infile_ngs, $infile_bb, $cn_one_end_hit); }
-
-# check for L v H range blat scores
-if ($do_range_blat)  { update_blat($outfile, $blat_field, $blat_script, $ref, $minIdentity); }
+unless($augment_off) {
+  # check for translocations
+  if ($do_trans) { update_translocations($outfile, $bal_trans_field, $inv_field, $bal_distance, $inv_distance); }
+  # count the occurrences fields
+  if ($do_occurrences) { update_occurrences($outfile, $occL_field, $occH_field, $occurs_within); }
+  # check for copynumber changepoints
+  if ($do_copynumber)  { update_cn($outfile, $cn_field, $cn_within, $infile_ascat, $infile_ngs, $infile_bb, $cn_one_end_hit); }
+  # check for L v H range blat scores
+  if ($do_range_blat)  { update_blat($outfile, $blat_field, $blat_script, $ref, $minIdentity); }
+}
 
 #-----------------------------------------------------------------------------#
 sub process {

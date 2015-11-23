@@ -124,16 +124,16 @@ sub process {
   }
   close $IN;
 
-warn 'loaded: '.$counts{'Groups Total'};
+#for(sort keys %end_count){
+#  warn $_.' : '.$end_count{$_}."\n" if $end_count{$_} > 10;
+#}
 
   my $grps_before_clean = scalar @pre_clean;
   my $end_occ_count = 0;
-#  my %chr_strand_grps;
   my @groups;
   while(my $group = shift @pre_clean) {
     next if($end_count{ "$group->{chr1}:$group->{start1}-$group->{end1}:$group->{strand1}" } > 10);
     next if($end_count{ "$group->{chr2}:$group->{start2}-$group->{end2}:$group->{strand2}" } > 10);
-#    push @{$chr_strand_grps{join(':',$group->{chr1}, $group->{chr2}, $group->{strand1}, $group->{strand2})}}, $group;
     push @groups, $group;
     $end_occ_count++;
   }

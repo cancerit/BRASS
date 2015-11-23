@@ -392,8 +392,7 @@ sub samples {
 =cut
 
 sub sample_type {
-    my $self = shift;
-    my $sample = shift if @_;
+    my ($self, $sample) = @_;
     my $sample_type = '';
 
     foreach my $entry(@{$self->{samples}}) {
@@ -691,14 +690,16 @@ sub _process_reads_and_repeats {
 
     next if($read_list =~ m/^[\.\-]$/);
 
-    my @read_list;
-    @read_list = split ';', $read_list if ($read_list);
-
     # make sure the same readname does not appear twice in the readlist
-    my $reads_hash = {};
-    foreach (@read_list) { $reads_hash->{$_} = 1; }
-    my @read_list2 = (sort {$a cmp $b} keys %$reads_hash);
-    $sample_read_data->{$sample2}->{read_names} = \@read_list2;
+    my %reads_hash;
+    if($read_list) {
+      for(split /;/, $read_list) {
+        $reads_hash{$_} = 1;
+      }
+    }
+    my @read_list = (sort {$a cmp $b} keys %reads_hash);
+    $sample_read_data->{$sample2}->{read_names} = \@read_list;
+
   }
   return($sample_read_data, $repeats);
 }

@@ -108,7 +108,7 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'tabix') {
     Sanger::CGP::Brass::Implement::tabix($options);
-#    cleanup($options);
+    cleanup($options) unless($options->{'noclean'});
   }
 }
 
@@ -214,7 +214,11 @@ sub setup {
               'gc|g_cache=s' => \$opts{'g_cache'},
               'vi|viral=s' => \$opts{'viral'},
               'mi|microbe=s' => \$opts{'microbe'},
+              'j|mingroup=i' => \$opts{'mingroup'},
+              'k|minkeep=i' => \$opts{'minkeep'},
+##    -minkeep   -k   Minmum reads to retain a group [4]. ## disabled until metropolis_hastings_inversions.R can handle variable
               'l|limit=i' => \$opts{'limit'},
+              'x|noclean' => \$opts{'noclean'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -226,9 +230,9 @@ sub setup {
   }
 
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
-  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
-  if(-e $final_logs) {
-    die "ERROR: Presence of logs directory suggests successful complete analysis, please delete to proceed: $final_logs\n";
+  my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
+  if(-e $intermediates) {
+    die "ERROR: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
   }
 
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});
@@ -262,6 +266,8 @@ sub setup {
 
   # now safe to apply defaults
   $opts{'threads'} = 1 unless(defined $opts{'threads'});
+  $opts{'mingroup'} = 2 unless(defined $opts{'mingroup'});
+  $opts{'minkeep'} = 4 unless(defined $opts{'minkeep'});
 
   my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpBrass');
   make_path($tmpdir) unless(-d $tmpdir);
@@ -339,13 +345,15 @@ brass.pl [options]
                       Ploidy X.XXX
 
   Optional
-    -repeats   -r   Repeat file, see 'make-repeat-file'
+    -mingroup  -j   Minmum reads to call group [2].
+    -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -ascat     -a   ASCAT copynumber summary
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)
     -exclude   -e   Exclude this list of ref sequences from processing, wildcard '%'
     -filter    -f   bgzip tabix-ed normal panel groups file
+    -noclean   -x   Don't tidyup the processing areas.
     -cpus      -c   Number of cores to use. [1]
                      - recommend max 2 during 'input' process.
 

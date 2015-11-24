@@ -298,22 +298,23 @@ if (sum(idx) > 0 && bad_groups_count >= 50) {
     idx = rep(T, length(size))
 }
 
-x = jitter(rp_count)
-plot(
-    x,
-    size / 1e3,
-    xlab = "Read pair count",
-    ylab = "Inner size (kb)",
-    main = paste(s, " inversion calls\n", threshold_idx, "/", length(size), " kept", sep = ""),
-    log = "xy",
-    pch = 16,
-    col = col,
-    ylim = c(0.01, 1000000)
-)
-points(x[idx], size[idx]/1e3, pch = ".", col = "white")
-abline(h = 10^(-2:6), col = "grey", lty = 3)
-abline(h = c(300, 500)/1e3, col = "grey", lty = 3)
-
+if(length(rp_count) > 0) {
+  x = jitter(rp_count)
+  plot(
+      x,
+      size / 1e3,
+      xlab = "Read pair count",
+      ylab = "Inner size (kb)",
+      main = paste(s, " inversion calls\n", threshold_idx, "/", length(size), " kept", sep = ""),
+      log = "xy",
+      pch = 16,
+      col = col,
+      ylim = c(0.01, 1000000)
+  )
+  points(x[idx], size[idx]/1e3, pch = ".", col = "white")
+  abline(h = 10^(-2:6), col = "grey", lty = 3)
+  abline(h = c(300, 500)/1e3, col = "grey", lty = 3)
+}
 dev.off()
 
 

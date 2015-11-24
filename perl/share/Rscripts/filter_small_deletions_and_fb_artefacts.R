@@ -6,13 +6,11 @@ output_file_name = commandArgs(T)[4]
 if (file.info(rg_file)$size == 0) {
     # Input rearrangement file has no rearrangements - just touch to create an empty output rearrangement file
     sys.call(paste("touch ", output_file_name, sep = ""))
-}
-else if (file.info(foldback_artefact_classification_file)$size == 0) {
+} else if (file.info(foldback_artefact_classification_file)$size == 0) {
     # Input rearrangement file has no inversion-type rearrangements - just copy the original
-    # rearrangement file. 
+    # rearrangement file.
     sys.call(paste("cp", rg_file, output_file_name))
-}
-else {
+} else {
     d = read.table(rg_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 
     isize = read.table(full_bam_insert_size_distribution, header = F, sep = " ")

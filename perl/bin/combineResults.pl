@@ -188,8 +188,8 @@ sub mergeBedpe {
       push @new, @bits[0..7]; # 1-8
       push @new, @bits[8..9]; # 9-10
       push @new, $bits[16]; # 11
-      push @new, svclass_bedpd(@new[0,3,9,10]); # 12
-      push @new, svdist_bedpd(@new[0..5,9,10]); # 13
+      push @new, svclass_bedpd(@new[0,3,8,9]); # 12
+      push @new, svdist_bedpd(@new[0..5]); # 13
       push @new, q{_}; # 14 assembly_score
       push @new, @bits[18..25]; # 15-22
       push @new, q{_},q{_},q{_},q{_},q{_}; # 23-27
@@ -201,8 +201,8 @@ sub mergeBedpe {
       # original brass_score here!!
       push @new, $bits[7]; # 8
       push @new, @old_brass_II[8..10]; # 9-11
-      push @new, svclass_bedpd(@new[0,3,9,10]); # 12
-      push @new, svdist_bedpd(@new[0..5,9,10]); # 13
+      push @new, svclass_bedpd(@new[0,3,8,9]); # 12
+      push @new, svdist_bedpd(@new[0..5]); # 13
       push @new, $old_brass_II[7]; # 14 assembly_score
       push @new, @bits[18..25]; # 15-22
       push @new, @old_brass_II[11..14]; # 23-26
@@ -210,8 +210,8 @@ sub mergeBedpe {
       push @new, @bits[26..44]; # 28-46
     }
     print $FINAL join("\t", @new),"\n";
-    $svclass_bkpt_dist{$id} = { 'svclass' => $new[12],
-                                'bkptdist' =>$new[13],};
+    $svclass_bkpt_dist{$id} = { 'svclass' => $new[11],
+                                'bkptdist' =>$new[12],};
   }
 
   close $FIXED;
@@ -229,7 +229,7 @@ sub svclass_bedpd {
 }
 
 sub svdist_bedpd {
-  my ($chrL, $startL, $endL, $chrH, $startH, $endH, $strL, $strH) = @_;
+  my ($chrL, $startL, $endL, $chrH, $startH, $endH) = @_;
   return -1 if($chrL ne $chrH);
   return abs $startH - $endL;
 }

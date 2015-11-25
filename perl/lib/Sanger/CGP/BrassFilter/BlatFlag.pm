@@ -334,8 +334,8 @@ sub _get_hits {
     if ($self->{debug}) { print "$name | SCORE:$score\n"; }
   }
   # save some file ops, only delete the L/H files at end of loop
-	unlink $Lfile or die $!;
-	unlink $Hfile or die $!;
+	unlink $Lfile or die $! if(-e $Lfile);
+	unlink $Hfile or die $! if(-e $Lfile);
 
   return(1);
 }

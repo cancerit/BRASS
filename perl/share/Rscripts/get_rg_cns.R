@@ -168,25 +168,27 @@ for (c in chrs) {
     rg_idx_of_chr[[c]] = numeric()
 }
 
-for (i in 1:nrow(rgs)) {
-    # Skip rearrangements where one end falls onto centromere or telomere
-    if (rgs[i, 1] == "Y" || rgs[i, 4] == "Y") next()
-    # if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 13:14])))) {
-    if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 11:12])))) {
-        next()
+if (nrow(rgs) > 0 ) {
+    for (i in 1:nrow(rgs)) {
+        # Skip rearrangements where one end falls onto centromere or telomere
+        if (rgs[i, 1] == "Y" || rgs[i, 4] == "Y") next()
+        # if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 13:14])))) {
+        if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 11:12])))) {
+            next()
+        }
+
+        # l = rgs[i, 13]
+        # h = rgs[i, 14]
+        l = rgs[i, 11]
+        h = rgs[i, 12]
+
+        bkpts_of_chr[[rgs[i,1]]] = append(bkpts_of_chr[[rgs[i,1]]], l)  # Breakpoint positions
+        bkpts_of_chr[[rgs[i,4]]] = append(bkpts_of_chr[[rgs[i,4]]], h)
+        rg_end_of_chr[[rgs[i,1]]] = append(rg_end_of_chr[[rgs[i,1]]], 1)  # Low/high end
+        rg_end_of_chr[[rgs[i,4]]] = append(rg_end_of_chr[[rgs[i,4]]], 2)
+        rg_idx_of_chr[[rgs[i,1]]] = append(rg_idx_of_chr[[rgs[i,1]]], i)  # Generic index for this rearrangement
+        rg_idx_of_chr[[rgs[i,4]]] = append(rg_idx_of_chr[[rgs[i,4]]], i)
     }
-
-    # l = rgs[i, 13]
-    # h = rgs[i, 14]
-    l = rgs[i, 11]
-    h = rgs[i, 12]
-
-    bkpts_of_chr[[rgs[i,1]]] = append(bkpts_of_chr[[rgs[i,1]]], l)  # Breakpoint positions
-    bkpts_of_chr[[rgs[i,4]]] = append(bkpts_of_chr[[rgs[i,4]]], h)
-    rg_end_of_chr[[rgs[i,1]]] = append(rg_end_of_chr[[rgs[i,1]]], 1)  # Low/high end
-    rg_end_of_chr[[rgs[i,4]]] = append(rg_end_of_chr[[rgs[i,4]]], 2)
-    rg_idx_of_chr[[rgs[i,1]]] = append(rg_idx_of_chr[[rgs[i,1]]], i)  # Generic index for this rearrangement
-    rg_idx_of_chr[[rgs[i,4]]] = append(rg_idx_of_chr[[rgs[i,4]]], i)
 }
 
 

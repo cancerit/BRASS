@@ -133,10 +133,9 @@ segs_file = args[3]
 bam_file = args[4]
 acf = as.numeric(args[5])
 if (acf > 1) acf = acf * 0.01
-if (file.info(rgs)$size > 0) {
+if (file.info(rgs_file)$size > 0) {
     rgs = read.table(rgs_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
-}
-else {
+} else {
     rgs = data.frame(
         chr_l = c(),
         l5 = c(),

@@ -5,7 +5,7 @@ use warnings FATAL => 'all';
 use autodie;
 use Const::Fast qw(const);
 
-const my @NEW_BEDPE_HEADER => ('# chr1','start1','end1','chr2','start2','end2','id/name','brass_score','strand1','strand2','sample','svclass','bkdist','assembly_score','readpair names','readpair count','bal_trans','inv','occL','occH','copynumber_flag','range_blat','Brass Notation','non-template','micro-homology','assembled readnames','assembled read count','gene','gene_id','transcript_id','strand','end_phase','region','region_number','total_region_count','first/last','gene','gene_id','transcript_id','strand','phase','region','region_number','total_region_count','first/last','fusion_flag');
+const my @NEW_BEDPE_HEADER => ('# chr1','start1','end1','chr2','start2','end2','id/name','brass_score','strand1','strand2','sample','svclass','bkdist','assembly_score','readpair names','readpair count','bal_trans','inv','occL','occH','copynumber_flag','range_blat','Brass Notation','non-template','micro-homology','assembled readnames','assembled read count','gene1','gene_id1','transcript_id1','strand1','end_phase1','region1','region_number1','total_region_count1','first/last1','gene2','gene_id2','transcript_id2','strand2','phase2','region2','region_number2','total_region_count2','first/last2','fusion_flag');
 
 if(scalar @ARGV < 3) {
   warn "USAGE: combineResults.pl X_ann.groups X_ann.assembled X.final ploidy Acf [ascat_failure]\n";

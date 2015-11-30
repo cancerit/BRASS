@@ -159,6 +159,7 @@ sub cleanup {
                         .annot.vcf.srt
                         .assembled.bedpe
                         .groups.filtered.bedpe.preclean
+                        .groups.filtered.bedpenohead
                     );
   for my $to_del(@base_delete) {
     my $file = $basefile.$to_del;

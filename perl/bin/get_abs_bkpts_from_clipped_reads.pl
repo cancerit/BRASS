@@ -143,14 +143,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = highest_pos_of_reads($low_end_reads_of_rg{$id1});
           }
           $clip_pos = $clip_pos + $SLOP;
-          if (!(grep { $_->end > $clip_pos } @{$low_end_reads_of_rg{$id2}})) {
-            die;
-          }
 
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id1}});
-          my @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$low_end_reads_of_rg{$id2}});
-          @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id1}};
-          @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id2}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->end > $clip_pos } @{$low_end_reads_of_rg{$id2}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->end } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
+            @{$low_end_reads_of_rg{$id1}} = grep { $_->end <= $median_pos } @{$low_end_reads_of_rg{$id1}};
+            @{$low_end_reads_of_rg{$id2}} = grep { $_->end >  $median_pos } @{$low_end_reads_of_rg{$id2}};
+            $clip_pos = $median_pos;
+          }
+          else {
+              @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id1}});
+              @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$low_end_reads_of_rg{$id2}});
+              @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id1}};
+              @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id2}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F1[0], ($F1[1]+$F1[2])/2, $F1[8], $F1[3], ($F1[4]+$F1[5])/2, $F1[9], 1)) {
@@ -171,14 +180,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = highest_pos_of_reads($low_end_reads_of_rg{$id2});
           }
           $clip_pos = $clip_pos + $SLOP;
-          if (!(grep { $_->end > $clip_pos } @{$low_end_reads_of_rg{$id1}})) {
-            die;
-          }
 
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id2}});
-          my @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$low_end_reads_of_rg{$id1}});
-          @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id2}};
-          @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id1}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->end > $clip_pos } @{$low_end_reads_of_rg{$id1}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->end } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
+            @{$low_end_reads_of_rg{$id2}} = grep { $_->end <= $median_pos } @{$low_end_reads_of_rg{$id2}};
+            @{$low_end_reads_of_rg{$id1}} = grep { $_->end >  $median_pos } @{$low_end_reads_of_rg{$id1}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id2}});
+            @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$low_end_reads_of_rg{$id1}});
+            @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id2}};
+            @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id1}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F2[0], ($F2[1]+$F2[2])/2, $F2[8], $F2[3], ($F2[4]+$F2[5])/2, $F2[9], 1)) {
@@ -202,12 +220,20 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = lowest_pos_of_reads($low_end_reads_of_rg{$id1});
           }
           $clip_pos = $clip_pos - $SLOP;
+
+          my @higher_group_reads;
+          my @lower_group_reads;
           if (!(grep { $_->start < $clip_pos } @{$low_end_reads_of_rg{$id2}})) {
-            die;
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->start } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
+            @{$low_end_reads_of_rg{$id1}} = grep { $_->start >= $median_pos } @{$low_end_reads_of_rg{$id1}};
+            @{$low_end_reads_of_rg{$id2}} = grep { $_->start <  $median_pos } @{$low_end_reads_of_rg{$id2}};
+            $clip_pos = $median_pos;
           }
 
-          my @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id1}});
-          my @lower_group_reads   = map { $_->query->name } grep( { $_->start <  $clip_pos } @{$low_end_reads_of_rg{$id2}});
+          @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id1}});
+          @lower_group_reads   = map { $_->query->name } grep( { $_->start <  $clip_pos } @{$low_end_reads_of_rg{$id2}});
           @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id1}};
           @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id2}};
 
@@ -230,14 +256,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = lowest_pos_of_reads($low_end_reads_of_rg{$id2});
           }
           $clip_pos = $clip_pos - $SLOP;
-          if (!(grep { $_->start < $clip_pos } @{$low_end_reads_of_rg{$id1}})) {
-            die;
-          }
 
-          my @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id2}});
-          my @lower_group_reads   = map { $_->query->name } grep( { $_->start <  $clip_pos } @{$low_end_reads_of_rg{$id1}});
-          @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id2}};
-          @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id1}};
+          my @higher_group_reads;
+          my @lower_group_reads;
+          if (!(grep { $_->start < $clip_pos } @{$low_end_reads_of_rg{$id1}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->start } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
+            @{$low_end_reads_of_rg{$id2}} = grep { $_->start >= $median_pos } @{$low_end_reads_of_rg{$id2}};
+            @{$low_end_reads_of_rg{$id1}} = grep { $_->start <  $median_pos } @{$low_end_reads_of_rg{$id1}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id2}});
+            @lower_group_reads   = map { $_->query->name } grep( { $_->start <  $clip_pos } @{$low_end_reads_of_rg{$id1}});
+            @{$low_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$low_end_reads_of_rg{$id2}};
+            @{$low_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$low_end_reads_of_rg{$id1}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F2[0], ($F2[1]+$F2[2])/2, $F2[8], $F2[3], ($F2[4]+$F2[5])/2, $F2[9], 1)) {
@@ -264,14 +299,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = highest_pos_of_reads($high_end_reads_of_rg{$id1});
           }
           $clip_pos = $clip_pos + $SLOP;
-          if (!(grep { $_->end > $clip_pos } @{$high_end_reads_of_rg{$id2}})) {
-            die;
-          }
 
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id1}});
-          my @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$high_end_reads_of_rg{$id2}});
-          @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id1}};
-          @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id2}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->end > $clip_pos } @{$high_end_reads_of_rg{$id2}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->end } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
+            @{$high_end_reads_of_rg{$id1}} = grep { $_->end <= $median_pos } @{$high_end_reads_of_rg{$id1}};
+            @{$high_end_reads_of_rg{$id2}} = grep { $_->end >  $median_pos } @{$high_end_reads_of_rg{$id2}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id1}});
+            @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$high_end_reads_of_rg{$id2}});
+            @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id1}};
+            @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id2}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F1[3], ($F1[4]+$F1[5])/2, $F1[9], $F1[0], ($F1[1]+$F1[2])/2, $F1[8], 1)) {
@@ -292,14 +336,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = highest_pos_of_reads($high_end_reads_of_rg{$id2});
           }
           $clip_pos = $clip_pos + $SLOP;
-          if (!(grep { $_->end > $clip_pos } @{$high_end_reads_of_rg{$id1}})) {
-            die;
-          }
 
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id2}});
-          my @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$high_end_reads_of_rg{$id1}});
-          @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id2}};
-          @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id1}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->end > $clip_pos } @{$high_end_reads_of_rg{$id1}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->end } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
+            @{$high_end_reads_of_rg{$id2}} = grep { $_->end <= $median_pos } @{$high_end_reads_of_rg{$id2}};
+            @{$high_end_reads_of_rg{$id1}} = grep { $_->end >  $median_pos } @{$high_end_reads_of_rg{$id1}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id2}});
+            @higher_group_reads = map { $_->query->name } grep( { $_->end >  $clip_pos } @{$high_end_reads_of_rg{$id1}});
+            @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id2}};
+            @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id1}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F2[3], ($F2[4]+$F2[5])/2, $F2[9], $F2[0], ($F2[1]+$F2[2])/2, $F2[8], 1)) {
@@ -323,14 +376,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = lowest_pos_of_reads($high_end_reads_of_rg{$id1});
           }
           $clip_pos = $clip_pos - $SLOP;
-          if (!(grep { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id2}})) {
-            die;
-          }
 
-          my @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id1}});
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id2}});
-          @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id1}};
-          @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id2}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id2}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->start } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
+            @{$high_end_reads_of_rg{$id1}} = grep { $_->start >= $median_pos } @{$high_end_reads_of_rg{$id1}};
+            @{$high_end_reads_of_rg{$id2}} = grep { $_->start <  $median_pos } @{$high_end_reads_of_rg{$id2}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id1}});
+            @lower_group_reads  = map { $_->query->name } grep( { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id2}});
+            @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id1}};
+            @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id2}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F1[3], ($F1[4]+$F1[5])/2, $F1[9], $F1[0], ($F1[1]+$F1[2])/2, $F1[8], 1)) {
@@ -351,14 +413,23 @@ for my $i (0..($#lines - 1)) {
             $clip_pos = lowest_pos_of_reads($high_end_reads_of_rg{$id2});
           }
           $clip_pos = $clip_pos - $SLOP;
-          if (!(grep { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id1}})) {
-            die;
-          }
 
-          my @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id2}});
-          my @lower_group_reads  = map { $_->query->name } grep( { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id1}});
-          @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id2}};
-          @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id1}};
+          my @lower_group_reads;
+          my @higher_group_reads;
+          if (!(grep { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id1}})) {
+            # die;
+            warn("Could not properly separate the reads between the low ends of rearrangements $id1 and $id2!\n");
+            my $median_pos = median(map { $_->start } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
+            @{$high_end_reads_of_rg{$id2}} = grep { $_->start >= $median_pos } @{$high_end_reads_of_rg{$id2}};
+            @{$high_end_reads_of_rg{$id1}} = grep { $_->start <  $median_pos } @{$high_end_reads_of_rg{$id1}};
+            $clip_pos = $median_pos;
+          }
+          else {
+            @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id2}});
+            @lower_group_reads  = map { $_->query->name } grep( { $_->start < $clip_pos } @{$high_end_reads_of_rg{$id1}});
+            @{$high_end_reads_of_rg{$id2}} = grep { within_array($_->query->name, @higher_group_reads) } @{$high_end_reads_of_rg{$id2}};
+            @{$high_end_reads_of_rg{$id1}} = grep { within_array($_->query->name, @lower_group_reads) } @{$high_end_reads_of_rg{$id1}};
+          }
 
           my %mate_of_read;
           for (collect_reads_by_region($bam, $F2[3], ($F2[4]+$F2[5])/2, $F2[9], $F2[0], ($F2[1]+$F2[2])/2, $F2[8], 1)) {

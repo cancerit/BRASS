@@ -44,7 +44,7 @@ use File::Temp qw(tempfile);
 use Capture::Tiny;
 use List::Util qw(first);
 use FindBin qw($Bin);
-use Capture::Tiny qw(capture_stdout);
+use Capture::Tiny qw(capture_stdout capture);
 use File::ShareDir qw(module_dir);
 use Cwd qw(abs_path getcwd);
 use File::Basename;
@@ -406,55 +406,63 @@ sub filter {
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'rem_head')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $rem_head, 'rem_head');
+		my ($sto, $ste, $exit) = capture{ system([0,1],$rem_head) };
+  	die "ERROR executing: $rem_head\n" if($exit > 1);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'rem_head');
     sleep 5;
   }
+
+	my ($sto, $ste, $exit) = capture{ system("wc -l $bedpe_no_head"); };
+ 	chomp $sto;
+  my ($group_count) = $sto =~ m/^([[:digit:]]+)/;
+
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'met_hasting')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $met_hasting, 'met_hasting');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $met_hasting, 'met_hasting') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'met_hasting');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'del_fb')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $del_fb, 'del_fb');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $del_fb, 'del_fb') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'del_fb');
     sleep 5;
   }
-  unlink $bedpe_no_head if(-e $bedpe_no_head);
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_grps')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $merge_grps, 'merge_grps');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $merge_grps, 'merge_grps') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_grps');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'abs_bkp')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $abs_bkp, 'abs_bkp');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $abs_bkp, 'abs_bkp') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'abs_bkp');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'remap_micro')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $remap_micro, 'remap_micro');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $remap_micro, 'remap_micro') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'remap_micro');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'rg_cns')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $rg_cns, 'rg_cns');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $rg_cns, 'rg_cns') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'rg_cns');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'match_lib')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $match_lib, 'match_lib');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $match_lib, 'match_lib') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'match_lib');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'final')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $final, 'final');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $final, 'final') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'final');
     sleep 5;
   }
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'add_blat')) {
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $add_blat, 'add_blat');
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $add_blat, 'add_blat') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'add_blat');
     sleep 5;
+  }
+  if($group_count == 0) {
+  	copy($bedpe, $final_file) or die "Failed to copy: $!";
   }
 }
 
@@ -678,7 +686,7 @@ sub get_ascat_summary {
 
 sub sanitised_sample_from_bam {
   my $sample = (PCAP::Bam::sample_name(shift))[0];
-  $sample =~ s/[^.a-z0-9_-]/_/ig; # sanitise sample name
+  $sample =~ s/[^a-z0-9_\-.]/_/ig; # sanitise sample name
   return $sample;
 }
 

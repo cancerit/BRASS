@@ -34,7 +34,7 @@ identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
 BRASS
 =====
 
-### BReakpoint AnalySiS
+### Breakpoints via assembly
 
 BRASS analyses one or more related BAM files of paired-end sequencing to determine potential rearrangement breakpoints.
 

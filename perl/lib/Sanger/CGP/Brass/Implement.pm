@@ -719,6 +719,8 @@ sub get_bam_info {
 
   my $platform;
   if(defined $tum_plat && defined $norm_plat) {
+   	$tum_plat = uc $tum_plat;
+	  $norm_plat = uc $norm_plat;
     die "BAMs have different sequencing platform: $tum_plat, $norm_plat\n" if($norm_plat ne $tum_plat);
     $platform = $norm_plat;
   }
@@ -729,8 +731,12 @@ sub get_bam_info {
   $options->{'tumour_name'} = $tum_name unless(defined $options->{'tumour_name'});
   $options->{'normal_name'} = $norm_name unless(defined $options->{'normal_name'});
 
-  die "Specified platform name doesn't match BAM headers" if(defined $options->{'platform'} && defined $platform && $options->{'platform'} ne $platform);
-  $options->{'platform'} = $platform unless(defined $options->{'platform'});
+  if(defined $options->{'platform'} && defined $platform && $options->{'platform'} ne $platform) {
+  	warn "Specified platform name doesn't match BAM headers, default to specifed";
+  }
+  else {
+  	$options->{'platform'} = $platform unless(defined $options->{'platform'});
+  }
 
   return $options;
 }

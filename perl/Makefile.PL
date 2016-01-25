@@ -75,6 +75,7 @@ WriteMakefile(
                      'Statistics::Basic' => 1.6611,
                      'Number::Format' => 1.75,
                      'Math::Combinatorics' => 0.09,
+                     'Try::Tiny' => 0.22,
                    }
 );
 

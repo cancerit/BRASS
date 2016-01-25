@@ -54,6 +54,7 @@ use Bio::Brass::Alignment;
 use Bio::Brass::ReadSelection;
 use Bio::Brass::VelvetGraph;
 use Bio::Tools::Run::Velvet;
+use Try::Tiny qw(try catch);
 
 $0 =~ s{.*/}{};
 
@@ -230,8 +231,19 @@ system("wc -l $fname");
 			      -dir => $directory, -verbose => $verbose);
     $velvet->quiet(1);
 
-    $velvet->prepare(@read_filenames);
-    @_ = $velvet->run(-cov_cutoff => 1.001);
+    my $is_ok = 1;
+    try {
+      $velvet->prepare(@read_filenames);
+      @_ = $velvet->run(-cov_cutoff => 1.001);
+    } catch {
+      if($_ =~ m/MSG: velvet[gh] execution failed/m) {
+        $is_ok = 0; # can't call next within try/catch as considered a subroutine exit
+        warn "Failed to process: $id ($chrL$strandL:$L5-$L3 / $chrH$strandH:$H5-$H3)\n";
+        warn $_;
+      }
+      else { die $_; }
+    };
+    next unless($is_ok);
     print "$k: graph has $_[0] vertices; n50 $_[1], max $_[2], total $_[3]\n"
       if $verbose;
 

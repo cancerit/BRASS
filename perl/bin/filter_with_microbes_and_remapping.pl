@@ -133,6 +133,11 @@ for my $i(0..$#regions) {
     else {
       push @low_end_footprint, 'NA';
     }
+    for (@reads) {
+      my $read_name = $_->query->name;
+      $read_name =~ s/:/_/g;
+      $rg_id_of_read{$read_name} = $r->[6];
+    }
 
     # Deal with high end reads
     @reads = collect_reads_by_region(

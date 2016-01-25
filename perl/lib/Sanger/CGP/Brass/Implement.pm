@@ -138,7 +138,7 @@ sub input {
     $command .= _which('bamsort');
     $command .= sprintf $BAMSORT, $tmp, $index, $outbam, $outbam, $outbam;
 
-    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, $index);
 
     #
     ## The rest is auto-magical

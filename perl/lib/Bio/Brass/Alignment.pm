@@ -303,7 +303,7 @@ sub _run_exonerate{
     my @locations = ();
     my $mappings = 0; ## no itteration if fails while streaming data.
 	my $fh;
-  warn "$cmd\n" if($itteration == 1);
+  warn "@{$cmd}\n" if($itteration == 1);
 	eval{
         run($cmd, '>', new_chunker, sub{
             my ($line) = @_;

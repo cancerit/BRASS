@@ -37,6 +37,7 @@ use warnings;
 
 use Bio::Root::IO;
 use Bio::SeqIO;
+use Capture::Tiny qw(capture);
 
 use base qw(Bio::Root::Root
 	    Bio::Tools::Run::WrapperBase
@@ -214,12 +215,16 @@ sub prepare {
     # FIXME Output buffering
 
     print "$cmd\n" if $self->verbose >= 0;
-    open my $VELVET, "$cmd|" or $self->throw("Can't execute $velveth: $!");
-    while (<$VELVET>) {
-	print unless $self->quiet || $self->verbose < 0;
-	$count = $1 if /^(\d+)\s+sequences in total/;
+
+    my ($sto, $ste, $exit) = capture { system($cmd) };
+    if($exit == 0) {
+      print $sto unless $self->quiet || $self->verbose < 0;
+    	$count = $1 if $sto =~ m/^(\d+)\s+sequences in total/m;
     }
-    close $VELVET or $self->throw("velveth execution failed");
+    else {
+      $ste =~ s/^\n+//; # don't treat as multi line as we only want to remove leading \n
+      $self->throw("velveth execution failed, Exit: $exit, Error: $ste");
+    }
 
     return $count;
 }
@@ -239,17 +244,17 @@ sub run {
     my $velvetg = $self->executable('velvetg');
     my $cmd = join(' ', $velvetg,$self->tempdir(), '-shortMatePaired yes', '-read_trkg yes', '-unused_reads yes', @_);
 
-    my $warnings = '';
-    my $finalline;
-
     print "$cmd\n" if $self->verbose >= 0;
-    open my $VELVET, "$cmd|" or $self->throw("Can't execute $velvetg: $!");
-    while (<$VELVET>) {
-	print unless $self->quiet || $self->verbose < 0;
-    	$warnings .= $_ if substr($_, 0, 8) eq 'WARNING:';
-	$finalline = $_ if substr($_, 0, 12) eq 'Final graph ';
+
+    my ($sto, $ste, $exit) = capture { system($cmd) };
+    my ($warnings, $finalline) = _process_velvet_output($sto);
+
+    if($exit == 0) {
+      print $sto unless $self->quiet || $self->verbose < 0;
     }
-    close $VELVET or $self->throw('velvetg execution failed');
+    else {
+      $self->throw("velvetg execution failed, Exit: $exit, Error: $ste");
+    }
 
     $self->error_string($warnings);
     if (defined $finalline && $finalline =~
@@ -258,6 +263,18 @@ sub run {
     }
 
     return;
+}
+
+sub _process_velvet_output {
+  my ($sto) = @_;
+  my $warnings = q{};
+  my $finalline;
+  my @lines = split /\n/, $sto;
+  for(@lines) {
+    $warnings .= "$_\n" if substr($_, 0, 8) eq 'WARNING:';
+  	$finalline = "$_\n" if substr($_, 0, 12) eq 'Final graph ';
+  }
+  return ($warnings, $finalline);
 }
 
 =head2 program_dir

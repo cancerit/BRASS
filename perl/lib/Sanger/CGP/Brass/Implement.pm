@@ -506,8 +506,8 @@ sub assemble {
     my $split_file = File::Spec->catfile($split_dir, 'split.');
     $split_file .= sprintf '%07d', $index-1;
 
-    my $tmp_assemble = File::Spec->catdir($tmp, 'assemble');
-    make_path($tmp_assemble) unless(-e $tmp_assemble);
+    # changed to be a real tmpdir as we always run with -X
+    my $tmp_assemble = tempdir( 'brassAssembly_XXXXXX', TMPDIR => 1, CLEANUP => 1 );
 
     my $assembled = File::Spec->catfile($tmp_assemble, 'bedpe.');
     $assembled .= sprintf '%07d', $index-1;

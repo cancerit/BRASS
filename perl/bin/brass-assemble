@@ -213,7 +213,7 @@ sub assemble {
     my ($kept, $discarded) = $sample->write_local_reads($reads, @_);
     push @sample_names, $sample->sample_name();
     close $reads or die "$0: closing $fname failed: $!\n";
-system("wc -l $fname");
+
     print "Wrote $kept reads to $fname, discarded $discarded\n" if $verbose;
     if($kept == 0) {
       print "No reads found in sample $sample_names[-1] for assembly input ... skipping variant\n" if $verbose;
@@ -236,7 +236,7 @@ system("wc -l $fname");
       $velvet->prepare(@read_filenames);
       @_ = $velvet->run(-cov_cutoff => 1.001);
     } catch {
-      if($_ =~ m/MSG: velvet[gh] execution failed/m) {
+      if($_ =~ m/MSG: velvet[gh] execution failed, Exit: \d+, Error: $/m) { # catch when velvet exits with no error
         $is_ok = 0; # can't call next within try/catch as considered a subroutine exit
         warn "Failed to process: $id ($chrL$strandL:$L5-$L3 / $chrH$strandH:$H5-$H3)\n";
         warn $_;

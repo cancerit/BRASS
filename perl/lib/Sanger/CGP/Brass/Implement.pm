@@ -40,7 +40,7 @@ use File::Copy qw(copy move);
 use File::Spec;
 use File::Which qw(which);
 use File::Path qw(make_path remove_tree);
-use File::Temp qw(tempfile);
+use File::Temp qw(tempfile tempdir);
 use Capture::Tiny;
 use List::Util qw(first);
 use FindBin qw($Bin);

@@ -263,7 +263,7 @@ sub group {
   $command .= sprintf $FILTER_GROUP, $options->{'tumour_name'}, $groups;
   $command .= " -n $options->{filter}" if(exists $options->{'filter'});
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
@@ -278,7 +278,7 @@ sub isize {
 
   my $command = sprintf $CLEAN_ISIZE, _which('samtools'), $options->{'tumour'}, $ISIZE_CHR, $^X, _which('corrected_insertsize.pl'), $tumour_isize;
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
@@ -477,10 +477,10 @@ sub split_filtered {
   my $split_dir = File::Spec->catdir($tmp, 'split');
   remove_tree($split_dir) if(-d $split_dir);
   make_path($split_dir);
-  my $command = sprintf q{grep -v '^#' %s | split --suffix-length=7 --numeric-suffixes --verbose --lines=%s - %s/split.},
+  my $command = sprintf q{grep -v "^#" %s | split --suffix-length=7 --numeric-suffixes --verbose --lines=%s - %s/split.},
                         $groups, $ASSEMBLE_SPLIT, $split_dir;
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
   my $splitOne = $split_dir.'/split.0000000';
   if(! -e $splitOne){
     `touch $splitOne`;
@@ -509,7 +509,11 @@ sub assemble {
     # changed to be a real tmpdir as we always run with -X
     my $tmp_assemble = tempdir( 'brassAssembly_XXXXXX', TMPDIR => 1, CLEANUP => 1 );
 
-    my $assembled = File::Spec->catfile($tmp_assemble, 'bedpe.');
+    my $assemble_out = File::Spec->catdir($tmp, 'assemble');
+    make_path($assemble_out) unless(-e $assemble_out);
+
+
+    my $assembled = File::Spec->catfile($assemble_out, 'bedpe.');
     $assembled .= sprintf '%07d', $index-1;
 
     my $command = "$^X ";
@@ -554,7 +558,7 @@ sub grass {
   $combine_cmd .= ' '.$options->{'AscatFailure'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'),
-                                            [ $merge,
+                                            [ qq{bash -c 'set -o pipefail; $merge'},
                                               _grass($options, $assembled),
                                               _grass($options, $groups),
                                               $combine_cmd],
@@ -619,7 +623,7 @@ sub tabix {
   my $sorted = $annotated.'.srt';
 
   my $header = sprintf q{(grep '^#' %s > %s)}, $annotated, $sorted;
-  my $sort = sprintf q{(grep -v '^#' %s | sort -k 1,1 -k 2,2n >> %s)}, $annotated, $sorted;
+  my $sort = sprintf q{(grep -v "^#" %s | sort -k 1,1 -k 2,2n >> %s)}, $annotated, $sorted;
 
   my $vcf_gz = $annotated.'.gz';
   my $bgzip = _which('bgzip');
@@ -628,7 +632,7 @@ sub tabix {
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
 
-  my @commands = ($header, $sort, $bgzip, $tabix);
+  my @commands = ($header, qq{bash -c 'set -o pipefail; $sort'}, $bgzip, $tabix);
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 

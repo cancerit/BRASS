@@ -231,6 +231,7 @@ sub setup {
   }
 
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+  $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
   if(-e $intermediates) {
     die "ERROR: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";

@@ -33,6 +33,9 @@
 
 
 SOURCE_BLAT="http://users.soe.ucsc.edu/~kent/src/blatSrc35.zip"
+
+# Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
+# No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
 SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz"
 
 done_message () {
@@ -165,7 +168,7 @@ done
 
 cd $SETUP_DIR
 
-echo -n "Building bedtools ..."
+echo -n "Building bedtools2 ..."
 if [ -e $SETUP_DIR/bedtools.success ]; then
   echo -n " previously installed ...";
 else

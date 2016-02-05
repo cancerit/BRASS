@@ -173,8 +173,12 @@ sub cleanup {
                     "$basefile.cn_filtered";
 
   for my $to_move(@base_move) {
-    move($to_move, $intdir);
+    move($to_move, $intdir) if(-e $to_move);
   }
+
+  # ascat files may not be in base output folder so copy from inputs:
+  copy($options->{'ascat'}, $intdir);
+  copy($options->{'ascat_summary'}, $intdir);
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {

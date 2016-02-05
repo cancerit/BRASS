@@ -100,10 +100,12 @@ sub mergeVcf {
       next;
     }
     else {
-      my $old_info = $orig_data{$id}->[7];
+      my $original_info = $orig_data{$id}->[7];
       my ($tsrds) = $bits[7] =~ m/(TSRDS=[^;]+)/;
-
-      $bits[7] = $old_info.';'.$tsrds;
+      $bits[1] = $orig_data{$id}->[1];
+      $bits[3] = $orig_data{$id}->[3];
+      $bits[4] = $orig_data{$id}->[4];
+      $bits[7] = $original_info.';'.$tsrds;
       $bits[7] .= ';BAS='.$orig_data{$id}->[5];
       $bits[5] = q{.};
       $bits[-3] .= ':PS';

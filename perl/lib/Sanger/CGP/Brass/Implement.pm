@@ -477,13 +477,23 @@ sub split_filtered {
   my $split_dir = File::Spec->catdir($tmp, 'split');
   remove_tree($split_dir) if(-d $split_dir);
   make_path($split_dir);
-  my $command = sprintf q{grep -v "^#" %s | split --suffix-length=7 --numeric-suffixes --verbose --lines=%s - %s/split.},
-                        $groups, $ASSEMBLE_SPLIT, $split_dir;
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
-  my $splitOne = $split_dir.'/split.0000000';
-  if(! -e $splitOne){
+  # before running this we need to know if there are any non '#' lines
+  my ($sto, $ste, $exit) = capture { system([0,1], "grep -vc '^#' $groups"); };
+
+	if($exit == 0 && $sto > 0) {
+		my $command = sprintf q{grep -v "^#" %s | split --suffix-length=7 --numeric-suffixes --verbose --lines=%s - %s/split.},
+													$groups, $ASSEMBLE_SPLIT, $split_dir;
+
+		PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
+  }
+  elsif($exit == 1 && $sto == 0) {
+	  my $splitOne = $split_dir.'/split.0000000';
     `touch $splitOne`;
+    warn "No data survived filtering (split_filtered)\n";
+  }
+  else {
+    die "ERROR: Unexpected result when parsing non-header lines from $groups\n";
   }
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
@@ -632,7 +642,22 @@ sub tabix {
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
 
-  my @commands = ($header, qq{bash -c 'set -o pipefail; $sort'}, $bgzip, $tabix);
+  # before running this we need to know if there are any non '#' lines
+  my ($sto, $ste, $exit) = capture { system([0,1], "grep -vc '^#' $annotated"); };
+
+  my @commands = ($header);
+
+  if($exit == 0 && $sto > 0) {
+    push @commands, qq{bash -c 'set -o pipefail; $sort'};
+  }
+  elsif($exit == 1 && $sto == 0) {
+    warn "No data survived (tabix)\n";
+  }
+  else {
+    die "ERROR: Unexpected result when parsing non-header lines from $annotated\n";
+  }
+
+  push @commands, $bgzip, $tabix;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 

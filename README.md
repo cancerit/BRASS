@@ -54,9 +54,10 @@ There are several stages the main component being:
 
 ### Pre-requisites
 
+* The C++ code (within this package) requires the presence of pstreams.h (and associated development libraries).  This is not handled by the `setup.sh` script.
+
 Perl packages:
 
-* The C++ code requires the presence of pstreams.h (and associated development libraries).  This is not handled by the `setup.sh` script.
 * [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
 * [cgpVcf](https://github.com/cancerit/cgpVcf/releases)
 * [grass](https://github.com/cancerit/grass/releases)
@@ -68,13 +69,21 @@ R packages (known to work with 3.1.3), recommend install via package manager:
 * [RColorBrewer](https://cran.r-project.org/web/packages/RColorBrewer/index.html)
 * [VGAM](https://cran.r-project.org/web/packages/VGAM/index.html)
 * [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
+* These themselves have further dependancies.
 
 R Bioconductor packages (known to work with 3.1.3)
 * [copynumber](https://www.bioconductor.org/packages/release/bioc/html/copynumber.html)
 
-Please also install the **ssearch36** binary from the FASTA package to your path.
+Other tools that need to be in path
 
 * [FASTA](https://github.com/wrpearson/fasta36/releases)
+
+###  Tools installed by setup.sh
+* Many CPAN hosted libraries, see `perl/Makefile.PL` for the list
+* [BLAT](http://hgwdev.cse.ucsc.edu/~kent/src/)
+* [exonerate](http://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate)
+* [Velvet](https://www.ebi.ac.uk/~zerbino/velvet/)
+* [bedtools2](https://github.com/arq5x/bedtools2/releases)
 
 ###
 

@@ -70,7 +70,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 const my $BRASS_COVERAGE => q{ %s %s %s %s};
 
 const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s};
-const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s};
+const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s %s %s};
 const my $DEL_FB_R => q{filter_small_deletions_and_fb_artefacts.R %s %s %s %s};
 
 const my $ISIZE_CHR => 5;
@@ -318,24 +318,26 @@ sub filter {
   my $bedpe_no_head = $bedpe.'nohead';
   my $rem_head = "grep -v '^#' $bedpe > $bedpe_no_head";
 
+  my $r_stub = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
   my $met_hasting = _which('Rscript').' ';
   $met_hasting .= _Rpath().'/';
-  $met_hasting .= sprintf $MET_HAST_R, $bedpe_no_head;
+  $met_hasting .= sprintf $MET_HAST_R, $bedpe_no_head, $options->{'safe_tumour_name'}, $r_stub;
 
   my $isize_dist = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'.insert_size_distr');
-  my $fb_art = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.is_fb_artefact.txt');
+  my $fb_art = $r_stub.'.is_fb_artefact.txt';
 
-  my $rfilt = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r2');
+  my $rfilt = $r_stub.'.r2';
 
   my $del_fb = _which('Rscript').' ';
   $del_fb .= _Rpath().'/';
   $del_fb .= sprintf $DEL_FB_R, $bedpe_no_head, $isize_dist, $fb_art, $rfilt;
 
-  my $merge_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r3');
+  my $merge_file = $r_stub.'.r3';
   my $merge_grps = $^X.' '._which('merge_double_rgs.pl');
   $merge_grps .= " $rfilt $merge_file";
 
-  my $abs_bkp_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r4');
+  my $abs_bkp_file = $r_stub.'.r4';
   my $abs_bkp = $^X.' '._which('get_abs_bkpts_from_clipped_reads.pl');
   $abs_bkp .= ' -fasta '.$options->{'genome'};
   $abs_bkp .= ' -out '.$abs_bkp_file;
@@ -343,8 +345,8 @@ sub filter {
   $abs_bkp .= ' '.$merge_file;
 
 
-  my $score_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r5.scores');
-  my $remap_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r5');
+  my $score_file = $r_stub.'.r5.scores';
+  my $remap_file = $r_stub.'.r5';
   my $tumour_brm = File::Spec->catfile($tmp, sanitised_sample_from_bam($options->{'tumour'})).'.brm.bam';
   my $remap_micro = $^X.' '._which('filter_with_microbes_and_remapping.pl');
   $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d',
@@ -371,8 +373,8 @@ sub filter {
   $rg_cns .= ' '.$options->{'tumour'};
   $rg_cns .= ' '.$options->{'Acf'};
 
-  my $match_lib_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.r6');
-  my $filtered_cn = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.cn_filtered');
+  my $match_lib_file = $r_stub.'.r6';
+  my $filtered_cn = $r_stub.'.cn_filtered';
   my $match_lib = $^X.' '._which('match_rg_patterns_to_library.pl');
   $match_lib .= ' -filtered_bedpe '.$match_lib_file;
   $match_lib .= ' -acf '.$options->{'Acf'};
@@ -382,9 +384,9 @@ sub filter {
   $match_lib .= " $remap_file";
   $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns';
 
-  my $final_file = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.clean.bedpe');
+  my $final_file = $r_stub.'.groups.clean.bedpe';
   my $final = $^X.' '._which('collate_rg_regions.pl');
-  $final .= ' '.File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.groups.filtered.bedpe');
+  $final .= ' '.$r_stub.'.groups.filtered.bedpe';
   $final .= ' '.$match_lib_file;
   $final .= ' '.$final_file;
 

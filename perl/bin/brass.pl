@@ -236,9 +236,11 @@ sub setup {
 
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
+  $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
   my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
   if(-e $intermediates) {
-    die "ERROR: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    warn "ERROR: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    exit 0;
   }
 
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});

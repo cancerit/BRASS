@@ -168,8 +168,8 @@ run_mcmc_for_artefacts = function(rp_count, size, prev_alpha, prev_gamma_params,
 
 # Read in files
 f = commandArgs(T)[1]
-s = sub("_vs_.+", "", f)
-s = sub(".+/", "", s)
+tumour_name = commandArgs(T)[2]
+output_stub = commandArgs(T)[3]
 d = read.table(f, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 idx = d[,1] == d[,4] & d[,9] == d[,10]
 d = d[idx,]
@@ -183,7 +183,7 @@ library(RColorBrewer)
 idx = size <= 1e5
 
 # Make decision on what to plot
-pdf_file = sub("\\..+", ".inversions.pdf", f)
+pdf_file = paste(output_stub, ".inversions.pdf", sep="")
 pdf(pdf_file, h = 10)
 layout(matrix(c(4, 4, 1, 2, 4, 4, 3, 3), ncol = 2))
 bad_groups_count = sum(size <= 1e5 & rp_count == 4)
@@ -305,7 +305,7 @@ if(length(rp_count) > 0) {
       size / 1e3,
       xlab = "Read pair count",
       ylab = "Inner size (kb)",
-      main = paste(s, " inversion calls\n", threshold_idx, "/", length(size), " kept", sep = ""),
+      main = paste(tumour_name, " inversion calls\n", threshold_idx, "/", length(size), " kept", sep = ""),
       log = "xy",
       pch = 16,
       col = col,

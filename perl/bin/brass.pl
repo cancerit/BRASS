@@ -122,9 +122,9 @@ sub cleanup {
 
   my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
 
-  my @to_gzip = ( $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg',
-                  $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns',
-                  $outdir.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg',
+  my @to_gzip = ( $basefile.'.ngscn.abs_cn.bg',
+                  $basefile.'.ngscn.abs_cn.bg.rg_cns',
+                  $basefile.'.ngscn.segments.abs_cn.bg',
                   $basefile.'.groups',
                 );
 
@@ -239,7 +239,7 @@ sub setup {
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
   my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
   if(-e $intermediates) {
-    warn "ERROR: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    warn "NOTE: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
     exit 0;
   }
 

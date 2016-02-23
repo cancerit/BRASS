@@ -208,7 +208,7 @@ sub normcn {
   my $tmp_cover = File::Spec->catdir($tmp, 'cover');
   my $tum_fb = sprintf '%s/%s.ngscn.fb_reads.bed.gz', $tmp_cover, $options->{'safe_tumour_name'};
   my $norm_fb = sprintf '%s/%s.ngscn.fb_reads.bed.gz', $tmp_cover, $options->{'safe_normal_name'};
-  my $normcn_stub = sprintf '%s/%s.ngscn', $tmp_cover, $options->{'safe_tumour_name'};
+  my $normcn_stub = sprintf '%s/%s_vs_%s.ngscn', $tmp_cover, $options->{'safe_tumour_name'}, $options->{'safe_normal_name'};
 
   my $command = _which('Rscript').' ';
   $command .= _Rpath().'/';
@@ -224,9 +224,11 @@ sub normcn {
   check_tsv_file($normcn_stub.'.segments.abs_cn.bg', 6);
 
 
-  move($normcn_stub.'.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg') || die "Move failed: $!\n";
-  move($normcn_stub.'.segments.abs_cn.bg', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg') || die "Move failed: $!\n";
-  move($normcn_stub.'.diagnostic_plots.pdf', $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
+  my $r_stub = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
+  move($normcn_stub.'.abs_cn.bg',$r_stub.'.ngscn.abs_cn.bg') || die "Move failed: $!\n";
+  move($normcn_stub.'.segments.abs_cn.bg', $r_stub.'.ngscn.segments.abs_cn.bg') || die "Move failed: $!\n";
+  move($normcn_stub.'.diagnostic_plots.pdf', $r_stub.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
@@ -362,8 +364,8 @@ sub filter {
                           $options->{'genome'},
                           $remap_file;
 
-  my $abs_cn = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg';
-  my $seg_cn = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.segments.abs_cn.bg';
+  my $abs_cn = $r_stub.'.ngscn.abs_cn.bg';
+  my $seg_cn = $r_stub.'.ngscn.segments.abs_cn.bg';
 
   my $rg_cns = _which('Rscript').' ';
   $rg_cns .= _Rpath().'/get_rg_cns.R';
@@ -382,7 +384,7 @@ sub filter {
   $match_lib .= ' -min_cn_change 0.3';
   $match_lib .= ' -filt_cn_out '.$filtered_cn;
   $match_lib .= " $remap_file";
-  $match_lib .= ' '.$options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.ngscn.abs_cn.bg.rg_cns';
+  $match_lib .= ' '.$r_stub.'.ngscn.abs_cn.bg.rg_cns';
 
   my $final_file = $r_stub.'.groups.clean.bedpe';
   my $final = $^X.' '._which('collate_rg_regions.pl');

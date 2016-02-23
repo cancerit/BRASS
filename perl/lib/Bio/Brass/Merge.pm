@@ -201,7 +201,7 @@ sub merge_headers {
   return $new_header;
 }
 
-=item tabix_header
+=head3 tabix_header
 
 Reads any header attached to the Tabix indexed normal_groups file.
 
@@ -223,7 +223,7 @@ sub tabix_header {
   return $groups_header
 }
 
-=item groups_header
+=head3 groups_header
 
 Reads any header attached to the analysis_groups file.
 

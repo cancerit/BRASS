@@ -250,9 +250,12 @@ sub setup {
   PCAP::Cli::file_for_reading('viral', $opts{'viral'});
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
-  PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
-  PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
+
+  if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
+  	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'});
+  	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
+  }
 
 
   delete $opts{'process'} unless(defined $opts{'process'});
@@ -316,9 +319,11 @@ sub setup {
   die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
   die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
 
-  Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
-  die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
-  die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+	if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
+  	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
+  	die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
+  	die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+  }
 
 
 

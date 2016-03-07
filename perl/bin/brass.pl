@@ -257,6 +257,9 @@ sub setup {
   	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
   }
 
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary)) {
+    $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
+  }
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});

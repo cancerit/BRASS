@@ -166,8 +166,7 @@ sub cleanup {
     unlink $file if(-e $file);
   }
   my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.ascat*};
-  push @base_move,  "$basefile.groups",
-                    "$basefile.groups.filtered.bedpe",
+  push @base_move,  "$basefile.groups.filtered.bedpe",
                     "$basefile.is_fb_artefact.txt",
                     "$basefile.groups.clean.bedpe",
                     "$basefile.cn_filtered";

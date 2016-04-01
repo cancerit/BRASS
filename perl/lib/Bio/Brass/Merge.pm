@@ -1,7 +1,7 @@
 package Bio::Brass::Merge;
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -32,10 +32,6 @@ package Bio::Brass::Merge;
 ########## LICENCE ##########
 
 
-BEGIN {
-  $SIG{__WARN__} = sub {warn $_[0] unless( $_[0] =~ m/^Subroutine Tabix.* redefined/)};
-};
-
 use strict;
 use autodie qw(:all);
 use warnings FATAL => 'all';
@@ -45,7 +41,7 @@ use List::Util qw(any);
 use Bio::Brass qw($VERSION);
 use Bio::Brass::Group;
 
-use Tabix;
+use Bio::DB::HTS::Tabix;
 
 use Const::Fast qw(const);
 
@@ -72,11 +68,14 @@ sub _init {
     next unless(any {$key eq $_} @EXPECTED);
     $self->{"_$key"} = $options{$key};
   }
-  $self->{'normal_groups'} = Bio::Brass::Group->new(header => $self->tabix_header);
+
   $self->{'analysis_groups'} = Bio::Brass::Group->new(header => $self->groups_header, sample_chk => $self->{'_tumour'});
 
-  # overide the file for the normal groups
-  $self->{'normal_groups'}->update_input($self->{'_normal_groups'});
+  if(defined $self->{'_normal_groups'}) {
+    $self->{'normal_groups'} = Bio::Brass::Group->new(header => $self->tabix_header);
+    # overide the file for the normal groups
+    $self->{'normal_groups'}->update_input($self->{'_normal_groups'});
+  }
 }
 
 sub merge_records {
@@ -84,37 +83,42 @@ sub merge_records {
   my $comment = $self->{'_comment_char'};
   my $a_grp = $self->{'analysis_groups'};
   my $n_grp = $self->{'normal_groups'};
-  my $brass_np = new Tabix(-data => $self->{'_normal_groups'});
+  my $brass_np;
+  $brass_np = Bio::DB::HTS::Tabix->new(filename => $self->{'_normal_groups'}) if(defined $self->{'_normal_groups'});
   my $fh = $self->{'_analysis_fh'};
   while(my $line = <$fh>) {
     next if($line =~ m/^$comment/);
+    chomp $line;
 
     # always clear the existing groups
     $a_grp->clear_group;
-    $n_grp->clear_group;
-
-    chomp $line;
     next unless($a_grp->new_group($line));
-    # tabix always works half-open, groups file is 1 based
-    my $res = $brass_np->query($a_grp->low_chr, $a_grp->low_5p - 1, $a_grp->low_3p);
-    my %overlaps;
-    if(defined $res->get) {
-      while(my $record = $brass_np->read($res)){
-        $n_grp->new_group($record);
-        next if($a_grp->low_strand ne $n_grp->low_strand);
-        next if($a_grp->high_strand ne $n_grp->high_strand);
-        next if($a_grp->high_chr ne $n_grp->high_chr);
-        next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
-        $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
-      }
-    }
 
-    my $overlap = filter_overlaps(\%overlaps, $n_grp->sample_count);
-    if(defined $overlap) {
-      $n_grp->new_group($overlap);
-    }
-    else {
+    if($n_grp) {
+      # always clear the existing groups
       $n_grp->clear_group;
+
+      # tabix always works half-open, groups file is 1 based
+      my $iter = $brass_np->query(sprintf '%s:%d-%d', $a_grp->low_chr, $a_grp->low_5p - 1, $a_grp->low_3p);
+      my %overlaps;
+      if(defined $iter) {
+        while(my $record = $iter->next){
+          $n_grp->new_group($record);
+          next if($a_grp->low_strand ne $n_grp->low_strand);
+          next if($a_grp->high_strand ne $n_grp->high_strand);
+          next if($a_grp->high_chr ne $n_grp->high_chr);
+          next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
+          $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
+        }
+      }
+
+      my $overlap = filter_overlaps(\%overlaps, $n_grp->sample_count);
+      if(defined $overlap) {
+        $n_grp->new_group($overlap);
+      }
+      else {
+        $n_grp->clear_group;
+      }
     }
     print $ofh $self->merge_record, "\n";
   }
@@ -165,37 +169,56 @@ sub merge_record {
   # first element is the analysis, second the normals
   # if n_grp has no group then just pad the record correctly
   my $a_grp = $self->{'analysis_groups'};
-  my $n_grp = $self->{'normal_groups'};
 
-  my (@n_read_counts, @n_read_lists);
-  if($n_grp->read_counts) {
-    @n_read_counts = $n_grp->read_counts;
-    @n_read_lists = $n_grp->read_lists;
-  }
-  else {
-    unless(exists $self->{'_pad_read_counts'}) {
-      $self->{'_pad_read_counts'} = [(0) x $n_grp->sample_count];
-      $self->{'_pad_read_lists'} = [(q{.}) x $n_grp->sample_count];
+  my @read_counts = $a_grp->read_counts;
+  my @read_lists = $a_grp->read_lists;
+
+  if(defined $self->{'normal_groups'}) {
+    my $n_grp = $self->{'normal_groups'};
+
+    my (@n_read_counts, @n_read_lists);
+    if($n_grp->read_counts) {
+      @n_read_counts = $n_grp->read_counts;
+      @n_read_lists = $n_grp->read_lists;
     }
-    @n_read_counts = @{$self->{'_pad_read_counts'}};
-    @n_read_lists = @{$self->{'_pad_read_lists'}};
+    else {
+      unless(exists $self->{'_pad_read_counts'}) {
+        $self->{'_pad_read_counts'} = [(0) x $n_grp->sample_count];
+        $self->{'_pad_read_lists'} = [(q{.}) x $n_grp->sample_count];
+      }
+      @n_read_counts = @{$self->{'_pad_read_counts'}};
+      @n_read_lists = @{$self->{'_pad_read_lists'}};
+    }
+    push @read_counts, @n_read_counts;
+    push @read_lists, @n_read_lists;
   }
 
   return join("\t", $a_grp->loc_data,
-                    $a_grp->read_counts, @n_read_counts,
+                    @read_counts,
                     $a_grp->repeats,
-                    $a_grp->read_lists, @n_read_lists);
+                    @read_lists);
 }
 
 sub merge_headers {
   # analysis first, normals second
   my $self = shift;
+
+
+  my @inputs = $self->{'analysis_groups'}->inputs;
+  my @samples = $self->{'analysis_groups'}->samples;
+  if(defined $self->{'normal_groups'}) {
+    push @inputs, $self->{'normal_groups'}->inputs;
+    push @samples, $self->{'normal_groups'}->samples;
+  }
+  my $sample_count = scalar @samples;
+
   my $new_header = join "\n", $self->{'analysis_groups'}->info;
   $new_header .= "\n#INPUT\t";
-  $new_header .= join "\n#INPUT\t", ($self->{'analysis_groups'}->inputs, $self->{'normal_groups'}->inputs);
-  $new_header .= "\n#NSAMPLES\t".($self->{'analysis_groups'}->sample_count + $self->{'normal_groups'}->sample_count)."\n";
-  my $sample_counter = 1;
-  for my $sample($self->{'analysis_groups'}->samples, $self->{'normal_groups'}->samples) {
+  $new_header .= join "\n#INPUT\t", @inputs;
+  $new_header .= "\n#NSAMPLES\t".$sample_count."\n";
+  my $sample_counter = 0;
+  for my $sample(@samples) {
+    $sample_counter++;
     $new_header .= sprintf "#SAMPLE\t%s\t%s\n", $sample_counter++, $sample;
   }
   return $new_header;

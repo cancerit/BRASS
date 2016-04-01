@@ -7,13 +7,21 @@ args = commandArgs(trailingOnly = T)
 options(scipen = 200)
 MIN_WINDOW_BIN_COUNT = 10
 
-if (length(args) < 4) {
+if (length(args) < 6) {
     cat("Usage: \n")
     cat("  Rscript get_rg_cns.R rgs_file cn_file segments_file bam_file acf cent_file\n")
     stop()
 } else {
     cat(sprintf("Using following settings:\nMIN_DIST_OF_CN_SEG_BKPT_TO_RG = %d\nMAX_GET_READS_EXTEND_DIST = %d\nMIN_WINDOW_BIN_COUNT = %d\n", MIN_DIST_OF_CN_SEG_BKPT_TO_RG, MAX_GET_READS_EXTEND_DIST, MIN_WINDOW_BIN_COUNT), file = stderr())
 }
+
+cat("Reading in data...\n")
+rgs_file = args[1]
+cn_file = args[2]
+segs_file = args[3]
+bam_file = args[4]
+acf = as.numeric(args[5])
+cent_file = args[6]
 
 
 # Telomeric and centromeric regions are determined based on standard coordinates
@@ -22,11 +30,11 @@ if (length(args) < 4) {
 centromere_telomere_coords<-as.matrix(
                               read.table( cent_file,
                                           sep="\t",
-                                          header = TRUE,
-                                          stringsAsFactor= FALSE,
+                                          header=TRUE,
+                                          stringsAsFactor=FALSE,
                                           row.names = 1,
-                                          fill = TRUE)
-                                        )
+                                          fill = TRUE)[,1:4] # this drops the comment column
+                                       )
 
 coord_within_tel_or_cent = function(chr, pos) {
     mapply(
@@ -43,13 +51,8 @@ coord_within_tel_or_cent = function(chr, pos) {
 }
 
 
-cat("Reading in data...\n")
-rgs_file = args[1]
-cn_file = args[2]
-segs_file = args[3]
-bam_file = args[4]
-acf = as.numeric(args[5])
 if (acf > 1) acf = acf * 0.01
+
 if (file.info(rgs_file)$size > 0) {
     rgs = read.table(rgs_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 } else {
@@ -78,7 +81,9 @@ cat("Organizing and sorting data...\n")
 bkpts_of_chr  = list()
 rg_end_of_chr = list()
 rg_idx_of_chr = list()
-chrs = c(1:22, "X")
+
+chrs<-rownames(centromere_telomere_coords);
+
 for (c in chrs) {
     bkpts_of_chr[[c]] = numeric()
     rg_end_of_chr[[c]] = numeric()
@@ -117,7 +122,6 @@ for (chr in names(bkpts_of_chr)) {
     rg_idx_of_chr[[chr]] = rg_idx_of_chr[[chr]][o]
 }
 
-
 # Go through every chromosome and perform segmentation
 cat("Segmenting data...\n")
 seg_chr = character()
@@ -128,6 +132,8 @@ seg_end_bkpt = character()
 seg_cn = numeric()
 seg_bin_count = numeric()
 for (c in chrs) {
+  cat(paste0("  Chr ", c, "...\n"))
+
     cn_idx = cn[,1] == c
     pos = cn[cn_idx, 2]/2 + cn[cn_idx, 3]/2
 
@@ -198,6 +204,7 @@ for (c in chrs) {
 
     o = order(boundaries)
     boundaries = boundaries[o]
+
     bkpts = bkpts[o]
     rg_idx = rg_idx[o]
     rg_end = rg_end[o]

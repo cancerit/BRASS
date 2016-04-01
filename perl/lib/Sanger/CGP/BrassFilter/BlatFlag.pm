@@ -1,7 +1,7 @@
 package Sanger::CGP::BrassFilter::BlatFlag;
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -66,7 +66,7 @@ Class that updates the Lrange to Hrange blat score flag on a bedpe file. It puts
 
 use strict;
 use File::Copy qw(move);
-use Bio::DB::Sam;
+use Bio::DB::HTS;
 use File::Temp qw(tempdir);
 use File::Spec;
 
@@ -304,7 +304,7 @@ sub _get_hits {
   my $Hfile = "$tempdir/Hrange.fa";
 
   # load an indexed fasta file
-  my $fai = Bio::DB::Sam::Fai->load( $self->{ref} );
+  my $fai = Bio::DB::HTS::Fai->load( $self->{ref} );
 
   foreach my $name(keys %{$self->{data}}) {
     my $Lrange = $self->{data}->{$name}->{Lrange};

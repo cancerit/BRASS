@@ -97,7 +97,7 @@ sub setup {
   }
 
   PCAP::Cli::file_for_reading('input', $opts{'input'}) unless($opts{'input'} eq q{-});
-  PCAP::Cli::file_for_reading('normals', $opts{'normals'});
+  PCAP::Cli::file_for_reading('normals', $opts{'normals'}) if(defined $opts{'normals'});
 
   return \%opts;
 }

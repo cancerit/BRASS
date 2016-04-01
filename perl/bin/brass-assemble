@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -43,7 +43,7 @@ use File::Path qw(make_path);
 use File::Temp;
 use Getopt::Long qw(:config bundling no_ignore_case);
 
-use Bio::DB::Sam;
+use Bio::DB::HTS;
 use Data::Dumper;
 
 use Graph;
@@ -126,7 +126,7 @@ die "$0: bad mode |$aligner_mode|" unless($aligner_mode =~ m/^(aln|mem)$/);
 my @bam_filenames = (scalar @ARGV > 1)? splice(@ARGV, 1) : ();
 my @sample_bams = map { Bio::Brass::ReadSelection->new($_, $aligner_mode) } @bam_filenames;
 
-my $ref_fai = Bio::DB::Sam::Fai->load($genome_fa);
+my $ref_fai = Bio::DB::HTS::Fai->load($genome_fa);
 $Bio::Brass::Alignment::ref_fai = $ref_fai;
 
 my ($bedpe, $tab, $vcf);

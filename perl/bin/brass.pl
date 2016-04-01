@@ -175,9 +175,9 @@ sub cleanup {
     move($to_move, $intdir) if(-e $to_move);
   }
 
-  # ascat files may not be in base output folder so copy from inputs:
-  copy($options->{'ascat'}, $intdir);
-  copy($options->{'ascat_summary'}, $intdir);
+  # ascat files may not be in base output folder so copy from inputs if available (as can be optional)
+  copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
+  copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {
@@ -209,6 +209,7 @@ sub setup {
               'b|gcbins=s' => \$opts{'gcbins'},
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
+              'ct|centtel=s' => \$opts{'centtel'},
               'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
@@ -247,16 +248,15 @@ sub setup {
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
   PCAP::Cli::file_for_reading('genome', $opts{'genome'});
   PCAP::Cli::file_for_reading('viral', $opts{'viral'});
+  PCAP::Cli::file_for_reading('centtel', $opts{'centtel'});
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
 
-  if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
-  	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'});
-  	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
-  }
+	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
+	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary)) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary centtel)) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
@@ -355,6 +355,8 @@ brass.pl [options]
     -viral     -vi  Virus sequences from NCBI
     -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'
     -gcbins    -b   5 column bed coord file, col 4 number of non-N bases, col 5 GC fraction.
+    -centtel   -ct  TSV file of usable regions of the chromosome
+                      Example in perl/share/Rdefault/
     -sampstat  -ss  ASCAT sample statistics file or file containing
                       NormalContamination 0.XXXXX
                       Ploidy X.XXX

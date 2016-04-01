@@ -1,7 +1,7 @@
 package Bio::Brass::ReadSelection;
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -35,7 +35,7 @@ package Bio::Brass::ReadSelection;
 use strict;
 use warnings;
 
-use Bio::DB::Sam 1.35;
+use Bio::DB::HTS;
 use Carp;
 use List::Util qw(first);
 use File::Spec;
@@ -87,13 +87,13 @@ sub new {
 	# If both files exist, treat this as BAMFILE:BAIFILE explicit syntax
     }
     elsif (-e $bam && -e "$bam.bai") {
-	# Index file is .bam.bai, so Bio::DB::Sam can use the files directly
+	# Index file is .bam.bai, so Bio::DB::HTS can use the files directly
 	undef $bam;  undef $bai;
     }
     else {
 	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= '.bai';
 	if (-e $bam && -e $bai) {
-	    # Index file is .bai, so Bio::DB::Sam will need symlinks
+	    # Index file is .bai, so Bio::DB::HTS will need symlinks
 	}
 	else {
 	    # No index file present, so just fail with the original filename
@@ -126,7 +126,7 @@ sub new {
 	$filename = "$base.bam";
     }
 
-    $self->{bam} = Bio::DB::Sam->new(-bam => $filename);
+    $self->{bam} = Bio::DB::HTS->new(-bam => $filename);
 
     my $max = 0;
     my %sample_names = ();

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -53,16 +53,15 @@ rm -rf blib
 echo '### Running perl tests ###'
 
 export HARNESS_PERL_SWITCHES=-MDevel::Cover=-db,reports,-select='^lib/*\.pm$',-ignore,'^t/'
-rm -rf docs
+rm -rf reports docs pm_to_blib blib
+cover -delete
 mkdir -p docs/reports_text
 prove -w -I lib t
 
 echo '### Generating test/pod coverage reports ###'
 # removed 'condition' from coverage as '||' 'or' doesn't work properly
-cover -coverage branch,subroutine,pod -report_c0 50 -report_c1 85 -report_c2 100 -report html_basic reports -silent > /dev/null
+cover -coverage branch,subroutine,pod -report_c0 50 -report_c1 85 -report_c2 100 -report html_basic reports -silent
 cover -coverage branch,subroutine,pod -report text reports -silent > docs/reports_text/coverage.txt
-# handle slightly noisy output from html_basic version
-grep -B 10000 -A 1 -m 1 '^Total' docs/reports_text/coverage.txt
 rm -rf reports/structure perl.reports/digests reports/cover.13 reports/runs
 cp reports/coverage.html reports/index.html
 mv reports docs/reports_html

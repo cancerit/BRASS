@@ -53,25 +53,21 @@ done_message () {
 
 get_distro () {
   EXT=""
-  DECOMP=""
   if [[ $2 == *.tar.bz2* ]] ; then
     EXT="tar.bz2"
-    DECOMP="-j"
+  elif [[ $2 == *.zip* ]] ; then
+    EXT="zip"
   elif [[ $2 == *.tar.gz* ]] ; then
     EXT="tar.gz"
-    DECOMP="-z"
   else
     echo "I don't understand the file type for $1"
     exit 1
   fi
-
   if hash curl 2>/dev/null; then
     curl -sS -o $1.$EXT -L $2
   else
     wget -nv -O $1.$EXT $2
   fi
-  mkdir -p $1
-  tar --strip-components 1 -C $1 $DECOMP -xf $1.$EXT
 }
 
 get_file () {

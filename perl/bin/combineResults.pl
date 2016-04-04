@@ -1,23 +1,55 @@
 #!/usr/bin/perl
 
+########## LICENCE ##########
+# Copyright (c) 2014-2016 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# 1. The usage of a range of years within a copyright statement contained within
+# this distribution should be interpreted as being equivalent to a list of years
+# including the first and last year specified and all consecutive years between
+# them. For example, a copyright statement that reads ‘Copyright (c) 2005, 2007-
+# 2009, 2011-2012’ should be interpreted as being identical to a statement that
+# reads ‘Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012’ and a copyright
+# statement that reads ‘Copyright (c) 2005-2012’ should be interpreted as being
+# identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
+# 2009, 2010, 2011, 2012’."
+########## LICENCE ##########
+
 use strict;
 use warnings FATAL => 'all';
 use autodie;
+use List::Util qw(first);
 use Const::Fast qw(const);
 
+const my @CN_STATES => qw(FAIL-DEFAULT DEFAULT REAL);
 const my @NEW_BEDPE_HEADER => ('# chr1','start1','end1','chr2','start2','end2','id/name','brass_score','strand1','strand2','sample','svclass','bkdist','assembly_score','readpair names','readpair count','bal_trans','inv','occL','occH','copynumber_flag','range_blat','Brass Notation','non-template','micro-homology','assembled readnames','assembled read count','gene1','gene_id1','transcript_id1','strand1','end_phase1','region1','region_number1','total_region_count1','first/last1','gene2','gene_id2','transcript_id2','strand2','phase2','region2','region_number2','total_region_count2','first/last2','fusion_flag');
 
 if(scalar @ARGV < 3) {
-  warn "USAGE: combineResults.pl X_ann.groups X_ann.assembled X.final ploidy Acf [ascat_failure]\n";
+  warn "USAGE: combineResults.pl X_ann.groups X_ann.assembled X.final ploidy Acf cn_state\n";
   warn "\tX.final is a prefix, relevant suffixes will be added for VCF and BEDPE outputs\n";
   exit 1;
 }
-my ($groups_prefix, $assembled_prefix, $final_prefix, $ploidy, $acf, $ascat_failed) = @ARGV;
+my ($groups_prefix, $assembled_prefix, $final_prefix, $ploidy, $acf, $cn_state) = @ARGV;
 
-my $cn_state = 'REAL';
-$cn_state = 'DEFAULTS' if(defined $ascat_failed && $ascat_failed == 1);
+die "ERROR: cn_state must be one of ".join(',',@CN_STATES)." - you provided $cn_state\n" unless(first { $cn_state eq $_ } @CN_STATES);
+
 my $ascat_info = sprintf "Ploidy=%s,Acf=%s,CnState=%s", $ploidy, $acf, $cn_state;
-
 my $svclass_bkpt_dist = mergeBedpe($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info);
 mergeVcf($groups_prefix, $assembled_prefix, $final_prefix, $ascat_info, $svclass_bkpt_dist);
 

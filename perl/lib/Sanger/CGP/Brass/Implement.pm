@@ -374,6 +374,7 @@ sub filter {
   $rg_cns .= ' '.$seg_cn;
   $rg_cns .= ' '.$options->{'tumour'};
   $rg_cns .= ' '.$options->{'Acf'};
+  $rg_cns .= ' '.$options->{'centtel'};
 
   my $match_lib_file = $r_stub.'.r6';
   my $filtered_cn = $r_stub.'.cn_filtered';
@@ -569,7 +570,7 @@ sub grass {
   $combine_cmd .= ' '.$final;
   $combine_cmd .= ' '.$options->{'Ploidy'};
   $combine_cmd .= ' '.$options->{'Acf'};
-  $combine_cmd .= ' '.$options->{'AscatFailure'};
+  $combine_cmd .= ' '.$options->{'PloidyAcfState'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'),
                                             [ qq{bash -c 'set -o pipefail; $merge'},
@@ -697,23 +698,29 @@ sub _Rpath {
 
 sub get_ascat_summary {
   my ($options) = @_;
-  open my $SUMM, '<', $options->{'ascat_summary'};
-  while(my $line = <$SUMM>) {
-    chomp $line;
-    my ($key, $value) = split /[[:space:]]+/, $line;
-    next unless($key eq 'rho' || $key eq 'Ploidy');
-    $options->{$key} = $value;
+  $options->{'PloidyAcfState'} = q{};
+  if(defined $options->{'ascat_summary'}) {
+    open my $SUMM, '<', $options->{'ascat_summary'};
+    while(my $line = <$SUMM>) {
+      chomp $line;
+      my ($key, $value) = split /[[:space:]]+/, $line;
+      next unless($key eq 'rho' || $key eq 'Ploidy');
+      $key = 'Acf' if($key eq 'rho');
+      $options->{$key} = $value;
+    }
+
+    if($options->{'Ploidy'} eq '?') {
+      $options->{'PloidyAcfState'} = 'FAIL-DEFAULT'
+    }
+    else {
+      $options->{'PloidyAcfState'} = 'REAL'
+    }
   }
 
-  if($options->{'Ploidy'} eq '?') {
+  if($options->{'PloidyAcfState'} ne 'REAL') {
     $options->{'Ploidy'} = 2;
     $options->{'Acf'} = 0.75;
-    $options->{'AscatFailure'} = 1;
-  }
-  else {
-    $options->{'Acf'} = $options->{'rho'};
-    delete $options->{'rho'};
-    $options->{'AscatFailure'} = 0;
+    $options->{'PloidyAcfState'} = 'DEFAULT'
   }
 }
 

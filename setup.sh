@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 20142016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -125,9 +125,29 @@ INST_PATH=`pwd`
 cd $INIT_DIR
 
 # make sure that build is self contained
-unset PERL5LIB
 PERLROOT=$INST_PATH/lib/perl5
-export PERL5LIB="$PERLROOT"
+
+# allows user to knowingly specify other PERL5LIB areas.
+if [ -z ${CGP_PERLLIBS+x} ]; then
+  export PERL5LIB="$PERLROOT"
+else
+  export PERL5LIB="$PERLROOT:$CGP_PERLLIBS"
+fi
+
+#add bin path for install tests
+export PATH=$INST_PATH/bin:$PATH
+
+#create a location to build dependencies
+SETUP_DIR=$INIT_DIR/install_tmp
+mkdir -p $SETUP_DIR
+
+cd $SETUP_DIR
+
+## grab cpanm and stick in workspace, then do a self upgrade into bin:
+get_file $SETUP_DIR/cpanm https://cpanmin.us/
+perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
+CPANM=`which cpanm`
+echo $CPANM
 
 CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
 if [[ "x$CHK" == "x" ]] ; then
@@ -141,23 +161,18 @@ if [[ "x$CHK" == "x" ]] ; then
   exit 1;
 fi
 
-#create a location to build dependencies
-SETUP_DIR=$INIT_DIR/install_tmp
-mkdir -p $SETUP_DIR
-
-## grab cpanm:
-rm -f $SETUP_DIR/cpanm
-get_file $SETUP_DIR/cpanm http://xrl.us/cpanm
-chmod +x $SETUP_DIR/cpanm
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Sanger::CGP::Vcf`
+if [[ "x$CHK" == "x" ]] ; then
+  echo "PREREQUISITE: Please install cgpVcf before proceeding: https://github.com/cancerit/cgpVcf/releases"
+  exit 1;
+fi
 
 perlmods=( "Graph" )
 
 set +e
 for i in "${perlmods[@]}" ; do
   echo -n "Installing build prerequisite $i..."
-  (
-    perl $SETUP_DIR/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
-  ) >>$INIT_DIR/setup.log 2>&1
+  $CPANM --mirror http://cpan.metacpan.org -l $INST_PATH $i
   done_message "" "Failed during installation of $i."
 done
 
@@ -168,14 +183,12 @@ if [ -e $SETUP_DIR/bedtools.success ]; then
   echo -n " previously installed ...";
 else
   cd $SETUP_DIR
-  (
   get_distro "bedtools2" $SOURCE_BEDTOOLS && \
   mkdir -p bedtools2 && \
   tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz && \
   make -C bedtools2 -j$CPU && \
   cp bedtools2/bin/* $INST_PATH/bin/. && \
   touch $SETUP_DIR/bedtools.success
-  )>>$INIT_DIR/setup.log 2>&1
 fi
 done_message "" "Failed to build bedtools."
 
@@ -183,18 +196,16 @@ echo -n "Building blat ..."
 if [ -e $SETUP_DIR/blat.success ]; then
   echo -n " previously installed ..."
 else
-  (
-    get_distro "blat" $SOURCE_BLAT && \
-    unzip -qu blat.zip && \
-    cd $SETUP_DIR/blatSrc && \
-    BINDIR=$SETUP_DIR/blat/bin && \
-    export BINDIR && \
-    export MACHTYPE && \
-    mkdir -p $BINDIR && \
-    make -j$CPU && \
-    cp $BINDIR/blat $INST_PATH/bin/. && \
-    touch $SETUP_DIR/blat.success
-  ) >>$INIT_DIR/setup.log 2>&1
+  get_distro "blat" $SOURCE_BLAT && \
+  unzip -qu blat.zip && \
+  cd $SETUP_DIR/blatSrc && \
+  BINDIR=$SETUP_DIR/blat/bin && \
+  export BINDIR && \
+  export MACHTYPE && \
+  mkdir -p $BINDIR && \
+  make -j$CPU && \
+  cp $BINDIR/blat $INST_PATH/bin/. && \
+  touch $SETUP_DIR/blat.success
 fi
 done_message "" "Failed to build blat."
 
@@ -203,19 +214,17 @@ echo -n "Building brass (c++)..."
 if [ -e $SETUP_DIR/brass.success ]; then
   echo -n " previously installed ..."
 else
-  (
-    rm -rf $INIT_DIR/cansam*
-    unzip -q distros/cansam.zip && \
-    mv cansam-master cansam && \
-    make -C cansam && \
-    make -C c++ && \
-    cp c++/augment-bam $INST_PATH/bin/. && \
-    cp c++/brass-group $INST_PATH/bin/. && \
-    cp c++/filterout-bam $INST_PATH/bin/. && \
-    make -C c++ clean && \
-    rm -rf cansam && \
-    touch $SETUP_DIR/brass.success
-  ) >>$INIT_DIR/setup.log 2>&1
+  rm -rf $INIT_DIR/cansam*
+  unzip -q distros/cansam.zip && \
+  mv cansam-master cansam && \
+  make -C cansam && \
+  make -C c++ && \
+  cp c++/augment-bam $INST_PATH/bin/. && \
+  cp c++/brass-group $INST_PATH/bin/. && \
+  cp c++/filterout-bam $INST_PATH/bin/. && \
+  make -C c++ clean && \
+  rm -rf cansam && \
+  touch $SETUP_DIR/brass.success
 fi
 done_message "" "Failed to build brass (c++)."
 
@@ -224,23 +233,21 @@ echo -n "Building velvet..."
 if [ -e $SETUP_DIR/velvet.success ]; then
   echo -n " previously installed ..."
 else
-  (
-    cd $INIT_DIR/distros && \
-    tar zxf velvet_1.2.10.tgz && \
-    cd velvet_1.2.10 && \
-    make MAXKMERLENGTH=95 velveth velvetg && \
-    mv velveth $INST_PATH/bin/velvet95h && \
-  	mv velvetg $INST_PATH/bin/velvet95g && \
-  	make clean && \
-  	make velveth velvetg && \   	# don't do multi-threaded make
-  	mv velveth $INST_PATH/bin/velvet31h && \
-  	mv velvetg $INST_PATH/bin/velvet31g && \
-  	ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth && \
-  	ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg && \
-  	cd $INIT_DIR && \
-  	rm -rf $INIT_DIR/distros/velvet_1.2.10 && \
-    touch $SETUP_DIR/velvet.success
-  ) >>$INIT_DIR/setup.log 2>&1
+  cd $INIT_DIR/distros && \
+  tar zxf velvet_1.2.10.tgz && \
+  cd velvet_1.2.10 && \
+  make MAXKMERLENGTH=95 velveth velvetg && \
+  mv velveth $INST_PATH/bin/velvet95h && \
+  mv velvetg $INST_PATH/bin/velvet95g && \
+  make clean && \
+  make velveth velvetg && \   	# don't do multi-threaded make
+  mv velveth $INST_PATH/bin/velvet31h && \
+  mv velvetg $INST_PATH/bin/velvet31g && \
+  ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth && \
+  ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg && \
+  cd $INIT_DIR && \
+  rm -rf $INIT_DIR/distros/velvet_1.2.10 && \
+  touch $SETUP_DIR/velvet.success
 fi
 done_message "" "Failed to build velvet."
 
@@ -249,20 +256,18 @@ echo -n "Building exonerate..."
 if [ -e $SETUP_DIR/exonerate.success ]; then
   echo -n " previously installed ..."
 else
-  (
-    cd $INIT_DIR/distros && \
-    tar zxf exonerate-2.2.0.tar.gz && \
-    cd $INIT_DIR/distros/exonerate-2.2.0 && \
-    cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff . && \
-    patch -p1 < exonerate_pthread-asneeded.diff && \
-    ./configure --prefix=$INST_PATH && \
-    make && \    # don't do multi-threaded make
-    make check && \
-    make install && \
-    cd $INIT_DIR && \
-    rm -rf $INIT_DIR/distros/exonerate-2.2.0 && \
-    touch $SETUP_DIR/exonerate.success
-  ) >>$INIT_DIR/setup.log 2>&1
+  cd $INIT_DIR/distros && \
+  tar zxf exonerate-2.2.0.tar.gz && \
+  cd $INIT_DIR/distros/exonerate-2.2.0 && \
+  cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff . && \
+  patch -p1 < exonerate_pthread-asneeded.diff && \
+  ./configure --prefix=$INST_PATH && \
+  make && \    # don't do multi-threaded make
+  make check && \
+  make install && \
+  cd $INIT_DIR && \
+  rm -rf $INIT_DIR/distros/exonerate-2.2.0 && \
+  touch $SETUP_DIR/exonerate.success
 fi
 done_message "" "Failed to build exonerate."
 
@@ -275,19 +280,15 @@ echo -n "Installing Perl prerequisites ..."
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
     echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar."
 fi
-(
-  perl $SETUP_DIR/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
-) >>$INIT_DIR/setup.log 2>&1
+$CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
 done_message "" "Failed during installation of core dependencies."
 
 echo -n "Installing brass (perl)..."
-(
-  cd $INIT_DIR/perl && \
-  perl Makefile.PL INSTALL_BASE=$INST_PATH && \
-  make && \
-  make test && \
-  make install
-) >>$INIT_DIR/setup.log 2>&1
+cd $INIT_DIR/perl && \
+perl Makefile.PL INSTALL_BASE=$INST_PATH && \
+make && \
+make test && \
+make install
 done_message "" "brass (perl) install failed."
 
 # cleanup all junk

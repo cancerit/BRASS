@@ -7,109 +7,34 @@ args = commandArgs(trailingOnly = T)
 options(scipen = 200)
 MIN_WINDOW_BIN_COUNT = 10
 
-if (length(args) < 4) {
+if (length(args) < 6) {
     cat("Usage: \n")
-    cat("  Rscript get_rg_cns.R rgs_file cn_file segments_file bam_file acf\n")
+    cat("  Rscript get_rg_cns.R rgs_file cn_file segments_file bam_file acf cent_file\n")
     stop()
 } else {
     cat(sprintf("Using following settings:\nMIN_DIST_OF_CN_SEG_BKPT_TO_RG = %d\nMAX_GET_READS_EXTEND_DIST = %d\nMIN_WINDOW_BIN_COUNT = %d\n", MIN_DIST_OF_CN_SEG_BKPT_TO_RG, MAX_GET_READS_EXTEND_DIST, MIN_WINDOW_BIN_COUNT), file = stderr())
 }
 
+cat("Reading in data...\n")
+rgs_file = args[1]
+cn_file = args[2]
+segs_file = args[3]
+bam_file = args[4]
+acf = as.numeric(args[5])
+cent_file = args[6]
 
-chr_lens = c(
-    "1" = 249250621,
-    "2" = 243199373,
-    "3" = 198022430,
-    "4" = 191154276,
-    "5" = 180915260,
-    "6" = 171115067,
-    "7" = 159138663,
-    "8" = 146364022,
-    "9" = 141213431,
-    "10" = 135534747,
-    "11" = 135006516,
-    "12" = 133851895,
-    "13" = 115169878,
-    "14" = 107349540,
-    "15" = 102531392,
-    "16" = 90354753,
-    "17" = 81195210,
-    "18" = 78077248,
-    "19" = 59128983,
-    "20" = 63025520,
-    "21" = 48129895,
-    "22" = 51304566,
-    "X" = 155270560,
-    "Y" = 59373566
-)
 
 # Telomeric and centromeric regions are determined based on standard coordinates
 # + surrounding unmappable regions. The matrix has coordinates for where
 # p-tel ends, regions of centromeres and where q-tel starts.
-
-# centromere_coords = matrix(
-#     c(
-#         121535434, 142535434,  # chr1, centromere + heterochromatin
-#          90545103,  91545103,  # chr2, centromere
-#          90504854,  93504854,  # chr3, centromere
-#          49660117,  52660117,  # chr4, centromere
-#          46405641,  49405641,  # chr5, centromere
-#          58830166,  61830166,  # chr6, centromere
-#          58054331,  61054331,  # chr7, centromere
-#          43838887,  46838887,  # chr8, centromere
-#          47367679,  65367679,  # chr9, centromere + heterochromatin
-#          39254935,  42254935,  # chr10, centromere
-#          51644205,  54644205,  # chr11, centromere
-#          34856694,  37856694,  # chr12, centromere
-#                NA,  19020000,  # chr13, short arm + centromere + heterochromatin
-#                NA,  19000000,  # chr14. short arm + centromere
-#                NA,  20000000,  # chr15, short arm + centromere
-#          35335801,  38335801,  # chr16, centromere + heterochromatin
-#          22263006,  25263006,  # chr17, centromere
-#          15460898,  18460898,  # chr18, centromere
-#          24631782,  27731782,  # chr19, heterochromatin + centromere + heterochromatin
-#          26369569,  29369569,  # chr20, centromere
-#          11238129,  14288129,  # chr21, heterochromatin + centromere
-#                NA,  16000000,  # chr22, short arm + centromere
-#          58632012,  61632012,  # chrX, centromere
-#          10104553,  13104553   # chrY, centromere
-#      ),
-#      ncol = 2,
-#      byrow = T
-# )
-centromere_telomere_coords = matrix(
-    c(
-        # 750000, 121270001, 144840000, 249220001, # chr 1: ...
-        750000, 121270001, 150000000, 249220001, # ... q-side of centromere manually set
-         10000,  89330001,  95390000, 242950001, # chr 2
-         60000,  90500001,  93510000, 197820001, # chr 3
-         40000,  49090001,  52680001, 190910001, # chr 4
-         10000,  46400001,  49440000, 180720001, # chr 5
-        200000,  58770001,  61880000, 170920001, # chr 6
-         80000,  58050001,  61980000, 159130001, # chr 7
-        160000,  43790001,  46880000, 146300001, # chr 8
-        200000,  38770001,  70990000, 141090001, # chr 9
-        100000,  39150001,  42400000, 135230001, # chr 10
-        190000,  51580001,  54800000, 134940001, # chr 11
-        180000,  34850001,  37860000, 133840001, # chr 12
-             0,         0,  19360000, 115110001, # chr 13
-             0,         0,  20190000, 107290001, # chr 14
-             0,         0,  20030000, 102280001, # chr 15
-         80000,  35240001,  46490000,  90160001, # chr 16
-             0,  22240001,  25270000,  81110001, # chr 17
-        130000,  15410001,  18540000,  78010001, # chr 18
-        250000,  24600001,  27740000,  59100001, # chr 19
-        120000,  26290001,  29420000,  62920001, # chr 20
-             0,         0,  14340000,  48100001, # chr 21 - don't use the p-arm data
-             0,         0,  16850000,  51200001, # chr 22
-        310000,  58500001,  61730000, 155240001  # chr X
-   ),
-   ncol = 4,
-   byrow = T
-)
-
-rownames(centromere_telomere_coords) = c(1:22, "X")
-colnames(centromere_telomere_coords) = c("ptel", "cen_start", "cen_end", "qtel")
+centromere_telomere_coords<-as.matrix(
+                              read.table( cent_file,
+                                          sep="\t",
+                                          header=TRUE,
+                                          stringsAsFactor=FALSE,
+                                          row.names = 1,
+                                          fill = TRUE)[,1:4] # this drops the comment column
+                                       )
 
 coord_within_tel_or_cent = function(chr, pos) {
     mapply(
@@ -126,13 +51,8 @@ coord_within_tel_or_cent = function(chr, pos) {
 }
 
 
-cat("Reading in data...\n")
-rgs_file = args[1]
-cn_file = args[2]
-segs_file = args[3]
-bam_file = args[4]
-acf = as.numeric(args[5])
 if (acf > 1) acf = acf * 0.01
+
 if (file.info(rgs_file)$size > 0) {
     rgs = read.table(rgs_file, header = F, sep = "\t", stringsAsFactors = F, comment = "")
 } else {
@@ -161,7 +81,9 @@ cat("Organizing and sorting data...\n")
 bkpts_of_chr  = list()
 rg_end_of_chr = list()
 rg_idx_of_chr = list()
-chrs = c(1:22, "X")
+
+chrs<-rownames(centromere_telomere_coords);
+
 for (c in chrs) {
     bkpts_of_chr[[c]] = numeric()
     rg_end_of_chr[[c]] = numeric()
@@ -200,7 +122,6 @@ for (chr in names(bkpts_of_chr)) {
     rg_idx_of_chr[[chr]] = rg_idx_of_chr[[chr]][o]
 }
 
-
 # Go through every chromosome and perform segmentation
 cat("Segmenting data...\n")
 seg_chr = character()
@@ -211,6 +132,8 @@ seg_end_bkpt = character()
 seg_cn = numeric()
 seg_bin_count = numeric()
 for (c in chrs) {
+  cat(paste0("  Chr ", c, "...\n"))
+
     cn_idx = cn[,1] == c
     pos = cn[cn_idx, 2]/2 + cn[cn_idx, 3]/2
 
@@ -281,6 +204,7 @@ for (c in chrs) {
 
     o = order(boundaries)
     boundaries = boundaries[o]
+
     bkpts = bkpts[o]
     rg_idx = rg_idx[o]
     rg_end = rg_end[o]

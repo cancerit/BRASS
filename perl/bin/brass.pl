@@ -175,9 +175,9 @@ sub cleanup {
     move($to_move, $intdir) if(-e $to_move);
   }
 
-  # ascat files may not be in base output folder so copy from inputs:
-  copy($options->{'ascat'}, $intdir);
-  copy($options->{'ascat_summary'}, $intdir);
+  # ascat files may not be in base output folder so copy from inputs if available (as can be optional)
+  copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
+  copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {
@@ -209,6 +209,7 @@ sub setup {
               'b|gcbins=s' => \$opts{'gcbins'},
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
+              'ct|centtel=s' => \$opts{'centtel'},
               'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
@@ -225,8 +226,8 @@ sub setup {
               'x|noclean' => \$opts{'noclean'},
   ) or pod2usage(2);
 
-  pod2usage(-verbose => 1) if(defined $opts{'h'});
-  pod2usage(-verbose => 2) if(defined $opts{'m'});
+  pod2usage(-verbose => 1, -exit=>0) if(defined $opts{'h'});
+  pod2usage(-verbose => 2, -exit=>0) if(defined $opts{'m'});
 
   if($opts{'version'}) {
     print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
@@ -247,16 +248,15 @@ sub setup {
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
   PCAP::Cli::file_for_reading('genome', $opts{'genome'});
   PCAP::Cli::file_for_reading('viral', $opts{'viral'});
+  PCAP::Cli::file_for_reading('centtel', $opts{'centtel'});
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
 
-  if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
-  	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'});
-  	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
-  }
+	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
+	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary)) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary centtel)) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
@@ -355,14 +355,16 @@ brass.pl [options]
     -viral     -vi  Virus sequences from NCBI
     -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'
     -gcbins    -b   5 column bed coord file, col 4 number of non-N bases, col 5 GC fraction.
-    -sampstat  -ss  ASCAT sample statistics file or file containing
-                      NormalContamination 0.XXXXX
-                      Ploidy X.XXX
+    -centtel   -ct  TSV file of usable regions of the chromosome
+                      Example in perl/share/Rdefault/
 
   Optional
     -mingroup  -j   Minmum reads to call group [2].
     -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -ascat     -a   ASCAT copynumber summary
+    -sampstat  -ss  ASCAT sample statistics file or file containing
+                      NormalContamination 0.XXXXX [0.25]
+                      Ploidy X.XXX [2.0]
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)
@@ -372,9 +374,10 @@ brass.pl [options]
     -cpus      -c   Number of cores to use. [1]
                      - recommend max 2 during 'input' process.
 
-  Targeted processing (further detail under OPTIONS):
+  Targeted processing (further detail under PROCESS OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
     -index     -i   Optionally restrict '-p' to single job
+    -limit     -l   Define with -p and -i, see below
 
   Other:
     -help      -h   Brief help message.
@@ -386,7 +389,12 @@ brass.pl [options]
 
   Run with '-m' for possible input file types.
 
-=head1 OPTIONS
+=head1 ONE SHOT PROCESSING
+
+You can submit the whole analysis with a single command using mutliple cores on the same host.
+Ensure that -p, -i and -l are not set when doing this.
+
+=head1 PROCESS OPTIONS
 
 =over 2
 
@@ -395,8 +403,13 @@ brass.pl [options]
 Available processes for this tool are:
 
   input
+  cover
+  merge
+  normcn
   group
+  isize
   filter
+  split
   assemble
   grass
   tabix
@@ -406,13 +419,29 @@ Available processes for this tool are:
 Possible index ranges for processes above are:
 
   input     = 1..2
+  cover     = ? - use with -l
+  merge     = 1
+  normcn    = 1
   group     = 1
+  isize     = 1
   filter    = 1
   split     = 1
-  assemble  = ?
+  assemble  = ? - use with -l
   grass     = 1
   tabix     = 1
 
 If you want STDOUT/ERR to screen ensure index is set even for single job steps.
+
+=item B<-limit>
+
+Allows -index of indeterminate size to executed on a known number of processes.
+
+For example if 5 jobs are required to run cover step, setting limit to 2 will allow this to be run in 2 jobs:
+
+ $ brass.pl ... -process cover -index 1 -limit 2
+   # runs 1,3,5
+
+ $ brass.pl ... -process cover -index 2 -limit 2
+   # runs 2,4
 
 =back

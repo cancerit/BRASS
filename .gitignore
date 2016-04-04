@@ -20,3 +20,8 @@
 /perl/perltidy.LOG
 /perl/MYMETA.json
 /perl/MYMETA.yml
+/perl/bin/augment-bam
+/perl/bin/brass-group
+/perl/bin/filterout-bam
+/perl/reports
+

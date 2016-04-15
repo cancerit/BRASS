@@ -203,7 +203,6 @@ sub setup {
               'g|genome=s' => \$opts{'genome'},
               'a|ascat=s' => \$opts{'ascat'},
               'f|filter=s' => \$opts{'filter'},
-              'e|exclude=s' => \$opts{'exclude'},
               'p|process=s' => \$opts{'process'},
               'i|index=i' => \$opts{'index'},
               'b|gcbins=s' => \$opts{'gcbins'},
@@ -263,7 +262,6 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'ascat'} unless(defined $opts{'ascat'});
-  delete $opts{'exclude'} unless(defined $opts{'exclude'});
   delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
@@ -368,7 +366,6 @@ brass.pl [options]
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)
-    -exclude   -e   Exclude this list of ref sequences from processing, wildcard '%'
     -filter    -f   bgzip tabix-ed normal panel groups file
     -noclean   -x   Don't tidyup the processing areas.
     -cpus      -c   Number of cores to use. [1]

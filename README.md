@@ -36,6 +36,7 @@ R packages (known to work with 3.1.3), recommend install via package manager:
 * [RColorBrewer](https://cran.r-project.org/web/packages/RColorBrewer/index.html)
 * [VGAM](https://cran.r-project.org/web/packages/VGAM/index.html)
 * [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
+* [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
 * These themselves have further dependancies.
 
 R Bioconductor packages (known to work with 3.1.3)

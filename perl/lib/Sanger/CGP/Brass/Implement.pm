@@ -69,7 +69,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 #genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
 const my $BRASS_COVERAGE => q{ %s %s %s %s};
 
-const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s};
+const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s};
 const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s %s %s};
 const my $DEL_FB_R => q{filter_small_deletions_and_fb_artefacts.R %s %s %s %s};
 
@@ -133,7 +133,7 @@ sub input {
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');
     $command .= sprintf $PREP_BAM, $input.'.bas', $rg_prefix;
-    $command .= " -e $options->{'exclude'}" if(exists $options->{'exclude'});
+    $command .= " -i ".join(',', valid_seqs($options));
     $command .= ' | ';
     $command .= _which('bamsort');
     $command .= sprintf $BAMSORT, $tmp, $index, $outbam, $outbam, $outbam;
@@ -188,12 +188,12 @@ sub merge {
   my $command_t = "$^X ";
   $command_t .= _which('coverage_merge.pl');
   $command_t .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_tumour_name'}, $tmp_cover;
-  $command_t .= ' '.$options->{'exclude'} if(exists $options->{'exclude'} && defined $options->{'exclude'});
+  $command_t .= ' '.join(',', valid_seqs($options));
 
   my $command_n = "$^X ";
   $command_n .= _which('coverage_merge.pl');
   $command_n .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_normal_name'}, $tmp_cover;
-  $command_n .= ' '.$options->{'exclude'} if(exists $options->{'exclude'} && defined $options->{'exclude'});
+  $command_n .= ' '.join(',', valid_seqs($options));
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command_t, $command_n], 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
@@ -216,7 +216,8 @@ sub normcn {
                                   $norm_fb,
                                   $options->{'Ploidy'},
                                   $options->{'Acf'},
-                                  $normcn_stub;
+                                  $normcn_stub,
+                                  $options->{'centtel'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
@@ -783,24 +784,23 @@ sub get_bam_info {
 
 sub valid_seqs {
   my $options = shift;
-  my @good_seqs;
-  my $fai_seqs = capture_stdout { system('cut', '-f', 1, $options->{'genome'}.'.fai' ); };
-  my @all_seqs = split /\n/, $fai_seqs;
-  if(exists $options->{'exclude'}) {
-    my @exclude = split /,/, $options->{'exclude'};
-    my @exclude_patt;
-    for my $ex(@exclude) {
-      $ex =~ s/%/.+/;
-      push @exclude_patt, $ex;
-    }
+  my @cent_seqs;
+  open my $CENT, '<', $options->{'centtel'} or die $!;
+  while (my $line = <$CENT>) {
+    my ($item) = $line =~ m/^([^\t]+)\t/;
+    next if($item eq 'chr');
+    push @cent_seqs, $item;
+  }
+  close $CENT;
 
-    for my $sq(@all_seqs) {
-      push @good_seqs, $sq unless(first { $sq =~ m/^$_$/ } @exclude_patt);
-    }
+  my @good_seqs;
+  open my $FAI, '<', $options->{'genome'}.'.fai' or die $!;
+  while(my $line = <$FAI>) {
+    my $chr = (split /\t/, $line)[0];
+    push @good_seqs, $chr if(first {$chr eq $_} @cent_seqs);
   }
-  else {
-    push @good_seqs, @all_seqs;
-  }
+  close $FAI;
+
   return @good_seqs;
 }
 

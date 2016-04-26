@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/bin/bash
 
 ########## LICENCE ##########
 # Copyright (c) 2014-2016 Genome Research Ltd.
@@ -31,39 +31,57 @@
 # 2009, 2010, 2011, 2012’."
 ########## LICENCE ##########
 
-use strict;
+if [ "$#" -lt "1" ] ; then
+  echo "USAGE: ./setupR.sh /install/path"
+  echo -e "\tOptionally add '1' to command to request build of R source in the install location"
+  exit 1
+fi
 
-my ($full_bed_pe, $rg_patt_pe, $out_file) = @ARGV;
+INST_PATH=$1
+BUILD_R=$2
 
-my %ids;
-open my $FILT, '<', $rg_patt_pe || die $!;
-while(my $line = <$FILT>) {
-  my ($id, $low, $high) = (split /\t/, $line)[6,12,13];
-  $ids{$id} = [$low, $high];
-}
-close $FILT;
+CPU=`grep -c ^processor /proc/cpuinfo`
+if [ $? -eq 0 ]; then
+  if [ "$CPU" -gt "6" ]; then
+    CPU=6
+  fi
+else
+  CPU=1
+fi
+echo "Max compilation CPUs set to $CPU"
 
-my $ofh = *STDOUT;
-if(defined $out_file) {
-  open $ofh, '>', $out_file || die $!;
-}
+set -ue
 
-open my $MAIN, '<', $full_bed_pe || die $!;
-while(my $line = <$MAIN>) {
-  if($line =~ m/^#/) {
-    print $line;
-    next;
-  }
+# get current directory
+INIT_DIR=`pwd`
 
-  my @F = split /\t/, $line;
-  my $id = $F[6];
-  next unless(exists $ids{$id});
-  $F[1] = $ids{$id}->[0]-1;
-  $F[2] = $ids{$id}->[0];
-  $F[4] = $ids{$id}->[1]-1;
-  $F[5] = $ids{$id}->[1];
-  print join("\t", @F);
-}
-close $MAIN;
+#add bin path for use in R lib building
+export PATH=$INST_PATH/bin:$PATH
 
-close $ofh if(defined $out_file);
+# set R lib paths based on INST_PATH
+export R_LIB=$INST_PATH/R-lib
+export R_LIB_USER=$INST_PATH/R-lib
+
+mkdir -p $R_LIB
+
+TMP_DIR=`mktemp --tmpdir=$INIT_DIR -d`
+
+cd $TMP_DIR
+
+if [ "x$BUILD_R" != "x" ]; then
+  # BUILD_R is tru
+  curl -sSL -o tmp.tar.gz --retry 10 http://ftp.heanet.ie/mirrors/cran.r-project.org/src/base/R-3/R-3.1.3.tar.gz
+  mkdir $TMP_DIR/R-build
+  tar -C $TMP_DIR/R-build --strip-components 1 -zxf tmp.tar.gz
+  cd $TMP_DIR/R-build
+  ./configure --with-cairo=yes --prefix=$INST_PATH
+  make -j$CPU
+  make check
+  make install
+  cd $TMP_DIR
+fi
+
+Rscript $INIT_DIR/libInstall.R $R_LIB_USER
+
+cd $INIT_DIR
+rm -rf $TMP_DIR

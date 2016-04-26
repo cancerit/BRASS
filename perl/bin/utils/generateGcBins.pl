@@ -32,38 +32,35 @@
 ########## LICENCE ##########
 
 use strict;
+use Const::Fast qw(const);
+use Bio::DB::HTS::Faidx;
 
-my ($full_bed_pe, $rg_patt_pe, $out_file) = @ARGV;
+const my $BIN_SIZE => 500;
 
-my %ids;
-open my $FILT, '<', $rg_patt_pe || die $!;
-while(my $line = <$FILT>) {
-  my ($id, $low, $high) = (split /\t/, $line)[6,12,13];
-  $ids{$id} = [$low, $high];
-}
-close $FILT;
+die "USAGE: generateGcBins.pl genome.fa > gcBins.bed\n" unless(@ARGV);
 
-my $ofh = *STDOUT;
-if(defined $out_file) {
-  open $ofh, '>', $out_file || die $!;
-}
+my $ref = shift @ARGV;
+my $index = Bio::DB::HTS::Faidx->new($ref);
 
-open my $MAIN, '<', $full_bed_pe || die $!;
-while(my $line = <$MAIN>) {
-  if($line =~ m/^#/) {
-    print $line;
-    next;
+my @seq_ids = $index->get_all_sequence_ids();
+for my $seq_id(@seq_ids) {
+  my $len = $index->length($seq_id);
+  warn "Processing seq: $seq_id ($len b.p.)\n";
+  my $low = 0;
+  while($low < $len) {
+    my $high = $low+$BIN_SIZE;
+    $high = $len if($high > $len);
+    my $seq = $index->get_sequence_no_length(sprintf "%s:%d-%d", $seq_id, $low+1, $high);
+    $seq =~ s/N//g;
+    my $s_len = length $seq;
+    my $gc = $seq =~ tr/GC//;
+    if($gc == 0) {
+      $gc = 'NA'
+    }
+    else {
+      $gc = sprintf '%.6f', $gc/$s_len;
+    }
+    printf "%s\t%d\t%d\t%d\t%s\n", $seq_id, $low, $high, $s_len, $gc;
+    $low+= $BIN_SIZE;
   }
-
-  my @F = split /\t/, $line;
-  my $id = $F[6];
-  next unless(exists $ids{$id});
-  $F[1] = $ids{$id}->[0]-1;
-  $F[2] = $ids{$id}->[0];
-  $F[4] = $ids{$id}->[1]-1;
-  $F[5] = $ids{$id}->[1];
-  print join("\t", @F);
 }
-close $MAIN;
-
-close $ofh if(defined $out_file);

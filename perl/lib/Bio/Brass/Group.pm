@@ -116,7 +116,12 @@ sub parse_header {
     }
     die "ERROR: Specified tumour '$sample_chk' not found in input\n"unless(exists $self->{'tumour_idx'});
   }
-  splice @info, 1, 0, '#'; # put the blank line back
+  if(@info) {
+    splice @info, 1, 0, '#'; # put the blank line back
+  }
+#  else {
+#    push @info, '#';
+#  }
   $self->{'_inputs'} = \@inputs;
   $self->{'_samples'} = \@samples;
   $self->{'_sample_count'} = (scalar @samples);

@@ -1,9 +1,40 @@
 #!/usr/bin/perl
 
+########## LICENCE ##########
+# Copyright (c) 2014-2016 Genome Research Ltd.
+#
+# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+#
+# This file is part of BRASS.
+#
+# BRASS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# 1. The usage of a range of years within a copyright statement contained within
+# this distribution should be interpreted as being equivalent to a list of years
+# including the first and last year specified and all consecutive years between
+# them. For example, a copyright statement that reads ‘Copyright (c) 2005, 2007-
+# 2009, 2011-2012’ should be interpreted as being identical to a statement that
+# reads ‘Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012’ and a copyright
+# statement that reads ‘Copyright (c) 2005-2012’ should be interpreted as being
+# identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
+# 2009, 2010, 2011, 2012’."
+########## LICENCE ##########
+
 use strict;
 
 use warnings FATAL => 'all';
-use Bio::DB::Sam;
+use Bio::DB::HTS;
 use Getopt::Long;
 use List::Util qw(first min max);
 use Statistics::Basic qw(median mean);
@@ -32,8 +63,8 @@ unless(-e $bam_file && -e $input) {
   die "\nUSAGE: get_abs_bkpts_from_clipped_reads.pl [options] full.bam merge_double_rgs.out\n\n";
 }
 
-my $bam = Bio::DB::Sam->new(-bam => $bam_file);
-my $fai = Bio::DB::Sam::Fai->load($fa_file);
+my $bam = Bio::DB::HTS->new(-bam => $bam_file);
+my $fai = Bio::DB::HTS::Fai->load($fa_file);
 
 my @lines;
 open my $IN, '<', $input || die $!;

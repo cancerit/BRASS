@@ -66,7 +66,6 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 
 {
   my $options = setup();
-  Sanger::CGP::Brass::Implement::prepare($options);
   my $threads = PCAP::Threaded->new($options->{'threads'});
   &PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
@@ -107,7 +106,8 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
   Sanger::CGP::Brass::Implement::grass($options) if(!exists $options->{'process'} || $options->{'process'} eq 'grass');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'tabix') {
-    Sanger::CGP::Brass::Implement::tabix($options);
+    Sanger::CGP::Brass::Implement::tabix($options, 'vcf');
+    Sanger::CGP::Brass::Implement::tabix($options, 'bedpe');
     cleanup($options) unless($options->{'noclean'});
   }
 }
@@ -117,13 +117,16 @@ sub cleanup {
   my $tmpdir = $options->{'tmp'};
   my $outdir = $options->{'outdir'};
 
+  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
+  # bigwig the copynumber file:
+  Sanger::CGP::Brass::Implement::bedGraphToBigWig($options, $basefile.'.ngscn.abs_cn.bg');
+
   my $intdir = File::Spec->catdir($outdir, 'intermediates/.');
   make_path($intdir) unless(-d $intdir);
 
-  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
-
   my @to_gzip = ( $basefile.'.ngscn.abs_cn.bg',
-                  $basefile.'.ngscn.abs_cn.bg.rg_cns',
+  								$basefile.'.ngscn.abs_cn.bg.rg_cns',
                   $basefile.'.ngscn.segments.abs_cn.bg',
                   $basefile.'.groups',
                 );
@@ -138,9 +141,15 @@ sub cleanup {
   }
 
   # move the BRM files
-  my @brm = glob qq{$tmpdir/*.brm.bam*};
+  my @brm = glob qq{$tmpdir/*.brm.bam};
   for(@brm) {
     move($_, "$outdir/.");
+  }
+
+  # index the BRM files
+  @brm = glob qq{$outdir/*.brm.bam};
+  for(@brm) {
+    system(qq{samtools index $_}) and die $!;
   }
 
   # read counts
@@ -157,6 +166,8 @@ sub cleanup {
                         _ann.groups.clean.vcf
                         .annot.vcf
                         .annot.vcf.srt
+                        .annot.bedpe
+                        .annot.bedpe.srt
                         .assembled.bedpe
                         .groups.filtered.bedpe.preclean
                         .groups.filtered.bedpenohead
@@ -165,7 +176,7 @@ sub cleanup {
     my $file = $basefile.$to_del;
     unlink $file if(-e $file);
   }
-  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.ascat*};
+  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.pdf $outdir/*.ascat*};
   push @base_move,  "$basefile.groups.filtered.bedpe",
                     "$basefile.is_fb_artefact.txt",
                     "$basefile.groups.clean.bedpe",
@@ -175,15 +186,22 @@ sub cleanup {
     move($to_move, $intdir) if(-e $to_move);
   }
 
-  # ascat files may not be in base output folder so copy from inputs:
-  copy($options->{'ascat'}, $intdir);
-  copy($options->{'ascat_summary'}, $intdir);
+  # ascat files may not be in base output folder so copy from inputs if available (as can be optional)
+  copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
+  copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
+
+	my $intermediates_dir = File::Spec->catdir($outdir, 'intermediates');
+  my $targz = $basefile.'.intermediates.tar.gz';
+  unless(-e $targz && -s $targz) {
+  	system(qq{tar zcf $targz $intermediates_dir}) and die $!;
+  }
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {
     move($tmplogs, File::Spec->catdir($outdir, 'logs')) or die $!;
   }
 
+	remove_tree $intermediates_dir if(-e $intermediates_dir);
   remove_tree $tmpdir if(-e $tmpdir);
 	return 0;
 }
@@ -203,12 +221,12 @@ sub setup {
               'g|genome=s' => \$opts{'genome'},
               'a|ascat=s' => \$opts{'ascat'},
               'f|filter=s' => \$opts{'filter'},
-              'e|exclude=s' => \$opts{'exclude'},
               'p|process=s' => \$opts{'process'},
               'i|index=i' => \$opts{'index'},
               'b|gcbins=s' => \$opts{'gcbins'},
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
+              'ct|centtel=s' => \$opts{'centtel'},
               'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
@@ -225,8 +243,8 @@ sub setup {
               'x|noclean' => \$opts{'noclean'},
   ) or pod2usage(2);
 
-  pod2usage(-verbose => 1) if(defined $opts{'h'});
-  pod2usage(-verbose => 2) if(defined $opts{'m'});
+  pod2usage(-verbose => 1, -exit=>0) if(defined $opts{'h'});
+  pod2usage(-verbose => 2, -exit=>0) if(defined $opts{'m'});
 
   if($opts{'version'}) {
     print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
@@ -236,34 +254,27 @@ sub setup {
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
-  my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
-  if(-e $intermediates) {
-    warn "NOTE: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
-    exit 0;
-  }
 
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
   PCAP::Cli::file_for_reading('depth', $opts{'depth'});
   PCAP::Cli::file_for_reading('genome', $opts{'genome'});
   PCAP::Cli::file_for_reading('viral', $opts{'viral'});
+  PCAP::Cli::file_for_reading('centtel', $opts{'centtel'});
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
 
-  if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
-  	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'});
-  	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
-  }
+	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
+	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary)) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary centtel)) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'ascat'} unless(defined $opts{'ascat'});
-  delete $opts{'exclude'} unless(defined $opts{'exclude'});
   delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
@@ -275,6 +286,19 @@ sub setup {
 
   for(@REQUIRED_PARAMS) {
     pod2usage(-msg => "\nERROR: $_ is a required argument.\n", -verbose => 1, -output => \*STDERR) unless(defined $opts{$_});
+  }
+
+  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
+  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
+  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
+  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
+
+  Sanger::CGP::Brass::Implement::prepare(\%opts);
+  my $intermediates = File::Spec->catfile($opts{'outdir'}, $opts{'safe_tumour_name'}.'_vs_'.$opts{'safe_normal_name'}.'.intermediates.tar.gz');
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $intermediates && -e $final_logs) {
+    warn "NOTE: Presence of intermediates.tar.gz and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    exit 1;
   }
 
   # now safe to apply defaults
@@ -316,15 +340,12 @@ sub setup {
     die "ERROR: -index cannot be defined without -process\n";
   }
 
-  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
-  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
-  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
-  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
-
 	if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
   	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
   	die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
   	die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+  	die "Failed to find 'GenderChr' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChr'});
+  	die "Failed to find 'GenderChrFound' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChrFound'});
   }
 
 
@@ -355,26 +376,28 @@ brass.pl [options]
     -viral     -vi  Virus sequences from NCBI
     -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'
     -gcbins    -b   5 column bed coord file, col 4 number of non-N bases, col 5 GC fraction.
-    -sampstat  -ss  ASCAT sample statistics file or file containing
-                      NormalContamination 0.XXXXX
-                      Ploidy X.XXX
+    -centtel   -ct  TSV file of usable regions of the chromosome
+                      Example in perl/share/Rdefault/
 
   Optional
     -mingroup  -j   Minmum reads to call group [2].
     -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -ascat     -a   ASCAT copynumber summary
+    -sampstat  -ss  ASCAT sample statistics file or file containing
+                      NormalContamination 0.XXXXX [0.25]
+                      Ploidy X.XXX [2.0]
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)
-    -exclude   -e   Exclude this list of ref sequences from processing, wildcard '%'
     -filter    -f   bgzip tabix-ed normal panel groups file
     -noclean   -x   Don't tidyup the processing areas.
     -cpus      -c   Number of cores to use. [1]
                      - recommend max 2 during 'input' process.
 
-  Targeted processing (further detail under OPTIONS):
+  Targeted processing (further detail under PROCESS OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
     -index     -i   Optionally restrict '-p' to single job
+    -limit     -l   Define with -p and -i, see below
 
   Other:
     -help      -h   Brief help message.
@@ -386,7 +409,12 @@ brass.pl [options]
 
   Run with '-m' for possible input file types.
 
-=head1 OPTIONS
+=head1 ONE SHOT PROCESSING
+
+You can submit the whole analysis with a single command using mutliple cores on the same host.
+Ensure that -p, -i and -l are not set when doing this.
+
+=head1 PROCESS OPTIONS
 
 =over 2
 
@@ -395,8 +423,13 @@ brass.pl [options]
 Available processes for this tool are:
 
   input
+  cover
+  merge
+  normcn
   group
+  isize
   filter
+  split
   assemble
   grass
   tabix
@@ -406,13 +439,29 @@ Available processes for this tool are:
 Possible index ranges for processes above are:
 
   input     = 1..2
+  cover     = ? - use with -l
+  merge     = 1
+  normcn    = 1
   group     = 1
+  isize     = 1
   filter    = 1
   split     = 1
-  assemble  = ?
+  assemble  = ? - use with -l
   grass     = 1
   tabix     = 1
 
 If you want STDOUT/ERR to screen ensure index is set even for single job steps.
+
+=item B<-limit>
+
+Allows -index of indeterminate size to executed on a known number of processes.
+
+For example if 5 jobs are required to run cover step, setting limit to 2 will allow this to be run in 2 jobs:
+
+ $ brass.pl ... -process cover -index 1 -limit 2
+   # runs 1,3,5
+
+ $ brass.pl ... -process cover -index 2 -limit 2
+   # runs 2,4
 
 =back

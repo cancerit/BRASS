@@ -23,26 +23,27 @@ There are several stages the main component being:
 
 * The C++ code (within this package) requires the presence of pstreams.h (and associated development libraries).  This is not handled by the `setup.sh` script.
 
-Perl packages:
+##### Perl packages:
 
 * [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
 * [cgpVcf](https://github.com/cancerit/cgpVcf/releases)
 * [grass](https://github.com/cancerit/grass/releases)
 
-R packages (known to work with 3.1.3), recommend install via package manager:
+##### R packages
 
-* [gam](https://cran.r-project.org/web/packages/gam/index.html)
-* [poweRlaw](https://cran.r-project.org/web/packages/poweRlaw/index.html)
-* [RColorBrewer](https://cran.r-project.org/web/packages/RColorBrewer/index.html)
-* [VGAM](https://cran.r-project.org/web/packages/VGAM/index.html)
-* [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
-* [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
-* These themselves have further dependancies.
+A large number of R packages are required to run BRASS.  To facilitate the install process there is a script `Rsupport/libInstall.R` that can be run to build these for you.  See this file for the list of packages.
 
-R Bioconductor packages (known to work with 3.1.3)
-* [copynumber](https://www.bioconductor.org/packages/release/bioc/html/copynumber.html)
+Alternatively you can run:
 
-Other tools that need to be in path
+````
+cd Rsupport
+./setupR.sh path_to_install_to
+````
+
+Appending `1` to the command will request a complete local build of `R` (3.1.3).
+
+
+##### Other tools that need to be in path
 
 * [FASTA](https://github.com/wrpearson/fasta36/releases)
 
@@ -53,7 +54,7 @@ Other tools that need to be in path
 * [Velvet](https://www.ebi.ac.uk/~zerbino/velvet/)
 * [bedtools2](https://github.com/arq5x/bedtools2/releases)
 
-Please use `setup.sh` to install these dependencies.  Setting the environment variable `CGP_PERLLIBS` allows you to to append to `PERL5LIB` during install.  Without this all dependancies are installed into the target area.
+Please use `setup.sh` to install these dependencies.  Setting the environment variable `CGP_PERLLIBS` allows you to to append to `PERL5LIB` during install.  Without this all dependancies are installed into the target area.  `setup.sh` will not use `PERL5LIB` directly.
 
 Please be aware that this expects basic C compilation libraries and tools to be available.
 

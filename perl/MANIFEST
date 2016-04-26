@@ -21,7 +21,9 @@ bin/make-repeat-file
 bin/match_rg_patterns_to_library.pl
 bin/merge_double_rgs.pl
 bin/rearr2bedpe
+bin/utils/brassSplitFasta.pl
 bin/utils/compare_bedpe.pl
+bin/utils/generateGcBins.pl
 docs.tar.gz
 lib/Bio/Brass.pm
 lib/Bio/Brass/Alignment.pm
@@ -52,7 +54,7 @@ lib/Sanger/CGP/Rearrangement/Path.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
-perltidy.LOG
+share/Rdefaults/Human.GRCh37.CentTelo.tsv
 share/Rscripts/.Rhistory
 share/Rscripts/filter_small_deletions_and_fb_artefacts.R
 share/Rscripts/get_rg_cns.R

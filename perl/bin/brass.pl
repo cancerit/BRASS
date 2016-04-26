@@ -66,7 +66,6 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 
 {
   my $options = setup();
-  Sanger::CGP::Brass::Implement::prepare($options);
   my $threads = PCAP::Threaded->new($options->{'threads'});
   &PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
@@ -191,9 +190,10 @@ sub cleanup {
   copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
   copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
 
+	my $intermediates_dir = File::Spec->catdir($outdir, 'intermediates');
   my $targz = $basefile.'.intermediates.tar.gz';
   unless(-e $targz && -s $targz) {
-  	system(qq{tar zcf $targz }.File::Spec->catdir($outdir, 'intermediates')) and die $!;
+  	system(qq{tar zcf $targz $intermediates_dir}) and die $!;
   }
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
@@ -201,6 +201,7 @@ sub cleanup {
     move($tmplogs, File::Spec->catdir($outdir, 'logs')) or die $!;
   }
 
+	remove_tree $intermediates_dir if(-e $intermediates_dir);
   remove_tree $tmpdir if(-e $tmpdir);
 	return 0;
 }
@@ -253,12 +254,6 @@ sub setup {
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
-  my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
-  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
-  if(-e $intermediates && -e $final_logs) {
-    warn "NOTE: Presence of intermediates and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
-    exit 0;
-  }
 
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
@@ -291,6 +286,19 @@ sub setup {
 
   for(@REQUIRED_PARAMS) {
     pod2usage(-msg => "\nERROR: $_ is a required argument.\n", -verbose => 1, -output => \*STDERR) unless(defined $opts{$_});
+  }
+
+  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
+  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
+  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
+  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
+
+  Sanger::CGP::Brass::Implement::prepare(\%opts);
+  my $intermediates = File::Spec->catfile($opts{'outdir'}, $opts{'safe_tumour_name'}.'_vs_'.$opts{'safe_normal_name'}.'.intermediates.tar.gz');
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $intermediates && -e $final_logs) {
+    warn "NOTE: Presence of intermediates.tar.gz and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    exit 1;
   }
 
   # now safe to apply defaults
@@ -331,11 +339,6 @@ sub setup {
   elsif(exists $opts{'index'}) {
     die "ERROR: -index cannot be defined without -process\n";
   }
-
-  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
-  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
-  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
-  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
 
 	if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
   	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);

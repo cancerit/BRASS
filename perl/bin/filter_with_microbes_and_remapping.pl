@@ -401,11 +401,11 @@ sub get_remapping_score_differences {
   # Source region and reads are never revcomped. Target region
   # is revcomped if strands are the same in source and target.
 
-  my($seq_fh, $seq_fh_name) = tempfile('seq_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
+  my($seq_fh, $seq_fh_name) = tempfile('seq_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>0);
   print_read_seqs_to_file($seq_fh, @{$reads_ref});
 
   # Target region sequence
-  my($target_fh, $target_fh_name) = tempfile('target_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
+  my($target_fh, $target_fh_name) = tempfile('target_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>0);
   print($target_fh ">$tgt_chr:" . ($tgt_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($tgt_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $tgt_dir . "\n");
   print($target_fh "$target_seq\n");
   $target_fh->flush();
@@ -413,7 +413,7 @@ sub get_remapping_score_differences {
   my $target_scores = $SCORE_SUB->($target_fh_name, $seq_fh_name, $TMP_DIR);
 
   # Source region
-  my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>1);
+  my($source_fh, $source_fh_name) = tempfile('source_'.$identifier.'_XXXX', DIR => $TMP_DIR, UNLINK=>0);
   print($source_fh ">$src_chr:" . ($src_pos-$SLOP_FOR_GENOMIC_REGION) . '-' . ($src_pos+$SLOP_FOR_GENOMIC_REGION) . ':' . $src_dir . "\n");
   print($source_fh "$source_seq\n");
   $source_fh->flush();
@@ -424,6 +424,10 @@ sub get_remapping_score_differences {
   close $seq_fh or warn $!;
   close $source_fh or warn $!;
   close $target_fh or warn $!;
+
+  unlink $seq_fh_name or warn $!;
+  unlink $target_fh_name or warn $!;
+  unlink $source_fh_name or warn $!;
 
   my @diffs;
   for(keys %{$source_scores}) {

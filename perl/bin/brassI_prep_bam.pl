@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -104,20 +104,9 @@ sub run {
 sub limit_seqs {
   my ($options, $raw_seqs) = @_;
   my @good_seqs = qw(= *);
-  if(exists $options->{'exclude'}) {
-    my @exclude = split /,/, $options->{'exclude'};
-    my @exclude_patt;
-    for my $ex(@exclude) {
-      $ex =~ s/%/.+/;
-      push @exclude_patt, $ex;
-    }
-
-    for my $sq(@{$raw_seqs}) {
-      push @good_seqs, $sq unless(first { $sq =~ m/^$_$/ } @exclude_patt);
-    }
-  }
-  else {
-    push @good_seqs, @{$raw_seqs};
+  my @inc_list = split /,/, $options->{'include'};
+  for my $sq(@{$raw_seqs}) {
+    push @good_seqs, $sq if(first { $sq eq $_ } @inc_list);
   }
   return @good_seqs;
 }
@@ -217,7 +206,7 @@ sub setup {
               'b|bas=s'       => \$opts{'bas'},
               'p|prefix:s'       => \$opts{'prefix'},
               'np|norm_panel' => \$opts{'np'},
-              'e|exclude:s'   => \$opts{'exclude'},
+              'i|include=s'   => \$opts{'include'},
   ) or pod2usage(1);
 
   pod2usage(-message => PCAP::license, -verbose => 1) if(defined $opts{'h'});
@@ -225,8 +214,8 @@ sub setup {
 
   pod2usage(-message => qq{File not found: $opts{bas}}, -verbose => 1) unless(-e $opts{'bas'});
   pod2usage(-message => qq{Empty file: $opts{bas}}, -verbose => 1) unless(-s $opts{'bas'});
+  pod2usage(-message => qq{-include option not defined}, -verbose => 1) unless(defined $opts{'include'});
 
-  delete $opts{'exclude'} unless(defined $opts{'exclude'});
   delete $opts{'prefix'} unless(defined $opts{'prefix'});
 
   return \%opts;
@@ -237,7 +226,7 @@ __END__
 
 =head1 brassI_prep_bam.pl
 
-Add max insert and exclude reads not mapped to expected refs.
+Add max insert and include reads not mapped to expected refs.
 
 =head1 SYNOPSIS
 
@@ -250,11 +239,11 @@ brassI_prep_bam.pl [options]
 
   Required parameters:
     -bas          -b    Bas statistics file for BAM being streamed
+    -include      -i    Include reads where self and mate are mapped to this ref name (or unmapped).
 
   Optional
     -prefix       -p    Prefix all readgroup IDs with this text to force unique between samples, (e.g. T, N)
-    -exclude      -e    Exclude reads where self and mate are mapped to this ref name (or unmapped).
-                         - csv, allows wild card of '%'
+                         - csv
     -norm_panel   -np   For generation of normal panel input only
 
   Other:
@@ -274,13 +263,13 @@ Values for the following are required expected:
   mean_insert_size
   insert_size_sd
 
-=item B<-exclude>
+=item B<-include>
 
-Ref names that should be excluded from prepared BAM.  Wildcard of '%' is allowed.
+Ref names that should be included in prepared BAM.
 
 e.g.
 
-  -e hs37d5,NC_007605,GL%
+  -e 1,2,3,4,5,6,7,8,9,....X,Y
 
 =item B<-norm_panel>
 

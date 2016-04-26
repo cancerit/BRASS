@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ########## LICENCE ##########
-# Copyright (c) 20142016 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -33,6 +33,7 @@
 
 
 SOURCE_BLAT="http://users.soe.ucsc.edu/~kent/src/blatSrc35.zip"
+BG_TO_BW_BINARY="https://github.com/ENCODE-DCC/kentUtils/raw/master/bin/linux.x86_64/bedGraphToBigWig"
 
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
 # No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
@@ -177,6 +178,10 @@ for i in "${perlmods[@]}" ; do
 done
 
 cd $SETUP_DIR
+
+echo -n "Getting bedGraphToBigWig ..."
+get_file "$INST_PATH/bin/bedGraphToBigWig" $BG_TO_BW_BINARY
+done_message "" "Failed to get bedGraphToBigWig."
 
 echo -n "Building bedtools2 ..."
 if [ -e $SETUP_DIR/bedtools.success ]; then

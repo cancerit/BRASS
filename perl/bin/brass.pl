@@ -66,7 +66,6 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 
 {
   my $options = setup();
-  Sanger::CGP::Brass::Implement::prepare($options);
   my $threads = PCAP::Threaded->new($options->{'threads'});
   &PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
@@ -107,7 +106,8 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
   Sanger::CGP::Brass::Implement::grass($options) if(!exists $options->{'process'} || $options->{'process'} eq 'grass');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'tabix') {
-    Sanger::CGP::Brass::Implement::tabix($options);
+    Sanger::CGP::Brass::Implement::tabix($options, 'vcf');
+    Sanger::CGP::Brass::Implement::tabix($options, 'bedpe');
     cleanup($options) unless($options->{'noclean'});
   }
 }
@@ -117,13 +117,16 @@ sub cleanup {
   my $tmpdir = $options->{'tmp'};
   my $outdir = $options->{'outdir'};
 
+  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
+  # bigwig the copynumber file:
+  Sanger::CGP::Brass::Implement::bedGraphToBigWig($options, $basefile.'.ngscn.abs_cn.bg');
+
   my $intdir = File::Spec->catdir($outdir, 'intermediates/.');
   make_path($intdir) unless(-d $intdir);
 
-  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
-
   my @to_gzip = ( $basefile.'.ngscn.abs_cn.bg',
-                  $basefile.'.ngscn.abs_cn.bg.rg_cns',
+  								$basefile.'.ngscn.abs_cn.bg.rg_cns',
                   $basefile.'.ngscn.segments.abs_cn.bg',
                   $basefile.'.groups',
                 );
@@ -138,9 +141,15 @@ sub cleanup {
   }
 
   # move the BRM files
-  my @brm = glob qq{$tmpdir/*.brm.bam*};
+  my @brm = glob qq{$tmpdir/*.brm.bam};
   for(@brm) {
     move($_, "$outdir/.");
+  }
+
+  # index the BRM files
+  @brm = glob qq{$outdir/*.brm.bam};
+  for(@brm) {
+    system(qq{samtools index $_}) and die $!;
   }
 
   # read counts
@@ -157,6 +166,8 @@ sub cleanup {
                         _ann.groups.clean.vcf
                         .annot.vcf
                         .annot.vcf.srt
+                        .annot.bedpe
+                        .annot.bedpe.srt
                         .assembled.bedpe
                         .groups.filtered.bedpe.preclean
                         .groups.filtered.bedpenohead
@@ -165,7 +176,7 @@ sub cleanup {
     my $file = $basefile.$to_del;
     unlink $file if(-e $file);
   }
-  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.ascat*};
+  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.pdf $outdir/*.ascat*};
   push @base_move,  "$basefile.groups.filtered.bedpe",
                     "$basefile.is_fb_artefact.txt",
                     "$basefile.groups.clean.bedpe",
@@ -179,11 +190,18 @@ sub cleanup {
   copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
   copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
 
+	my $intermediates_dir = File::Spec->catdir($outdir, 'intermediates');
+  my $targz = $basefile.'.intermediates.tar.gz';
+  unless(-e $targz && -s $targz) {
+  	system(qq{tar zcf $targz $intermediates_dir}) and die $!;
+  }
+
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {
     move($tmplogs, File::Spec->catdir($outdir, 'logs')) or die $!;
   }
 
+	remove_tree $intermediates_dir if(-e $intermediates_dir);
   remove_tree $tmpdir if(-e $tmpdir);
 	return 0;
 }
@@ -203,7 +221,6 @@ sub setup {
               'g|genome=s' => \$opts{'genome'},
               'a|ascat=s' => \$opts{'ascat'},
               'f|filter=s' => \$opts{'filter'},
-              'e|exclude=s' => \$opts{'exclude'},
               'p|process=s' => \$opts{'process'},
               'i|index=i' => \$opts{'index'},
               'b|gcbins=s' => \$opts{'gcbins'},
@@ -237,11 +254,6 @@ sub setup {
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
-  my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
-  if(-e $intermediates) {
-    warn "NOTE: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
-    exit 0;
-  }
 
   PCAP::Cli::file_for_reading('tumour', $opts{'tumour'});
   PCAP::Cli::file_for_reading('normal', $opts{'normal'});
@@ -263,7 +275,6 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'ascat'} unless(defined $opts{'ascat'});
-  delete $opts{'exclude'} unless(defined $opts{'exclude'});
   delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
@@ -275,6 +286,19 @@ sub setup {
 
   for(@REQUIRED_PARAMS) {
     pod2usage(-msg => "\nERROR: $_ is a required argument.\n", -verbose => 1, -output => \*STDERR) unless(defined $opts{$_});
+  }
+
+  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
+  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
+  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
+  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
+
+  Sanger::CGP::Brass::Implement::prepare(\%opts);
+  my $intermediates = File::Spec->catfile($opts{'outdir'}, $opts{'safe_tumour_name'}.'_vs_'.$opts{'safe_normal_name'}.'.intermediates.tar.gz');
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $intermediates && -e $final_logs) {
+    warn "NOTE: Presence of intermediates.tar.gz and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
+    exit 1;
   }
 
   # now safe to apply defaults
@@ -316,15 +340,12 @@ sub setup {
     die "ERROR: -index cannot be defined without -process\n";
   }
 
-  Sanger::CGP::Brass::Implement::get_bam_info(\%opts);
-  die "Unable to find norm_name in BAM header please specify as option" unless(defined $opts{'normal_name'});
-  die "Unable to find tum_name in BAM header please specify as option" unless(defined $opts{'tumour_name'});
-  die "Unable to find platform in BAM header please specify as option" unless(defined $opts{'platform'});
-
 	if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
   	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
   	die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
   	die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+  	die "Failed to find 'GenderChr' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChr'});
+  	die "Failed to find 'GenderChrFound' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChrFound'});
   }
 
 
@@ -368,7 +389,6 @@ brass.pl [options]
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)
-    -exclude   -e   Exclude this list of ref sequences from processing, wildcard '%'
     -filter    -f   bgzip tabix-ed normal panel groups file
     -noclean   -x   Don't tidyup the processing areas.
     -cpus      -c   Number of cores to use. [1]

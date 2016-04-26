@@ -2,10 +2,16 @@ tumour_file = commandArgs(T)[1]
 normal_file = commandArgs(T)[2]
 ploidy = as.numeric(commandArgs(T)[3])
 purity = as.numeric(commandArgs(T)[4])
-if (purity > 1) { purity = purity / 100 }
 output_body = commandArgs(T)[5]
+cent_file = commandArgs(T)[6]
 
-chrs = c(1:22, "X", "Y")
+# set some defaults
+if (purity > 1) { purity = purity / 100 }
+
+# load the chr list from the cent_file
+library(data.table)
+chrs <- as.vector(fread(cent_file, select=c("chr"), colClasses=c("character"))$chr)
+
 
 cat(paste0("Reading in file ", tumour_file, "...\n"), file = stderr())
 d.t = read.table(gzfile(tumour_file), header = F, colClasses = c("character", rep("numeric", 6)))

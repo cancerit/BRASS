@@ -10,7 +10,7 @@ if (purity > 1) { purity = purity / 100 }
 
 # load the chr list from the cent_file
 library(data.table)
-chrs <- as.vector(fread(cent_file, select = c("chr"), colClasses=c("character"))$chr)
+chrs <- as.vector(fread(cent_file, select=c("chr"), colClasses=c("character"))$chr)
 
 
 cat(paste0("Reading in file ", tumour_file, "...\n"), file = stderr())

@@ -376,6 +376,8 @@ sub filter {
   $rg_cns .= ' '.$options->{'tumour'};
   $rg_cns .= ' '.$options->{'Acf'};
   $rg_cns .= ' '.$options->{'centtel'};
+  $rg_cns .= ' '.$options->{'GenderChr'};
+  $rg_cns .= ' '.$options->{'GenderChrFound'};
 
   my $match_lib_file = $r_stub.'.r6';
   my $filtered_cn = $r_stub.'.cn_filtered';
@@ -630,23 +632,30 @@ sub limited_indices {
 }
 
 sub tabix {
-  my $options = shift;
+  my ($options, $type) = @_;
 
   my $tmp = $options->{'tmp'};
-  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $type);
 
-  my $annotated = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.annot.vcf');
+  my $annotated = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.annot.'.$type);
   my $sorted = $annotated.'.srt';
 
-  my $header = sprintf q{(grep '^#' %s > %s)}, $annotated, $sorted;
-  my $sort = sprintf q{(grep -v "^#" %s | sort -k 1,1 -k 2,2n >> %s)}, $annotated, $sorted;
+  my $tabix_type = 'vcf';
+  my $sort_str = '-k 1,1 -k 2,2n';
+  if($type eq 'bedpe') {
+    $tabix_type = 'bed';
+    $sort_str = '-k 1,1 -k 2,3n';
+  }
 
-  my $vcf_gz = $annotated.'.gz';
+  my $header = sprintf q{(grep '^#' %s > %s)}, $annotated, $sorted;
+  my $sort = sprintf q{(grep -v "^#" %s | sort %s >> %s)}, $annotated, $sort_str, $sorted;
+
+  my $type_gz = $annotated.'.gz';
   my $bgzip = _which('bgzip');
-  $bgzip .= sprintf ' -c %s > %s', $sorted, $vcf_gz;
+  $bgzip .= sprintf ' -c %s > %s', $sorted, $type_gz;
 
   my $tabix = _which('tabix');
-  $tabix .= sprintf ' -p vcf %s', $vcf_gz;
+  $tabix .= sprintf ' -p %s %s', $tabix_type, $type_gz;
 
   # before running this we need to know if there are any non '#' lines
   my ($sto, $ste, $exit) = capture { system([0,1], "grep -vc '^#' $annotated"); };
@@ -657,7 +666,7 @@ sub tabix {
     push @commands, qq{bash -c 'set -o pipefail; $sort'};
   }
   elsif($exit == 1 && $sto == 0) {
-    warn "No data survived (tabix)\n";
+    warn "No data survived (tabix, $type)\n";
   }
   else {
     die "ERROR: Unexpected result when parsing non-header lines from $annotated\n";
@@ -665,7 +674,29 @@ sub tabix {
 
   push @commands, $bgzip, $tabix;
 
-  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, $type);
+
+  PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $type);
+  return 1;
+}
+
+sub bedGraphToBigWig {
+  my ($options, $bedgraph) = @_;
+  my $tmp = $options->{'tmp'};
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+
+  # required file
+  my $chr_sizes = File::Spec->catfile($tmp, 'chrSizes.txt');
+  my $chrCmd = sprintf 'cut -f 1,2 %s > %s', $options->{'genome'}.'.fai', $chr_sizes;
+
+  # Need to strip down the cn file as it's not really a bedgraph
+  my $realBg = File::Spec->catfile($tmp, 'real.bg');
+  my $bgCmd = sprintf 'cut -f 1-4 %s > %s', $bedgraph, $realBg;
+
+  my $bw = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.ngscn.abs_cn.bw');
+  my $command = sprintf '%s %s %s %s', _which('bedGraphToBigWig'), $realBg, $chr_sizes, $bw;
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$chrCmd, $bgCmd, $command], 0);
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
   return 1;
@@ -705,7 +736,7 @@ sub get_ascat_summary {
     while(my $line = <$SUMM>) {
       chomp $line;
       my ($key, $value) = split /[[:space:]]+/, $line;
-      next unless($key eq 'rho' || $key eq 'Ploidy');
+      next unless($key eq 'rho' || $key eq 'Ploidy' || $key eq 'GenderChr' || $key eq 'GenderChrFound');
       $key = 'Acf' if($key eq 'rho');
       $options->{$key} = $value;
     }

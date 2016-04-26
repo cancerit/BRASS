@@ -22,6 +22,8 @@ segs_file = args[3]
 bam_file = args[4]
 acf = as.numeric(args[5])
 cent_file = args[6]
+gender_chr = args[7]
+gender_present = args[8]
 
 
 # Telomeric and centromeric regions are determined based on standard coordinates
@@ -92,15 +94,16 @@ for (c in chrs) {
 
 if (nrow(rgs) > 0 ) {
     for (i in 1:nrow(rgs)) {
+        # skip male gender chr if it is not indicated as present by ASCAT summary
+        if(gender_present == "N") {
+          if (rgs[i, 1] == gender_chr || rgs[i, 4] == gender_chr) next()
+        }
+
         # Skip rearrangements where one end falls onto centromere or telomere
-        if (rgs[i, 1] == "Y" || rgs[i, 4] == "Y") next()
-        # if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 13:14])))) {
         if (any(coord_within_tel_or_cent(c(rgs[i, c(1,4)]), c(rgs[i, 11:12])))) {
             next()
         }
 
-        # l = rgs[i, 13]
-        # h = rgs[i, 14]
         l = rgs[i, 11]
         h = rgs[i, 12]
 

@@ -107,7 +107,8 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
   Sanger::CGP::Brass::Implement::grass($options) if(!exists $options->{'process'} || $options->{'process'} eq 'grass');
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'tabix') {
-    Sanger::CGP::Brass::Implement::tabix($options);
+    Sanger::CGP::Brass::Implement::tabix($options, 'vcf');
+    Sanger::CGP::Brass::Implement::tabix($options, 'bedpe');
     cleanup($options) unless($options->{'noclean'});
   }
 }
@@ -117,13 +118,16 @@ sub cleanup {
   my $tmpdir = $options->{'tmp'};
   my $outdir = $options->{'outdir'};
 
+  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
+
+  # bigwig the copynumber file:
+  Sanger::CGP::Brass::Implement::bedGraphToBigWig($options, $basefile.'.ngscn.abs_cn.bg');
+
   my $intdir = File::Spec->catdir($outdir, 'intermediates/.');
   make_path($intdir) unless(-d $intdir);
 
-  my $basefile = File::Spec->catfile($outdir, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'});
-
   my @to_gzip = ( $basefile.'.ngscn.abs_cn.bg',
-                  $basefile.'.ngscn.abs_cn.bg.rg_cns',
+  								$basefile.'.ngscn.abs_cn.bg.rg_cns',
                   $basefile.'.ngscn.segments.abs_cn.bg',
                   $basefile.'.groups',
                 );
@@ -138,9 +142,15 @@ sub cleanup {
   }
 
   # move the BRM files
-  my @brm = glob qq{$tmpdir/*.brm.bam*};
+  my @brm = glob qq{$tmpdir/*.brm.bam};
   for(@brm) {
     move($_, "$outdir/.");
+  }
+
+  # index the BRM files
+  @brm = glob qq{$outdir/*.brm.bam};
+  for(@brm) {
+    system(qq{samtools index $_}) and die $!;
   }
 
   # read counts
@@ -157,6 +167,8 @@ sub cleanup {
                         _ann.groups.clean.vcf
                         .annot.vcf
                         .annot.vcf.srt
+                        .annot.bedpe
+                        .annot.bedpe.srt
                         .assembled.bedpe
                         .groups.filtered.bedpe.preclean
                         .groups.filtered.bedpenohead
@@ -165,7 +177,7 @@ sub cleanup {
     my $file = $basefile.$to_del;
     unlink $file if(-e $file);
   }
-  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.ascat*};
+  my @base_move = glob qq{$basefile.r* $outdir/*.insert_size_distr $outdir/*.pdf $outdir/*.ascat*};
   push @base_move,  "$basefile.groups.filtered.bedpe",
                     "$basefile.is_fb_artefact.txt",
                     "$basefile.groups.clean.bedpe",
@@ -178,6 +190,11 @@ sub cleanup {
   # ascat files may not be in base output folder so copy from inputs if available (as can be optional)
   copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
   copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
+
+  my $targz = $basefile.'.intermediates.tar.gz';
+  unless(-e $targz && -s $targz) {
+  	system(qq{tar zcf $targz }.File::Spec->catdir($outdir, 'intermediates')) and die $!;
+  }
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');
   if(-e $tmplogs) {
@@ -237,8 +254,9 @@ sub setup {
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
   my $intermediates = File::Spec->catdir($opts{'outdir'}, 'intermediates');
-  if(-e $intermediates) {
-    warn "NOTE: Presence of intermediates directory suggests successful complete analysis, please delete to proceed: $intermediates\n";
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $intermediates && -e $final_logs) {
+    warn "NOTE: Presence of intermediates and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
     exit 0;
   }
 
@@ -323,6 +341,8 @@ sub setup {
   	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
   	die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
   	die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
+  	die "Failed to find 'GenderChr' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChr'});
+  	die "Failed to find 'GenderChrFound' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChrFound'});
   }
 
 

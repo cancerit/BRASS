@@ -99,17 +99,15 @@ sub merge_records {
       $n_grp->clear_group;
 
       # tabix always works half-open, groups file is 1 based
-      my $iter = $brass_np->query(sprintf '%s:%d-%d', $a_grp->low_chr, $a_grp->low_5p - 1, $a_grp->low_3p);
+      my $iter = $brass_np->query(sprintf '%s:%d-%d', $a_grp->low_chr, $a_grp->low_5p, $a_grp->low_3p);
       my %overlaps;
-      if(defined $iter) {
-        while(my $record = $iter->next){
-          $n_grp->new_group($record);
-          next if($a_grp->low_strand ne $n_grp->low_strand);
-          next if($a_grp->high_strand ne $n_grp->high_strand);
-          next if($a_grp->high_chr ne $n_grp->high_chr);
-          next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
-          $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
-        }
+      while(my $record = $iter->next){
+        $n_grp->new_group($record);
+        next if($a_grp->low_strand ne $n_grp->low_strand);
+        next if($a_grp->high_strand ne $n_grp->high_strand);
+        next if($a_grp->high_chr ne $n_grp->high_chr);
+        next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
+        $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
       }
 
       my $overlap = filter_overlaps(\%overlaps, $n_grp->sample_count);

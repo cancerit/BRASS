@@ -33,15 +33,23 @@
 
 use strict;
 
-my ($full_bed_pe, $rg_patt_pe, $out_file) = @ARGV;
+my ($full_bed_pe, $rg_remap, $rg_cn_pe, $out_file) = @ARGV;
 
 my %ids;
-open my $FILT, '<', $rg_patt_pe || die $!;
+open my $FILT, '<', $rg_remap || die $!;
 while(my $line = <$FILT>) {
-  my ($id, $low, $high) = (split /\t/, $line)[6,12,13];
+  my ($id, $low, $high) = (split /\t/, $line)[6,10,11];
   $ids{$id} = [$low, $high];
 }
 close $FILT;
+
+my %cnflag;
+open my $CNFLAG, '<', $rg_cn_pe || die $!;
+while(my $line = <$CNFLAG>) {
+  my ($id, $low, $high) = (split /\t/, $line)[6,12,13];
+  $cnflag{$id} = [$low, $high];
+}
+close $CNFLAG;
 
 my $ofh = *STDOUT;
 if(defined $out_file) {
@@ -50,8 +58,9 @@ if(defined $out_file) {
 
 open my $MAIN, '<', $full_bed_pe || die $!;
 while(my $line = <$MAIN>) {
+  chomp $line;
   if($line =~ m/^#/) {
-    print $line;
+    print $line,"\n";
     next;
   }
 
@@ -62,7 +71,14 @@ while(my $line = <$MAIN>) {
   $F[2] = $ids{$id}->[0];
   $F[4] = $ids{$id}->[1]-1;
   $F[5] = $ids{$id}->[1];
+  if(exists $cnflag{$id}) {
+    $F[24] = 1;
+  }
+  else {
+    $F[24] = 0;
+  }
   print join("\t", @F);
+  print "\n";
 }
 close $MAIN;
 

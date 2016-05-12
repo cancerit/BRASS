@@ -106,12 +106,15 @@ my $ref = ''; # eg '/nfs/cancer_ref01/human/37/genome.fa';
 my $blat_script = ''; # eg '/software/pubseq/bin/blat';
 my $minIdentity = 95;
 
+my $cn_off = 0;
+
 GetOptions( 'infile:s'               => \$infile,
             'outfile:s'              => \$outfile,
             'tumour:s'                => \$tumour,
 	    'trans_only'             => \$trans_only,
 	    'occurs_only'            => \$occur_only,
 	    'cn_only'                => \$copyn_only,
+	    'cn_off'                => \$cn_off,
 	    'blat_only'              => \$rblat_only,
 	    'augment_only'              => \$augment_only,
 	    'augment_off'               => \$augment_off,
@@ -175,6 +178,7 @@ else {
   if ($occur_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 1; $do_copynumber = 0; $do_range_blat = 0; }
   if ($copyn_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 1; $do_range_blat = 0; }
   if ($rblat_only) { $do_process = 0; $do_trans = 0; $do_occurrences = 0; $do_copynumber = 0; $do_range_blat = 1; }
+  $do_copynumber = 0 if($cn_off);
 }
 
 # process core information and print to outfile

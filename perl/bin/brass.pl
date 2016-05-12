@@ -187,7 +187,6 @@ sub cleanup {
   }
 
   # ascat files may not be in base output folder so copy from inputs if available (as can be optional)
-  copy($options->{'ascat'}, $intdir) if(-e $options->{'ascat'});
   copy($options->{'ascat_summary'}, $intdir) if(-e $options->{'ascat_summary'});
 
 	my $intermediates_dir = File::Spec->catdir($outdir, 'intermediates');
@@ -219,7 +218,6 @@ sub setup {
               'd|depth=s' => \$opts{'depth'},
               'r|repeats=s' => \$opts{'repeats'},
               'g|genome=s' => \$opts{'genome'},
-              'a|ascat=s' => \$opts{'ascat'},
               'f|filter=s' => \$opts{'filter'},
               'p|process=s' => \$opts{'process'},
               'i|index=i' => \$opts{'index'},
@@ -265,16 +263,14 @@ sub setup {
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
 
-	PCAP::Cli::file_for_reading('ascat', $opts{'ascat'}) if(defined $opts{'ascat'});
 	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat ascat_summary centtel)) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel)) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
-  delete $opts{'ascat'} unless(defined $opts{'ascat'});
   delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
@@ -382,7 +378,6 @@ brass.pl [options]
   Optional
     -mingroup  -j   Minmum reads to call group [2].
     -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
-    -ascat     -a   ASCAT copynumber summary
     -sampstat  -ss  ASCAT sample statistics file or file containing
                       NormalContamination 0.XXXXX [0.25]
                       Ploidy X.XXX [2.0]

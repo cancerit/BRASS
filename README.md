@@ -25,9 +25,9 @@ There are several stages the main component being:
 
 ##### Perl packages:
 
-* [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
-* [cgpVcf](https://github.com/cancerit/cgpVcf/releases)
-* [grass](https://github.com/cancerit/grass/releases)
+* [PCAP-core 2.1.3+](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
+* [cgpVcf 2.0.1+](https://github.com/cancerit/cgpVcf/releases)
+* [grass 2.0.2+](https://github.com/cancerit/grass/releases)
 
 ##### R packages
 

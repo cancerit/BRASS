@@ -24,6 +24,9 @@ acf = as.numeric(args[5])
 cent_file = args[6]
 gender_chr = args[7]
 gender_present = args[8]
+work_dir = args[9]
+
+tmp_bam = paste0(work_dir,"/get_rg_cns_tmp.bam")
 
 
 # Telomeric and centromeric regions are determined based on standard coordinates
@@ -351,7 +354,7 @@ while (i <= length(seg_chr)) {
         bam_file, " ",
         loc,
         " > ",
-        bam_file, ".subset"
+        tmp_bam, ".subset"
     )
     system(cmd)
 
@@ -368,14 +371,14 @@ while (i <= length(seg_chr)) {
         (if (left_side_not_NA) seg_end_coord[(i-1):j] else seg_end_coord[i:j]),
         (if (rght_side_not_NA) pmin(seg_end_coord[j+1], seg_end_coord[j]+MAX_GET_READS_EXTEND_DIST) else c())
     )
-    write.table(data.frame(bed_chrs, bed_starts, bed_ends), paste0(bam_file, ".subset.segs"), col.names = F, row.names = F, quote = F, sep = "\t")
+    write.table(data.frame(bed_chrs, bed_starts, bed_ends), paste0(tmp_bam, ".subset.segs"), col.names = F, row.names = F, quote = F, sep = "\t")
     seg_coords = paste(bed_starts, bed_ends, sep = "-")
 
     # Compute average coverage for each segment
     cmd = paste0(
         "bedtools coverage -d -abam ",
-        bam_file, ".subset ",
-        "-b ", bam_file, ".subset.segs ",
+        tmp_bam, ".subset ",
+        "-b ", tmp_bam, ".subset.segs ",
         "| bedtools groupby -g 1,2,3 -c 5 -o mean | sort -k2,2n "
     )
 
@@ -433,5 +436,5 @@ write.table(
 
 
 # Cleanup
-file.remove(paste0(bam_file, ".subset"))
-file.remove(paste0(bam_file, ".subset.segs"))
+file.remove(paste0(tmp_bam, ".subset"))
+file.remove(paste0(tmp_bam, ".subset.segs"))

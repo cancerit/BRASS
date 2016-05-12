@@ -86,7 +86,7 @@ const my $REDIR_GROUP => q{(%s) > %s};
 
 ## filter
 const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile %s -outfile %s -min_tumour_count_high %d};
-# path/to/blat, genome.fa, tumour name, groups_in, groups_out, ascat
+# path/to/blat, genome.fa, tumour name, groups_in, groups_out
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 
 ## assemble
@@ -94,7 +94,7 @@ const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s:%s.bai
 # extreme depth, genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
 
 ## grass
-const my $GRASS => ' -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s';
+const my $GRASS => q{ -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s -add_header 'brassVersion=%s'};
 
 sub input {
   my ($index, $options) = @_;
@@ -314,7 +314,6 @@ sub filter {
                                       $filtered,
                                       $options->{'minkeep'};
   $brassI_filter .= ' -augment_off';
-  $brassI_filter .= " -ascat $options->{ascat}" if(exists $options->{'ascat'} && defined $options->{'ascat'});
 
   my $bedpe = $filtered.'.bedpe';
 
@@ -378,6 +377,7 @@ sub filter {
   $rg_cns .= ' '.$options->{'centtel'};
   $rg_cns .= ' '.$options->{'GenderChr'};
   $rg_cns .= ' '.$options->{'GenderChrFound'};
+  $rg_cns .= ' '.$tmp;
 
   my $match_lib_file = $r_stub.'.r6';
   my $filtered_cn = $r_stub.'.cn_filtered';
@@ -393,6 +393,7 @@ sub filter {
   my $final_file = $r_stub.'.groups.clean.bedpe';
   my $final = $^X.' '._which('collate_rg_regions.pl');
   $final .= ' '.$r_stub.'.groups.filtered.bedpe';
+  $final .= ' '.$remap_file;
   $final .= ' '.$match_lib_file;
   $final .= ' '.$final_file;
 
@@ -405,7 +406,6 @@ sub filter {
                                       $final_file,
                                       $options->{'minkeep'};
   $add_blat .= ' -augment_only';
-  $add_blat .= " -ascat $options->{ascat}" if(exists $options->{'ascat'} && defined $options->{'ascat'});
 
   #[$brassI_filter, $met_hasting, $del_fb, $merge_grps, $abs_bkp, $remap_micro, $rg_cns, $match_lib, $final]
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'brassI_filter')) {
@@ -598,7 +598,8 @@ sub _grass {
                               $options->{'protocol'},
                               $options->{'tumour_name'},
                               $options->{'normal_name'},
-                              $input;
+                              $input,
+                              $VERSION;
   return $grass_cmd;
 }
 

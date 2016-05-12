@@ -98,7 +98,7 @@ sub merge_records {
       # always clear the existing groups
       $n_grp->clear_group;
 
-      # tabix always works half-open, groups file is 1 based
+      # tabix BED now 1 based when queried
       my $iter = $brass_np->query(sprintf '%s:%d-%d', $a_grp->low_chr, $a_grp->low_5p, $a_grp->low_3p);
       my %overlaps;
       while(my $record = $iter->next){

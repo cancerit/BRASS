@@ -181,6 +181,7 @@ cd $SETUP_DIR
 
 echo -n "Getting bedGraphToBigWig ..."
 get_file "$INST_PATH/bin/bedGraphToBigWig" $BG_TO_BW_BINARY
+chmod +x $INST_PATH/bin/bedGraphToBigWig
 done_message "" "Failed to get bedGraphToBigWig."
 
 echo -n "Building bedtools2 ..."

@@ -49,7 +49,7 @@ use File::Path qw(remove_tree make_path);
 use FindBin qw($Bin);
 
 const my $BAMCOLLATE2 => q{%s outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2 filename=%s};
-const my $BRASS_PREP => q{%s %s -b %s.bas -e MT,GL%%,hs37d5,NC_007605 -np};
+const my $BRASS_PREP => q{%s %s -b %s.bas -np};
 const my $BAMSORT => q{%s inputformat=sam verbose=0 index=1 md5=1 tmpfile=%s/bamsort md5filename=%s.md5 indexfilename=%s.bai O=%s};
 
 die 'USAGE: <OUT_DIR> <FILE_INDEX> <FILE_1> <FILE 2>...' unless(scalar @ARGV > 2);

@@ -104,9 +104,14 @@ sub run {
 sub limit_seqs {
   my ($options, $raw_seqs) = @_;
   my @good_seqs = qw(= *);
-  my @inc_list = split /,/, $options->{'include'};
-  for my $sq(@{$raw_seqs}) {
-    push @good_seqs, $sq if(first { $sq eq $_ } @inc_list);
+  if(defined $options->{'include'}) {
+    my @inc_list = split /,/, $options->{'include'};
+    for my $sq(@{$raw_seqs}) {
+      push @good_seqs, $sq if(first { $sq eq $_ } @inc_list);
+    }
+  }
+  else {
+    push @good_seqs, @{$raw_seqs};
   }
   return @good_seqs;
 }
@@ -181,7 +186,6 @@ sub process_header {
 
   # die horribly if number of RGs in bas and bam don't match
   unless ($count_in_bam == $count_in_bas) { die "Different number or readgroups in bam and bas files $!"; }
-
   return ($new_header, \@seq_names);
 }
 
@@ -214,7 +218,7 @@ sub setup {
 
   pod2usage(-message => qq{File not found: $opts{bas}}, -verbose => 1) unless(-e $opts{'bas'});
   pod2usage(-message => qq{Empty file: $opts{bas}}, -verbose => 1) unless(-s $opts{'bas'});
-  pod2usage(-message => qq{-include option not defined}, -verbose => 1) unless(defined $opts{'include'});
+#  pod2usage(-message => qq{-include option not defined}, -verbose => 1) unless(defined $opts{'include'});
 
   delete $opts{'prefix'} unless(defined $opts{'prefix'});
 
@@ -238,10 +242,10 @@ brassI_prep_bam.pl [options]
 =head1 OPTIONS
 
   Required parameters:
-    -bas          -b    Bas statistics file for BAM being streamed
-    -include      -i    Include reads where self and mate are mapped to this ref name (or unmapped).
+    -bas          -b    Bas statistics file for BAM being streame
 
   Optional
+    -include      -i    Include reads where self and mate are mapped to this ref name (or unmapped).
     -prefix       -p    Prefix all readgroup IDs with this text to force unique between samples, (e.g. T, N)
                          - csv
     -norm_panel   -np   For generation of normal panel input only

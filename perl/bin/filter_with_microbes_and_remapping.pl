@@ -41,7 +41,7 @@ use warnings FATAL => 'all';
 use Bio::DB::HTS;
 use File::Temp qw(tempfile);
 use IO::Handle;
-use List::Util qw(max sum);
+use List::Util qw(max sum first);
 use Getopt::Long;
 use Const::Fast qw(const);
 use Data::Dumper;
@@ -60,12 +60,13 @@ const my $DNA_MAT => join("\n",
 
 my $BLAT_MAPPING_THRESHOLD = 80;
 my $SLOP_FOR_GENOMIC_REGION = 1000;
-my $SLOP_FOR_GETTING_READS = 500;
+my $SLOP_FOR_GETTING_READS = 1000;
 my $SMALL_INDEL_THRESHOLD = 1000;
 my $REMAPPING_SCORE_THRESHOLD = 40;
 my $MICROBIAL_MATCHES_MAX_FRACTION = 0.5;
 my $FOOTPRINT_SIZE_MAX = 50;
 my $SCORES_OUTPUT_FILE = q{};
+my $GROUPS_FILE = q{};
 my $BEDPEOUT = q{};
 my $VIRUS_DB = q{};
 my $BAC_DB_STUB = q{};
@@ -75,6 +76,7 @@ my $SEARCH_CORES = 1;
 my $MIN_SUPPORT = 3;
 GetOptions(
   'blat_mapping_threshold=i' => \$BLAT_MAPPING_THRESHOLD,
+  'groups_file=s' => \$GROUPS_FILE,
   'slop_for_genomic_region=i' => \$SLOP_FOR_GENOMIC_REGION,
   'slop_for_getting_reads=i' => \$SLOP_FOR_GETTING_READS,
   'small_indel_threshold=i' => \$SMALL_INDEL_THRESHOLD,
@@ -111,16 +113,27 @@ else {
 my $bam = Bio::DB::HTS->new(-bam => $bam_file);
 my $fai = Bio::DB::HTS::Fai->load($fa_file);
 
+my %group_readnames;
+
 my @regions;
-open my $IN, '<', $bedpe_file;
+open my $IN, '<', $bedpe_file or die $!;
 while (<$IN>) {
   next if /^#/;
   chomp;
   my @F = split /\t/;
-#next unless($F[6] == 3);
   push @regions, [@F];
-#warn "EXIT LOOP PREMATURLY";
-#last;
+  $group_readnames{$F[6]} = 1;
+}
+close $IN;
+
+# load the original abberent pair read names from the groups file
+open $IN, '<', $GROUPS_FILE or die $!;
+while(<$IN>) {
+  next if /^#/;
+  chomp;
+  my ($id, $names) = (split /\t/)[6,18];
+  next unless(exists $group_readnames{$id});
+  $group_readnames{$id} = [split /,/, $names];
 }
 close $IN;
 
@@ -154,6 +167,7 @@ for my $i(0..$#regions) {
 
     my @reads = collect_reads_by_region(
       $bam,
+      $r->[6], # id
       $r->[0], $l, $r->[8],
       $r->[3], $h, $r->[9],
     );
@@ -173,6 +187,7 @@ for my $i(0..$#regions) {
     # Deal with high end reads
     @reads = collect_reads_by_region(
       $bam,
+      $r->[6], # id
       $r->[3], $h, $r->[9],
       $r->[0], $l, $r->[8],
     );
@@ -206,6 +221,7 @@ for my $i(0..$#regions) {
 
     my @reads = collect_reads_by_region(
       $bam,
+      $r->[6], # id
       $r->[0], $l, $r->[8],
       $r->[3], $h, $r->[9],
     );
@@ -238,6 +254,7 @@ for my $i(0..$#regions) {
     # Deal with high end reads
     @reads = collect_reads_by_region(
       $bam,
+      $r->[6], # id
       $r->[3], $h, $r->[9],
       $r->[0], $l, $r->[8],
     );
@@ -269,6 +286,8 @@ for my $i(0..$#regions) {
     push @high_end_footprint, $footprint;
   }
 }
+
+#die "REQUSESTED EXIT POINT";
 
 # All reads file against viral genomes
 my $dt = DateTime->now;
@@ -432,14 +451,13 @@ sub get_remapping_score_differences {
   my @diffs;
   for(keys %{$source_scores}) {
     $target_scores->{$_} ||= 0;
-#warn "$identifier: $_: $source_scores->{$_}, $target_scores->{$_}\n";
     push @diffs, $source_scores->{$_} - $target_scores->{$_};
   }
   return @diffs;
 }
 
 sub collect_reads_by_region {
-  my($bam, $chr, $pos, $dir, $mate_chr, $mate_pos, $mate_dir) = @_;
+  my($bam, $id, $chr, $pos, $dir, $mate_chr, $mate_pos, $mate_dir) = @_;
   my ($start, $end, $mate_start, $mate_end);
   # Adjust regions of expected read positions based on BEDPE intervals
   if ($dir eq '+') {
@@ -465,10 +483,12 @@ sub collect_reads_by_region {
 
   my @aln = $bam->get_features_by_location($chr, $start, $end);
 
+  my $readnames = $group_readnames{$id};
   @aln = grep {
     !is_supplementary($_->flag) &&
     $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
     $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
+    readname_filter($readnames, $_) &&
     $_->strand    eq $dir &&
     $_->mate_seq_id eq $mate_chr &&
     (
@@ -480,7 +500,14 @@ sub collect_reads_by_region {
     $_->mate_start  <= $mate_end &&
     $_->mate_start + $_->length - 1 >= $mate_start
   } @aln;
+
+  warn "Didn't get expected set of reads for readgroup_id: $id\n" if(@aln != @{$readnames});
   return @aln;
+}
+
+sub readname_filter {
+  my ($readnames, $a) = @_;
+  return first {$a->qname eq $_} @{$readnames};
 }
 
 sub print_read_seqs_to_file {

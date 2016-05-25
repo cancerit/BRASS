@@ -234,6 +234,7 @@ sub setup {
               'gc|g_cache=s' => \$opts{'g_cache'},
               'vi|viral=s' => \$opts{'viral'},
               'mi|microbe=s' => \$opts{'microbe'},
+              'cn|mincn=s' => \$opts{'mincn'},
               'j|mingroup=i' => \$opts{'mingroup'},
               'k|minkeep=i' => \$opts{'minkeep'},
 ##    -minkeep   -k   Minmum reads to retain a group [4]. ## disabled until metropolis_hastings_inversions.R can handle variable
@@ -274,6 +275,8 @@ sub setup {
   delete $opts{'repeats'} unless(defined $opts{'repeats'});
   delete $opts{'filter'} unless(defined $opts{'filter'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+
+  $opts{'mincn'} ||= 0.3;
 
   die "ERROR: No '.bas' file (with content) for tumour bam has been found $opts{tumour}\n" unless(-e $opts{'tumour'}.'.bas' && -s _ > 0);
   die "ERROR: No '.bas' file (with content) for normal bam has been found $opts{normal}\n" unless(-e $opts{'normal'}.'.bas' && -s _ > 0);
@@ -376,7 +379,8 @@ brass.pl [options]
                       Example in perl/share/Rdefault/
 
   Optional
-    -mingroup  -j   Minmum reads to call group [2].
+    -mingroup  -j   Minimum reads to call group [2].
+    -mincn  	 -cn   Minimum CN change for copynumber_flag [0.3].
     -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -sampstat  -ss  ASCAT sample statistics file or file containing
                       NormalContamination 0.XXXXX [0.25]

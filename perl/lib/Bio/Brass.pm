@@ -1,7 +1,7 @@
 package Bio::Brass;
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -46,7 +46,7 @@ our @EXPORT = qw(find_breakpoints find_dusty_vertices
 		 is_dusty get_isolated_bp_alignment get_isolated_bp_surrounding_region
 		 $VERSION);
 
-our $VERSION = '5.1.2';
+our $VERSION = '5.1.3';
 
 =head1 NAME
 

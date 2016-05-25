@@ -80,13 +80,18 @@ get_file () {
   fi
 }
 
-if [ "$#" -ne "1" ] ; then
+if [ "$#" -lt "1" ] ; then
   echo "Please provide an installation path  such as /opt/pancan"
   exit 0
 fi
 
 INST_PATH=$1
-PERL_ONLY=$2
+
+if [[ "x$2" == "x" ]] ; then
+  CORE_ONLY=0
+else
+  CORE_ONLY=1
+fi
 
 CPU=`grep -c ^processor /proc/cpuinfo`
 if [ $? -eq 0 ]; then
@@ -179,41 +184,88 @@ done
 
 cd $SETUP_DIR
 
-echo -n "Getting bedGraphToBigWig ..."
-get_file "$INST_PATH/bin/bedGraphToBigWig" $BG_TO_BW_BINARY
-chmod +x $INST_PATH/bin/bedGraphToBigWig
-done_message "" "Failed to get bedGraphToBigWig."
-
-echo -n "Building bedtools2 ..."
-if [ -e $SETUP_DIR/bedtools.success ]; then
-  echo -n " previously installed ...";
+if [ $CORE_ONLY -eq 1 ] ; then
+  echo -e "\n\t !!! Not installing additional tools CORE_ONLY requested !!! \n\n"
 else
-  cd $SETUP_DIR
-  get_distro "bedtools2" $SOURCE_BEDTOOLS && \
-  mkdir -p bedtools2 && \
-  tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz && \
-  make -C bedtools2 -j$CPU && \
-  cp bedtools2/bin/* $INST_PATH/bin/. && \
-  touch $SETUP_DIR/bedtools.success
-fi
-done_message "" "Failed to build bedtools."
+  echo -n "Getting bedGraphToBigWig ..."
+  get_file "$INST_PATH/bin/bedGraphToBigWig" $BG_TO_BW_BINARY
+  chmod +x $INST_PATH/bin/bedGraphToBigWig
+  done_message "" "Failed to get bedGraphToBigWig."
 
-echo -n "Building blat ..."
-if [ -e $SETUP_DIR/blat.success ]; then
-  echo -n " previously installed ..."
-else
-  get_distro "blat" $SOURCE_BLAT && \
-  unzip -qu blat.zip && \
-  cd $SETUP_DIR/blatSrc && \
-  BINDIR=$SETUP_DIR/blat/bin && \
-  export BINDIR && \
-  export MACHTYPE && \
-  mkdir -p $BINDIR && \
-  make -j$CPU && \
-  cp $BINDIR/blat $INST_PATH/bin/. && \
-  touch $SETUP_DIR/blat.success
+  echo -n "Building bedtools2 ..."
+  if [ -e $SETUP_DIR/bedtools.success ]; then
+    echo -n " previously installed ...";
+  else
+    cd $SETUP_DIR
+    get_distro "bedtools2" $SOURCE_BEDTOOLS && \
+    mkdir -p bedtools2 && \
+    tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz && \
+    make -C bedtools2 -j$CPU && \
+    cp bedtools2/bin/* $INST_PATH/bin/. && \
+    touch $SETUP_DIR/bedtools.success
+  fi
+  done_message "" "Failed to build bedtools."
+
+  echo -n "Building blat ..."
+  if [ -e $SETUP_DIR/blat.success ]; then
+    echo -n " previously installed ..."
+  else
+    get_distro "blat" $SOURCE_BLAT && \
+    unzip -qu blat.zip && \
+    cd $SETUP_DIR/blatSrc && \
+    BINDIR=$SETUP_DIR/blat/bin && \
+    export BINDIR && \
+    export MACHTYPE && \
+    mkdir -p $BINDIR && \
+    make -j$CPU && \
+    cp $BINDIR/blat $INST_PATH/bin/. && \
+    touch $SETUP_DIR/blat.success
+  fi
+  done_message "" "Failed to build blat."
+
+  cd $INIT_DIR
+  echo -n "Building velvet..."
+  if [ -e $SETUP_DIR/velvet.success ]; then
+    echo -n " previously installed ..."
+  else
+    cd $INIT_DIR/distros && \
+    tar zxf velvet_1.2.10.tgz && \
+    cd velvet_1.2.10 && \
+    make MAXKMERLENGTH=95 velveth velvetg && \
+    mv velveth $INST_PATH/bin/velvet95h && \
+    mv velvetg $INST_PATH/bin/velvet95g && \
+    make clean && \
+    make velveth velvetg && \   	# don't do multi-threaded make
+    mv velveth $INST_PATH/bin/velvet31h && \
+    mv velvetg $INST_PATH/bin/velvet31g && \
+    ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth && \
+    ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg && \
+    cd $INIT_DIR && \
+    rm -rf $INIT_DIR/distros/velvet_1.2.10 && \
+    touch $SETUP_DIR/velvet.success
+  fi
+  done_message "" "Failed to build velvet."
+
+  cd $INIT_DIR
+  echo -n "Building exonerate..."
+  if [ -e $SETUP_DIR/exonerate.success ]; then
+    echo -n " previously installed ..."
+  else
+    cd $INIT_DIR/distros && \
+    tar zxf exonerate-2.2.0.tar.gz && \
+    cd $INIT_DIR/distros/exonerate-2.2.0 && \
+    cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff . && \
+    patch -p1 < exonerate_pthread-asneeded.diff && \
+    ./configure --prefix=$INST_PATH && \
+    make && \    # don't do multi-threaded make
+    make check && \
+    make install && \
+    cd $INIT_DIR && \
+    rm -rf $INIT_DIR/distros/exonerate-2.2.0 && \
+    touch $SETUP_DIR/exonerate.success
+  fi
+  done_message "" "Failed to build exonerate."
 fi
-done_message "" "Failed to build blat."
 
 cd $INIT_DIR
 echo -n "Building brass (c++)..."
@@ -233,49 +285,6 @@ else
   touch $SETUP_DIR/brass.success
 fi
 done_message "" "Failed to build brass (c++)."
-
-cd $INIT_DIR
-echo -n "Building velvet..."
-if [ -e $SETUP_DIR/velvet.success ]; then
-  echo -n " previously installed ..."
-else
-  cd $INIT_DIR/distros && \
-  tar zxf velvet_1.2.10.tgz && \
-  cd velvet_1.2.10 && \
-  make MAXKMERLENGTH=95 velveth velvetg && \
-  mv velveth $INST_PATH/bin/velvet95h && \
-  mv velvetg $INST_PATH/bin/velvet95g && \
-  make clean && \
-  make velveth velvetg && \   	# don't do multi-threaded make
-  mv velveth $INST_PATH/bin/velvet31h && \
-  mv velvetg $INST_PATH/bin/velvet31g && \
-  ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth && \
-  ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg && \
-  cd $INIT_DIR && \
-  rm -rf $INIT_DIR/distros/velvet_1.2.10 && \
-  touch $SETUP_DIR/velvet.success
-fi
-done_message "" "Failed to build velvet."
-
-cd $INIT_DIR
-echo -n "Building exonerate..."
-if [ -e $SETUP_DIR/exonerate.success ]; then
-  echo -n " previously installed ..."
-else
-  cd $INIT_DIR/distros && \
-  tar zxf exonerate-2.2.0.tar.gz && \
-  cd $INIT_DIR/distros/exonerate-2.2.0 && \
-  cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff . && \
-  patch -p1 < exonerate_pthread-asneeded.diff && \
-  ./configure --prefix=$INST_PATH && \
-  make && \    # don't do multi-threaded make
-  make check && \
-  make install && \
-  cd $INIT_DIR && \
-  rm -rf $INIT_DIR/distros/exonerate-2.2.0 && \
-  touch $SETUP_DIR/exonerate.success
-fi
-done_message "" "Failed to build exonerate."
 
 #add bin path for install tests
 export PATH="$INST_PATH/bin:$PATH"

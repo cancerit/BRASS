@@ -1,7 +1,7 @@
 package Sanger::CGP::Brass::Implement;
 
 ########## LICENCE ##########
-# Copyright (c) 2014,2015 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -351,13 +351,14 @@ sub filter {
   my $remap_file = $r_stub.'.r5';
   my $tumour_brm = File::Spec->catfile($tmp, sanitised_sample_from_bam($options->{'tumour'})).'.brm.bam';
   my $remap_micro = $^X.' '._which('filter_with_microbes_and_remapping.pl');
-  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d',
+  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d -groups_file %s',
                           $options->{'viral'},
                           $options->{'microbe'},
                           $score_file,
                           File::Spec->catdir($tmp,'remap_micro'),
                           'ssearch36',
-                          $options->{'threads'};
+                          $options->{'threads'},
+                          $bedpe_no_head;
   $remap_micro .= sprintf ' %s %s %s %s',
                           $abs_bkp_file,
                           $tumour_brm,
@@ -385,7 +386,7 @@ sub filter {
   $match_lib .= ' -filtered_bedpe '.$match_lib_file;
   $match_lib .= ' -acf '.$options->{'Acf'};
   $match_lib .= ' -ploidy '.$options->{'Ploidy'};
-  $match_lib .= ' -min_cn_change 0.3';
+  $match_lib .= ' -min_cn_change '.$options->{'mincn'};
   $match_lib .= ' -filt_cn_out '.$filtered_cn;
   $match_lib .= " $remap_file";
   $match_lib .= ' '.$r_stub.'.ngscn.abs_cn.bg.rg_cns';
@@ -420,9 +421,7 @@ sub filter {
     sleep 5;
   }
 
-	my ($sto, $ste, $exit) = capture{ system("wc -l $bedpe_no_head"); };
- 	chomp $sto;
-  my ($group_count) = $sto =~ m/^([[:digit:]]+)/;
+  my $group_count = count_lines($bedpe_no_head);
 
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'met_hasting')) {
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $met_hasting, 'met_hasting') if($group_count);
@@ -449,6 +448,12 @@ sub filter {
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'remap_micro');
     sleep 5;
   }
+
+  my $r4_lines = count_lines($abs_bkp_file);
+  my $r5scr_lines = count_lines($score_file);
+
+  die "Line count mismatch: $abs_bkp_file ($r4_lines) vs $score_file ($r5scr_lines)\n" if($r4_lines != $r5scr_lines);
+
   unless(PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'rg_cns')) {
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $rg_cns, 'rg_cns') if($group_count);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'rg_cns');
@@ -472,6 +477,15 @@ sub filter {
   if($group_count == 0) {
   	copy($bedpe, $final_file) or die "Failed to copy: $!";
   }
+}
+
+sub count_lines {
+  my ($file) = @_;
+  open my $FH, '<', $file or die $!;
+  while(<$FH>){}
+  my $lines = $.;
+  close $FH;
+  return $lines;
 }
 
 sub split_filtered {

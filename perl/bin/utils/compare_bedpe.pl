@@ -36,6 +36,10 @@ use Data::Dumper;
 use IO::Uncompress::Gunzip qw($GunzipError);
 use List::Util qw(first);
 use Data::Dumper;
+use File::Temp qw(tempdir);
+use File::Path qw(remove_tree);
+
+#compare_bedpe.pl brass_CN/PD26400a_vs_PD26400b.annot.bedpe.gz brass_CN_0_15/PD26400a_vs_PD26400b.annot.bedpe.gz
 
 if(@ARGV < 2) {
   warn "USAGE: ./compare_bedpe.pl old.annot.bedpe.gz new.annot.bedpe.gz [new.r6 <CLASS_STR>]\n\n";
@@ -48,9 +52,19 @@ if(@ARGV < 2) {
 # old, new
 my ($file_old, $file_new, $r6, $dump_class) = @ARGV;
 
+my $tmpdir;
+
 my $plus_split_read_info = 0;
 if(defined $r6) {
   $plus_split_read_info = 1;
+  if($r6 =~ m|([^/]+)\.intermediates\.tar\.gz$|) {
+    my $samples = $1;
+    $tmpdir = tempdir();
+    my $tmp = "$tmpdir/$samples";
+    my $cmd = sprintf q{tar -zxf %s --no-anchored --wildcards '*.r6' -O > %s}, $r6, $tmp;
+    system($cmd) && die "$!\n\tFailed to execute: $cmd\n";
+    $r6 = $tmp;
+  }
 }
 
 
@@ -59,6 +73,8 @@ my $grps_new = load_groups($file_new);
 my $new_coord = load_coord($r6);
 
 compare_grps($grps_old, $grps_new, $new_coord);
+
+remove_tree($tmpdir);
 
 sub compare_grps {
   my ($old, $new, $coord) = @_;

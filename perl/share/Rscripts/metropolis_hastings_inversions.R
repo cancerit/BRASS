@@ -180,6 +180,7 @@ size = rowMeans(d[,5:6]) - rowMeans(d[,2:3])
 library(MASS)
 library(poweRlaw)
 library(RColorBrewer)
+library(methods)
 idx = size <= 1e5
 
 # Make decision on what to plot

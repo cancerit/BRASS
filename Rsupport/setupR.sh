@@ -59,8 +59,8 @@ INIT_DIR=`pwd`
 export PATH=$INST_PATH/bin:$PATH
 
 # set R lib paths based on INST_PATH
-export R_LIB=$INST_PATH/R-lib
-export R_LIB_USER=$INST_PATH/R-lib
+export R_LIBS=$INST_PATH/R-lib
+export R_LIBS_USER=$INST_PATH/R-lib
 
 mkdir -p $R_LIB
 

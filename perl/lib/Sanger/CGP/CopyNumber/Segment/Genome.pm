@@ -470,7 +470,7 @@ sub print_rearrangements_in_bedpe {
 
 sub print_rg_cns_bedpe {
     my ($self, $fh) = @_;
-    for my $chr (sort {$a->name cmp $b->name} values($self->chrs)) {
+    for my $chr (sort {$a->name cmp $b->name} values %{$self->chrs}) {
         $chr->print_rg_cns_bedpe($fh);
     }
 }
@@ -628,78 +628,9 @@ sub find_rg_pattern_motifs {
         }
     }
 
-    for (values $self->rg_of_id) {
+    for (values %{$self->rg_of_id}) {
         %selected_groups = (%selected_groups, iterate_further_rgs([], $_, $params{size}, %params));
     }
-
-#     for $chr ($self->chrs_array) {
-#         @rg_ends = ();
-#         for $seg ($chr->segments_array) {
-#             if (defined($seg->low_end->bkpt)) {
-#                 push @rg_ends, $seg->low_end->bkpt;
-#             }
-#             if (defined($seg->high_end->bkpt)) {
-#                 push @rg_ends, $seg->high_end->bkpt;
-#             }
-#         }
-#
-#         # Strategy for each encountered rearrangement end:
-#         # 1. Collect an array of $params{size} successive rearrangements
-#         # 2. Check that none of the involved rearrangements ends are within
-#         #    $params{away_from} base pairs of a non-involved rearrangement end.
-#         # 3. Make sure rearrangements are within a window of $params{within} size
-#         my $next_idx;
-#         GROUP_CANDIDATE:
-#         for (0..($#rg_ends - $params{size})) {
-#             %selected_rgs = ();
-#             $next_idx = $_-1;
-#             while (scalar(keys %selected_rgs) < $params{size} && $next_idx+1 < $#rg_ends) {
-#                 $next_idx++;
-#                 if ($rg_ends[$next_idx]->segment_end->pos - $rg_ends[$_]->segment_end->pos > $params{within}) {
-#                     next GROUP_CANDIDATE;
-#                 }
-#                 $selected_rgs{$rg_ends[$next_idx]->rg->id} = $rg_ends[$next_idx]->rg;
-#             }
-#             if (scalar(keys %selected_rgs) < $params{size}) {
-#                 next;
-#             }
-#
-#             # Check if the current group is already handled/found
-#             for $rg_end (@rg_ends[$_..($_+$params{size}-1)]) {
-#                 $selected_rgs{$rg_end->rg->id} = $rg_end->rg;
-#             }
-#             if (exists($selected_groups{ join(',', sort(keys %selected_rgs)) })) {
-#                 next;
-#             }
-#
-#             # Make sure none of the involved rearrangements are within near
-#             # non-involved rearrangement ends.
-#             $have_non_involved_rgs_nearby = 0;
-#             for $rg (values %selected_rgs) {
-#                 if (
-#                     defined($rg->low_end->closest_rg_end(within => $params{away_from}, exclude_rgs => [keys %selected_rgs])) ||
-#                     defined($rg->high_end->closest_rg_end(within => $params{away_from}, exclude_rgs => [keys %selected_rgs]))
-#                 ) {
-#                     $have_non_involved_rgs_nearby = 1;
-#                     last;
-#                 }
-#             }
-#             if ($have_non_involved_rgs_nearby) {
-#                 next;
-#             }
-#
-#             # Finally store the group
-#             $selected_groups{join(',', sort(keys %selected_rgs))} = RearrangementGroup->new(
-#                 components => [map { $_->component } values(%selected_rgs)]
-#             );
-#
-#             # Sanity check - should never happen if $params{within} < $params{away_from}
-#             if (scalar($selected_groups{join(',', sort(keys %selected_rgs))}->rgs_array) > $params{size}) {
-#                 die;
-#             }
-#         }
-#     }
-#
 
     map { $_->get_normalised_rg_patterns(%params) } values(%selected_groups);
     return values(%selected_groups);

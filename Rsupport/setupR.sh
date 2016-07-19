@@ -62,7 +62,7 @@ export PATH=$INST_PATH/bin:$PATH
 export R_LIBS=$INST_PATH/R-lib
 export R_LIBS_USER=$INST_PATH/R-lib
 
-mkdir -p $R_LIB
+mkdir -p $R_LIBS
 
 TMP_DIR=`mktemp --tmpdir=$INIT_DIR -d`
 
@@ -74,14 +74,14 @@ if [ "x$BUILD_R" != "x" ]; then
   mkdir $TMP_DIR/R-build
   tar -C $TMP_DIR/R-build --strip-components 1 -zxf tmp.tar.gz
   cd $TMP_DIR/R-build
-  ./configure --with-cairo=yes --prefix=$INST_PATH
+  ./configure --enable-R-shlib --with-cairo=yes --prefix=$INST_PATH
   make -j$CPU
   make check
   make install
   cd $TMP_DIR
 fi
 
-Rscript $INIT_DIR/libInstall.R $R_LIB_USER
+Rscript $INIT_DIR/libInstall.R $R_LIBS_USER
 
 cd $INIT_DIR
 rm -rf $TMP_DIR

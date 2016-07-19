@@ -46,6 +46,8 @@ Appending `1` to the command will request a complete local build of `R` (3.1.3).
 ##### Other tools that need to be in path
 
 * [FASTA](https://github.com/wrpearson/fasta36/releases)
+    * If not done failures due to absence of `ssearch36` will occur.
+    * `ssearch36` is the only program required.
 
 ###  Tools installed by setup.sh
 * Many CPAN hosted libraries, see `perl/Makefile.PL` for the list

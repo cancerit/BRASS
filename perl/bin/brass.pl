@@ -341,7 +341,7 @@ sub setup {
 
 	if(!defined $opts{'process'} || first { $opts{'process'} eq $_ } (qw(normcn filter grass))) {
   	Sanger::CGP::Brass::Implement::get_ascat_summary(\%opts);
-  	die "Failed to find 'NormalContamination' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
+  	die "Failed to find 'rho' in $opts{ascat_summary}\n" unless(exists $opts{'Acf'});
   	die "Failed to find 'Ploidy' in $opts{ascat_summary}\n" unless(exists $opts{'Ploidy'});
   	die "Failed to find 'GenderChr' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChr'});
   	die "Failed to find 'GenderChrFound' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChrFound'});
@@ -383,8 +383,10 @@ brass.pl [options]
     -mincn  	 -cn   Minimum CN change for copynumber_flag [0.3].
     -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -sampstat  -ss  ASCAT sample statistics file or file containing
-                      NormalContamination 0.XXXXX [0.25]
+                      rho 0.XXXXX [0.75]
                       Ploidy X.XXX [2.0]
+                      GenderChr Y [Y]
+                      GenderChrFound Y\N
     -platform  -pl  Sequencing platform (when not defined in BAM header)
     -tum_name  -tn  Tumour sample name (when not defined in BAM header)
     -norm_name -nn  Normal sample name (when not defined in BAM header)

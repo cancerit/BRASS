@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2016 Genome Research Ltd.
+# Copyright (c) 2014-2017 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -70,7 +70,8 @@ if(defined $r6) {
 
 my $grps_old = load_groups($file_old, 1);
 my $grps_new = load_groups($file_new);
-my $new_coord = load_coord($r6);
+my $new_coord = {};
+$new_coord = load_coord($r6) if(defined $r6);
 
 compare_grps($grps_old, $grps_new, $new_coord);
 

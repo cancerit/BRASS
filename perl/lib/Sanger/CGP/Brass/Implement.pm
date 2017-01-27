@@ -1,7 +1,7 @@
 package Sanger::CGP::Brass::Implement;
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2016 Genome Research Ltd.
+# Copyright (c) 2014-2017 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -59,7 +59,7 @@ const my $ASSEMBLE_SPLIT => 40;
 
 ## input
 const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
-const my $BAMCOLLATE => q{ outputformat=sam exclude=PROPER_PAIR,UNMAP,MUNMAP,SECONDARY,QCFAIL,DUP,SUPPLEMENTARY mapqthres=6 classes=F,F2 T=%s/bamcollate2_%s};
+const my $BAMCOLLATE => q{ outputformat=sam exclude= classes=F,F2 T=%s/bamcollate2_%s};
 # tmpdir, iter, file
 const my $PREP_BAM => q{ -b %s -p %s};
 # basfile[ -e exclude chrs]
@@ -124,8 +124,11 @@ sub input {
       $rg_prefix = 'N';
     }
 
-    my $command = _which('bedtools');
-    $command .= sprintf $BED_INTERSECT_V, $input, $options->{'depth'};
+    my $command = _which('samtools');
+    $command .= ' view -F 3854 -q 6 -u '.$input;
+    $command .= ' | ';
+    $command .= _which('bedtools');
+    $command .= sprintf $BED_INTERSECT_V, 'stdin', $options->{'depth'};
     $command .= ' | ';
     $command .= _which('bamcollate2');
     $command .= sprintf $BAMCOLLATE, $tmp, $index;

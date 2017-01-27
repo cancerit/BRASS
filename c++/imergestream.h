@@ -1,5 +1,5 @@
 /**   LICENCE
-* Copyright (c) 2014,2015 Genome Research Ltd.
+* Copyright (c) 2014-2017 Genome Research Ltd.
 *
 * Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 *

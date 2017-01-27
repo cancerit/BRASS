@@ -1,5 +1,5 @@
 /**   LICENCE
-* Copyright (c) 2014,2015 Genome Research Ltd.
+* Copyright (c) 2014-2017 Genome Research Ltd.
 *
 * Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 *
@@ -447,7 +447,7 @@ try {
   static const char version[] = "brass-group (Brass) " BRASS_VERSION;
 
   static const char copyright[] =
-"Copyright (C) 2013 Genome Research Ltd.\n"
+"Copyright (C) 2014-2017 Genome Research Ltd.\n"
 "This is free software; you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
 "";

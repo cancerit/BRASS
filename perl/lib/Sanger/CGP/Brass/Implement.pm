@@ -712,7 +712,7 @@ sub bedGraphToBigWig {
   my $bgCmd = sprintf 'cut -f 1-4 %s > %s', $bedgraph, $realBg;
 
   my $bw = File::Spec->catfile($options->{'outdir'}, $options->{'safe_tumour_name'}.'_vs_'.$options->{'safe_normal_name'}.'.ngscn.abs_cn.bw');
-  my $command = sprintf '%s %s %s %s', _which('bedGraphToBigWig'), $realBg, $chr_sizes, $bw;
+  my $command = sprintf '%s -i %s -c %s -o %s', _which('bg2bw'), $realBg, $chr_sizes, $bw;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$chrCmd, $bgCmd, $command], 0);
 

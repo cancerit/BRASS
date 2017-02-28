@@ -33,7 +33,6 @@
 
 
 SOURCE_BLAT="http://users.soe.ucsc.edu/~kent/src/blatSrc35.zip"
-BG_TO_BW_BINARY="https://github.com/ENCODE-DCC/kentUtils/raw/master/bin/linux.x86_64/bedGraphToBigWig"
 
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
 # No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
@@ -187,11 +186,6 @@ cd $SETUP_DIR
 if [ $CORE_ONLY -eq 1 ] ; then
   echo -e "\n\t !!! Not installing additional tools CORE_ONLY requested !!! \n\n"
 else
-  echo -n "Getting bedGraphToBigWig ..."
-  get_file "$INST_PATH/bin/bedGraphToBigWig" $BG_TO_BW_BINARY
-  chmod +x $INST_PATH/bin/bedGraphToBigWig
-  done_message "" "Failed to get bedGraphToBigWig."
-
   echo -n "Building bedtools2 ..."
   if [ -e $SETUP_DIR/bedtools.success ]; then
     echo -n " previously installed ...";

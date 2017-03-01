@@ -772,7 +772,7 @@ sub get_ascat_summary {
   if($options->{'PloidyAcfState'} ne 'REAL') {
     $options->{'Ploidy'} = 2;
     $options->{'Acf'} = 0.75;
-    $options->{'PloidyAcfState'} = 'DEFAULT'
+    $options->{'PloidyAcfState'} = 'DEFAULT';
     $options->{'GenderChr'} = 'Y' unless(defined $options->{'GenderChr'});
     $options->{'GenderChrFound'} = 'Y' unless(defined $options->{'GenderChrFound'});
   }

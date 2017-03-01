@@ -748,8 +748,10 @@ sub _Rpath {
 
 sub get_ascat_summary {
   my ($options) = @_;
+  my $ret_val = 0;
   $options->{'PloidyAcfState'} = q{};
   if(defined $options->{'ascat_summary'}) {
+    $ret_val = 1;
     open my $SUMM, '<', $options->{'ascat_summary'};
     while(my $line = <$SUMM>) {
       chomp $line;
@@ -771,7 +773,10 @@ sub get_ascat_summary {
     $options->{'Ploidy'} = 2;
     $options->{'Acf'} = 0.75;
     $options->{'PloidyAcfState'} = 'DEFAULT'
+    $options->{'GenderChr'} = 'Y' unless(defined $options->{'GenderChr'});
+    $options->{'GenderChrFound'} = 'Y' unless(defined $options->{'GenderChrFound'});
   }
+  return $ret_val;
 }
 
 sub sanitised_sample_from_bam {

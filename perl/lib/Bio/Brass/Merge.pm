@@ -217,7 +217,7 @@ sub merge_headers {
   my $sample_counter = 0;
   for my $sample(@samples) {
     $sample_counter++;
-    $new_header .= sprintf "#SAMPLE\t%s\t%s\n", $sample_counter++, $sample;
+    $new_header .= sprintf "#SAMPLE\t%s\t%s\n", $sample_counter, $sample;
   }
   return $new_header;
 }

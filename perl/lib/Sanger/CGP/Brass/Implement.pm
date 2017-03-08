@@ -452,8 +452,8 @@ sub filter {
     sleep 5;
   }
 
-  my $r4_lines = count_lines($abs_bkp_file);
-  my $r5scr_lines = count_lines($score_file);
+  my $r4_lines = count_lines($abs_bkp_file, 1);
+  my $r5scr_lines = count_lines($score_file, 1);
 
   die "Line count mismatch: $abs_bkp_file ($r4_lines) vs $score_file ($r5scr_lines)\n" if($r4_lines != $r5scr_lines);
 
@@ -483,7 +483,8 @@ sub filter {
 }
 
 sub count_lines {
-  my ($file) = @_;
+  my ($file, $allow_no_file) = @_;
+  return 0 if($allow_no_file && ! -e $file);
   open my $FH, '<', $file or die $!;
   while(<$FH>){}
   my $lines = $.;

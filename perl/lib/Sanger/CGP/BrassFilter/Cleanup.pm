@@ -138,6 +138,8 @@ sub process {
     $end_occ_count++;
   }
 
+  $counts{'Groups Total'} ||= 0;
+
   $counts{'Discard - EndOcc'} = $counts{'Groups Total'} - $end_occ_count;
 
   my $col_max = (scalar (keys %name_by_loc))-1;

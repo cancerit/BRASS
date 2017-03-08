@@ -510,8 +510,7 @@ sub process {
   close $self->{bedpe_out_fh} if ($self->{bedpe_out_fh});
 
   unless ($count || ($chunk > 1)) {
-	  print "NO ENTRIES PRINTED. EXITING\n";
-	  exit;
+	  warn "NO ENTRIES PRINTED.\n";
   }
 
   return($count);

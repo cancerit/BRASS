@@ -243,6 +243,7 @@ sub mergeBedpe {
       push @new, scalar (split /,/, $new[-1]); # 27 # assembled read count
       push @new, @bits[26..44]; # 28-46
     }
+    clean_record(\@new);
     print $FINAL join("\t", @new),"\n";
     $svclass_bkpt_dist{$id} = { 'svclass' => $new[11],
                                 'bkptdist' =>$new[12],};
@@ -252,6 +253,13 @@ sub mergeBedpe {
   close $FINAL;
 
   return \%svclass_bkpt_dist;
+}
+
+sub clean_record {
+  my $rec = shift;
+  for(0..@{$rec}-1) {
+      $rec->[$_] = '_' unless(defined $rec->[$_]);
+  }
 }
 
 sub svclass_bedpd {
@@ -267,4 +275,3 @@ sub svdist_bedpd {
   return -1 if($chrL ne $chrH);
   return abs $startH - $endL;
 }
-

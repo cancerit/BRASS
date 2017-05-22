@@ -4,21 +4,36 @@ ploidy = as.numeric(commandArgs(T)[3])
 purity = as.numeric(commandArgs(T)[4])
 output_body = commandArgs(T)[5]
 cent_file = commandArgs(T)[6]
+genomebuild = commandArgs(T)[7]
 
 # set some defaults
-if (purity > 1) { purity = purity / 100 }
+chrprefix <- FALSE
 
+if (purity > 1) { purity = purity / 100 }
 # load the chr list from the cent_file
 library(data.table)
 chrs <- as.vector(fread(cent_file, select=c("chr"), colClasses=c("character"))$chr)
-
+#remove chr prefix
+if(grepl("chr", chrs[1]) == TRUE ) {
+	chrs <- gsub('chr', '', chrs)
+	chrprefix <- TRUE
+}
 
 cat(paste0("Reading in file ", tumour_file, "...\n"), file = stderr())
 d.t = read.table(gzfile(tumour_file), header = F, colClasses = c("character", rep("numeric", 6)))
+#remove chr prefix
+if(chrprefix == TRUE) {
+	d.t[,1] <- gsub('chr', '', d.t[,1])
+}
 d.t = d.t[d.t[,1] %in% chrs, ]
 cat(paste0("Reading in file ", normal_file, "...\n"), file = stderr())
 d.n = read.table(gzfile(normal_file), header = F, colClasses = c("character", rep("numeric", 6)))
+#remove chr prefix
+if(chrprefix == TRUE) {
+	d.n[,1] <- gsub('chr', '', d.n[,1])
+}
 d.n = d.n[d.n[,1] %in% chrs, ]
+
 
 # Sanity check
 d.t = d.t[d.t[,4] == d.t[,3] - d.t[,2], ]
@@ -65,7 +80,7 @@ cat("Segmenting copy number...\n", file = stderr())
 library(copynumber)
 options(scipen=999)
 data_for_pcf = data.frame(chr = d.t[,1], pos = rowMeans(d.t[,2:3]), cn = normalised_logratio)
-segs = pcf(data_for_pcf, gamma = 200)
+segs = pcf(data_for_pcf, gamma = 200, assembly = genomebuild)
 out_table = data.frame(chr = segs[,2], start = segs[,4], end = segs[,5], cn = segs[,7], nwin = segs[,6])
 out_table = out_table[order(out_table[,1], out_table[,2]), ]
 i = 1
@@ -78,6 +93,23 @@ while (i < nrow(out_table)) {
     i = i + 1
 }
 
+
+# Some diagnostic plots
+pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+plot.gam(gam_m, rugplot = F)
+idx = d.t[,1] == "9"
+plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
+plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
+dev.off()
+
+# add prefix if removed earlier
+if(chrprefix == TRUE) {
+	d.t <- transform(d.t, V1 = sprintf('chr%s', V1))
+	out_table <- transform(out_table, chr = sprintf('chr%s', chr))
+}
 
 # Outputting data
 write.table(
@@ -106,15 +138,3 @@ write.table(
     sep = "\t",
     quote = F
 )
-
-
-# Some diagnostic plots
-pdf(paste0(output_body, ".diagnostic_plots.pdf"))
-smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
-smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
-smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
-plot.gam(gam_m, rugplot = F)
-idx = d.t[,1] == "9"
-plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
-plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
-dev.off()

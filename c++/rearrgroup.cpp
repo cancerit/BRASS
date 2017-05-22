@@ -35,6 +35,7 @@
 
 #include "rearrgroup.h"
 
+#include <ostream>
 #include <cstdlib>
 
 #include "cansam/exception.h"

@@ -277,17 +277,48 @@ sub group {
 
 sub isize {
   my $options = shift;
-
   my $tmp = $options->{'tmp'};
+
+  my $decomp = File::Spec->catfile($tmp, 'genome.fa');
+  unless(-e $decomp) {
+    if($options->{genome} =~ m/\.[gz|razf]$/) {
+      system([0,2], "gunzip -c $options->{genome} > $decomp");
+      system("samtools faidx $decomp");
+    }
+    else {
+      symlink($options->{genome}, $decomp);
+      symlink("$options->{genome}.fai", "$decomp.fai");
+    }
+  }
+  my($chr_isize)=_getChr("$decomp.fai");  
+
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
   my $tumour_isize = $options->{'outdir'}.'/'.$options->{'safe_tumour_name'}.'.insert_size_distr';
 
-  my $command = sprintf $CLEAN_ISIZE, _which('samtools'), $options->{'tumour'}, $ISIZE_CHR, $^X, _which('corrected_insertsize.pl'), $tumour_isize;
+  my $command = sprintf $CLEAN_ISIZE, _which('samtools'), $options->{'tumour'}, $chr_isize, $^X, _which('corrected_insertsize.pl'), $tumour_isize;
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
+
+
+sub _getChr {
+	my($fai)=shift;
+
+  my $fai_seqs = capture_stdout { system('cut', '-f', 1, $fai ); };
+  my @array = split /\n/, $fai_seqs; 
+  if( grep( /^$ISIZE_CHR$/, @array ) ) {
+     return $ISIZE_CHR;
+	}elsif( grep(/^chr$ISIZE_CHR$/, @array ) ) {
+		  return "chr$ISIZE_CHR";
+  }else{
+		return $array[4];
+	}
+}
+
+
+
 
 sub filter {
   my $options = shift;

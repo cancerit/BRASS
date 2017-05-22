@@ -251,7 +251,12 @@ sub setup {
     print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
     exit 0;
   }
-
+  
+ if(!defined $opts{'assemblyini'}) {
+	 warn "Using default assembly ini file in  $Bin/../share/config/assembly.ini";
+   $opts{'assemblyini'} = "$Bin/../share/config/assembly.ini";
+ }
+	
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
@@ -265,7 +270,7 @@ sub setup {
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
-  PCAP::Cli::file_for_reading('assemblyini', $opts{'assemblyini'}) if(defined $opts{'assemblyini'});
+  PCAP::Cli::file_for_reading('assemblyini', $opts{'assemblyini'});
 	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
   for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel)) {
@@ -349,7 +354,8 @@ sub setup {
     	die "Failed to find 'GenderChrFound' in $opts{ascat_summary}\n" unless(exists $opts{'GenderChrFound'});
     }
   }
-	
+
+ 
  if(defined $opts{'assemblyini'}) {
 	 my $cfg = Config::IniFiles->new( -file =>$opts{'assemblyini'}, -nocase => 1);
 	 $opts{'ucsc_name'}=$cfg->val($opts{'species'},$opts{'assembly'});
@@ -396,7 +402,7 @@ brass.pl [options]
                       GenderChr Y [Y]
                       GenderChrFound Y/N [Y]
     -platform    -pl  Sequencing platform (when not defined in BAM header)
-    -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc)  
+    -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc assembly)  
     -tum_name    -tn  Tumour sample name (when not defined in BAM header)
     -norm_name   -nn  Normal sample name (when not defined in BAM header)
     -filter      -f   bgzip tabix-ed normal panel groups file

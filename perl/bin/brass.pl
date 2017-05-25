@@ -226,6 +226,7 @@ sub setup {
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
               'ct|centtel=s' => \$opts{'centtel'},
+              'cb|cytoband=s'=> \$opts{'cytoband'},
               'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
@@ -403,6 +404,8 @@ brass.pl [options]
                       GenderChrFound Y/N [Y]
     -platform    -pl  Sequencing platform (when not defined in BAM header)
     -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc assembly)  
+    -cytoband    -cb  Cytoband file for a species build (can be obtained from UCSC)
+
     -tum_name    -tn  Tumour sample name (when not defined in BAM header)
     -norm_name   -nn  Normal sample name (when not defined in BAM header)
     -filter      -f   bgzip tabix-ed normal panel groups file

@@ -32,7 +32,7 @@
 ########## LICENCE ##########
 
 
-use FindBin;
+use FindBin qw($Bin);
 use lib "$FindBin::Bin/../lib";
 
 use strict;
@@ -362,7 +362,6 @@ sub setup {
 	 $opts{'ucsc_name'}=$cfg->val($opts{'species'},$opts{'assembly'});
 	 $opts{'ucsc_name'}=$opts{'assembly'} unless(defined $opts{'ucsc_name'});
 } 
-  print $opts;
   return \%opts;
 }
 

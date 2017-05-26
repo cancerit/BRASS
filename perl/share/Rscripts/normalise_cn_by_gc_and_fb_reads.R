@@ -19,12 +19,15 @@ cat(paste0("Reading in file ", normal_file, "...\n"), file = stderr())
 d.n = read.table(gzfile(normal_file), header = F, colClasses = c("character", rep("numeric", 6)))
 d.n = d.n[d.n[,1] %in% chrs, ]
 
+
+
 # Sanity check
 d.t = d.t[d.t[,4] == d.t[,3] - d.t[,2], ]
 d.n = d.n[d.n[,4] == d.n[,3] - d.n[,2], ]
 if (!all(d.t[,2] == d.n[,2] & d.t[,3] == d.n[,3])) {
     stop()
 }
+
 
 # Normalise read counts
 normalisation_factor = sum(d.n[,6]) / sum(d.t[,6])
@@ -39,7 +42,7 @@ if (ploidy >= 2) {
 }
 
 logratio = log2((d.t[,6] + pseudocount) / (d.n[,6] + pseudocount))
-gc = d.t[,5]
+
 avg_t_fb_count = mean(d.t[,7] / (d.t[,6] + d.t[,7]), na.rm = T)
 avg_n_fb_count = mean(d.n[,7] / (d.n[,6] + d.n[,7]), na.rm = T)
 tumour_fb_ratio = (d.t[,7] + avg_t_fb_count) / (d.t[,6] + d.t[,7] + 1)
@@ -49,6 +52,8 @@ normal_fb_ratio = pmin(normal_fb_ratio, quantile(normal_fb_ratio, 0.99))
 
 cat("Normalising copy number using GAM...\n", file = stderr())
 library(gam)
+gc = d.t[,5]
+
 gam_m = gam(logratio ~ s(gc) + s(tumour_fb_ratio) + s(normal_fb_ratio), data = data.frame(logratio, gc, tumour_fb_ratio, normal_fb_ratio))
 normalised_logratio = logratio - predict(gam_m)
 normalised_logratio = normalised_logratio - median(normalised_logratio) + log2((purity * ploidy + (1 - purity) * 2) / 2)
@@ -79,18 +84,42 @@ while (i < nrow(out_table)) {
 
 # skipping diagnostinc plots for chromosome 9
 
-if(!exists do_diagnostic) {
-cat("Creating diagnostic plots...\n", file = stderr())
-# Some diagnostic plots
-pdf(paste0(output_body, ".diagnostic_plots.pdf"))
-smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
-smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
-smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
-plot.gam(gam_m, rugplot = F)
-idx = d.t[,1] == "9"
-plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
-plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
-dev.off()
+if(is.element("9",chrs)){
+  cat("Creating diagnostic plots...\n", file = stderr())
+	# Some diagnostic plots
+	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+	plot.gam(gam_m, rugplot = F)
+	idx = d.t[,1] == "9"
+	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
+	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
+	dev.off()
+}else if(is.element("chr9",chrs)){
+	cat("Creating diagnostic plots...\n", file = stderr())
+	# Some diagnostic plots
+	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+	plot.gam(gam_m, rugplot = F)
+	idx = d.t[,1] == "chr9"
+	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
+	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
+	dev.off()
+}else{
+  cat("Diagnostic plots created for fifth chromosome in the list...\n", file = stderr())
+	# Some diagnostic plots
+	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+	plot.gam(gam_m, rugplot = F)
+	idx = d.t[,1] == chrs[5]
+	plot(d.t[idx, 3], d.t[idx, 6], xlab = paste0("chr ",chrs[5]," position"),  ylab = "Read depth", pch = ".")
+	plot(d.t[idx, 3], normalised_logratio[idx], xlab = paste0("chr ",chrs[5]," position"), ylab = "Normalised log-ratio", pch = ".")
+	dev.off()
 }
 
 cat("Outputting data...\n", file = stderr())

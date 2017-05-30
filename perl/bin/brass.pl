@@ -226,7 +226,7 @@ sub setup {
               'v|version' => \$opts{'version'},
               's|species=s' => \$opts{'species'},
               'ct|centtel=s' => \$opts{'centtel'},
-              'cb|cytoband=s'=> \$opts{'cytoband'},
+              'cb|cytoband=s' => \$opts{'cytoband'},
               'ss|sampstat=s' => \$opts{'ascat_summary'},
               'as|assembly=s' => \$opts{'assembly'},
               'pr|protocol=s' => \$opts{'protocol'},
@@ -254,8 +254,8 @@ sub setup {
   }
   
  if(!defined $opts{'assemblyini'}) {
-	 warn "Using default assembly ini file in  $Bin/../share/config/assembly.ini";
-   $opts{'assemblyini'} = "$Bin/../share/config/assembly.ini";
+	 warn "Using default assembly ini $Bin/../lib/perl5/auto/share/module/Sanger-CGP-Brass-Implement/config/assembly.ini file in  ";
+   $opts{'assemblyini'} = "$Bin/../lib/perl5/auto/share/module/Sanger-CGP-Brass-Implement/config/assembly.ini";
  }
 	
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
@@ -274,7 +274,7 @@ sub setup {
   PCAP::Cli::file_for_reading('assemblyini', $opts{'assemblyini'});
 	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel)) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel assemblyini )) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 

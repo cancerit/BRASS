@@ -1,3 +1,7 @@
+### v5.4.0
+* pcf function in copynumber package is now species agnostic
+* removed NA rows before applying gam function
+
 ### v5.3.4
 Merge fix for clang compilation, thanks to @jmarshall
 

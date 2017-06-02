@@ -254,8 +254,10 @@ sub setup {
   }
   
  if(!defined $opts{'assemblyini'}) {
-	 warn "Using default assembly ini $Bin/../lib/perl5/auto/share/module/Sanger-CGP-Brass-Implement/config/assembly.ini file in  ";
-   $opts{'assemblyini'} = "$Bin/../lib/perl5/auto/share/module/Sanger-CGP-Brass-Implement/config/assembly.ini";
+   my $ini_path=Sanger::CGP::Brass::Implement::_Rpath();
+    $ini_path=~s/Rscripts$/config/ig;
+	 warn "Using default assembly ini $ini_path/assembly.ini file in  ";
+   $opts{'assemblyini'} = "$ini_path/assembly.ini";
  }
 	
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});

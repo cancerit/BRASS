@@ -255,7 +255,7 @@ sub setup {
   
  if(!defined $opts{'assemblyini'}) {
    my $ini_path=Sanger::CGP::Brass::Implement::_Rpath();
-    $ini_path=~s/Rscripts$/config/ig;
+    $ini_path=~s/Rscripts$/config/;
 	 warn "Using default assembly ini $ini_path/assembly.ini file in  ";
    $opts{'assemblyini'} = "$ini_path/assembly.ini";
  }

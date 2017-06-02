@@ -15,9 +15,11 @@ chrs <- as.vector(fread(cent_file, select=c("chr"), colClasses=c("character"))$c
 
 cat(paste0("Reading in file ", tumour_file, "...\n"), file = stderr())
 d.t = read.table(gzfile(tumour_file), header = F, colClasses = c("character", rep("numeric", 6)))
+d.t<-na.omit(d.t)
 d.t = d.t[d.t[,1] %in% chrs, ]
 cat(paste0("Reading in file ", normal_file, "...\n"), file = stderr())
 d.n = read.table(gzfile(normal_file), header = F, colClasses = c("character", rep("numeric", 6)))
+d.n<-na.omit(d.n)
 d.n = d.n[d.n[,1] %in% chrs, ]
 
 # Sanity check

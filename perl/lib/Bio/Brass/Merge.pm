@@ -99,14 +99,17 @@ sub merge_records {
       $n_grp->clear_group;
 
       # tabix BED now 1 based when queried
-      my $iter = $brass_np->query(sprintf '%s:%d-%d', $a_grp->low_chr, $a_grp->low_5p, $a_grp->low_3p);
+      my $modChr=$a_grp->low_chr.$a_grp->low_strand.$a_grp->high_chr.$a_grp->high_strand;
+      
+      my $iter = $brass_np->query(sprintf '%s:%d-%d', $modChr, $a_grp->low_5p, $a_grp->low_3p);
       my %overlaps;
       while(my $record = $iter->next){
         $n_grp->new_group($record);
-        next if($a_grp->low_strand ne $n_grp->low_strand);
-        next if($a_grp->high_strand ne $n_grp->high_strand);
-        next if($a_grp->high_chr ne $n_grp->high_chr);
+        #next if($a_grp->low_strand ne $n_grp->low_strand);
+        #next if($a_grp->high_strand ne $n_grp->high_strand);
+        #next if($a_grp->high_chr ne $n_grp->high_chr);
         next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
+        $record=~s/\Q$modChr/$a_grp->low_chr/;
         $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
       }
 

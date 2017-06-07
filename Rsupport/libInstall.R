@@ -14,6 +14,5 @@ biocLite("zlibbioc", ask=FALSE, lib=instLib)
 biocLite("RColorBrewer", ask=FALSE, lib=instLib)
 install.packages("devtools", lib=instLib)
 library(devtools)
-options(download.file.method = "wget")
+options(download.file.method = "auto")
 install_github("sb43/copynumber", ref="c15c1ed")
-

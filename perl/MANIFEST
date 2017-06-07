@@ -1,6 +1,4 @@
-bin/augment-bam
 bin/brass-assemble
-bin/brass-group
 bin/brass.pl
 bin/brass_foldback_reads.pl
 bin/brassI_filter.pl
@@ -13,7 +11,6 @@ bin/compute_coverage.pl
 bin/corrected_insertsize.pl
 bin/coverage_merge.pl
 bin/filter_with_microbes_and_remapping.pl
-bin/filterout-bam
 bin/findbp
 bin/findbp-all
 bin/get_abs_bkpts_from_clipped_reads.pl
@@ -54,6 +51,7 @@ lib/Sanger/CGP/Rearrangement/Path.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+share/config/assembly.ini
 share/Rdefaults/Human.GRCh37.CentTelo.tsv
 share/Rscripts/.Rhistory
 share/Rscripts/filter_small_deletions_and_fb_artefacts.R

@@ -252,14 +252,14 @@ sub setup {
     print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
     exit 0;
   }
-  
+
  if(!defined $opts{'assemblyini'}) {
    my $ini_path=Sanger::CGP::Brass::Implement::_Rpath();
     $ini_path=~s/Rscripts$/config/;
 	 warn "Using default assembly ini $ini_path/assembly.ini file in  ";
    $opts{'assemblyini'} = "$ini_path/assembly.ini";
  }
-	
+
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
@@ -314,6 +314,7 @@ sub setup {
   $opts{'threads'} = 1 unless(defined $opts{'threads'});
   $opts{'mingroup'} = 2 unless(defined $opts{'mingroup'});
   $opts{'minkeep'} = 4 unless(defined $opts{'minkeep'});
+  $opts{'cytoband'} = q{} unless(defined $opts{'cytoband'});
 
   my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpBrass');
   make_path($tmpdir) unless(-d $tmpdir);
@@ -358,12 +359,12 @@ sub setup {
     }
   }
 
- 
+
  if(defined $opts{'assemblyini'}) {
 	 my $cfg = Config::IniFiles->new( -file =>$opts{'assemblyini'}, -nocase => 1);
 	 $opts{'ucsc_name'}=$cfg->val($opts{'species'},$opts{'assembly'});
 	 $opts{'ucsc_name'}=$opts{'assembly'} unless(defined $opts{'ucsc_name'});
-} 
+}
   return \%opts;
 }
 
@@ -404,7 +405,7 @@ brass.pl [options]
                       GenderChr Y [Y]
                       GenderChrFound Y/N [Y]
     -platform    -pl  Sequencing platform (when not defined in BAM header)
-    -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc assembly)  
+    -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc assembly)
     -cytoband    -cb  Cytoband file for a species build (can be obtained from UCSC)
 
     -tum_name    -tn  Tumour sample name (when not defined in BAM header)

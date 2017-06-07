@@ -221,7 +221,7 @@ sub normcn {
                                   $options->{'Acf'},
                                   $normcn_stub,
                                   $options->{'centtel'},
-																	$options->{'ucsc_name'},
+                                  $options->{'ucsc_name'},
                                   $options->{'cytoband'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
@@ -291,7 +291,7 @@ sub isize {
       symlink("$options->{genome}.fai", "$decomp.fai");
     }
   }
-  my($chr_isize)=_getChr("$decomp.fai");  
+  my($chr_isize)=_getChr("$decomp.fai");
 
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
@@ -308,7 +308,7 @@ sub _getChr {
 	my($fai)=shift;
 
   my $fai_seqs = capture_stdout { system('cut', '-f', 1, $fai ); };
-  my @array = split /\n/, $fai_seqs; 
+  my @array = split /\n/, $fai_seqs;
   if( grep( /^$ISIZE_CHR$/, @array ) ) {
      return $ISIZE_CHR;
 	}elsif( grep(/^chr$ISIZE_CHR$/, @array ) ) {

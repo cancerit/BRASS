@@ -266,10 +266,9 @@ sub setup {
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
   PCAP::Cli::file_for_reading('cytoband', $opts{'cytoband'});
-  PCAP::Cli::file_for_reading('assemblyini', $opts{'assemblyini'});
 	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel assemblyini )) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel )) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
@@ -351,12 +350,6 @@ sub setup {
     }
   }
 
-
- if(defined $opts{'assemblyini'}) {
-	 my $cfg = Config::IniFiles->new( -file =>$opts{'assemblyini'}, -nocase => 1);
-	 $opts{'ucsc_name'}=$cfg->val($opts{'species'},$opts{'assembly'});
-	 $opts{'ucsc_name'}=$opts{'assembly'} unless(defined $opts{'ucsc_name'});
-}
   return \%opts;
 }
 

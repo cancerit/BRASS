@@ -221,7 +221,6 @@ sub normcn {
                                   $options->{'Acf'},
                                   $normcn_stub,
                                   $options->{'centtel'},
-                                  $options->{'ucsc_name'},
                                   $options->{'cytoband'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);

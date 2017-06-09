@@ -69,7 +69,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 #genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
 const my $BRASS_COVERAGE => q{ %s %s %s %s};
 
-const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s %s %s};
+const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s %s};
 const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s %s %s};
 const my $DEL_FB_R => q{filter_small_deletions_and_fb_artefacts.R %s %s %s %s};
 

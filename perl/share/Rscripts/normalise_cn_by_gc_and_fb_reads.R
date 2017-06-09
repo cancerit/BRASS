@@ -4,8 +4,7 @@ ploidy = as.numeric(commandArgs(T)[3])
 purity = as.numeric(commandArgs(T)[4])
 output_body = commandArgs(T)[5]
 cent_file = commandArgs(T)[6]
-genomebuild = commandArgs(T)[7]
-cytoband_file = commandArgs(T)[8]
+cytoband_file = commandArgs(T)[7]
 
 # set some defaults
 if (purity > 1) { purity = purity / 100 }
@@ -71,7 +70,9 @@ cat("Segmenting copy number...\n", file = stderr())
 library(copynumber)
 options(scipen=999)
 data_for_pcf = data.frame(chr = d.t[,1], pos = rowMeans(d.t[,2:3]), cn = normalised_logratio)
-segs = pcf(data_for_pcf, gamma = 200, assembly = genomebuild , cytoband_file = cytoband_file)
+
+# assembly not used but needs a value to prevent accidental use of wrong info
+segs = pcf(data_for_pcf, gamma = 200, assembly = '.' , cytoband_file = cytoband_file)
 out_table = data.frame(chr = segs[,2], start = segs[,4], end = segs[,5], cn = segs[,7], nwin = segs[,6])
 out_table = out_table[order(out_table[,1], out_table[,2]), ]
 i = 1

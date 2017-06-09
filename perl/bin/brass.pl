@@ -233,7 +233,6 @@ sub setup {
               'tn|tum_name=s' => \$opts{'tumour_name'},
               'nn|norm_name=s' => \$opts{'normal_name'},
               'pl|platform=s' => \$opts{'platform'},
-							'ai|assemblyini=s' => \$opts{'assemblyini'},
               'gc|g_cache=s' => \$opts{'g_cache'},
               'vi|viral=s' => \$opts{'viral'},
               'mi|microbe=s' => \$opts{'microbe'},
@@ -252,14 +251,7 @@ sub setup {
     print 'Version: ',Sanger::CGP::Brass::Implement->VERSION,"\n";
     exit 0;
   }
-  
- if(!defined $opts{'assemblyini'}) {
-   my $ini_path=Sanger::CGP::Brass::Implement::_Rpath();
-    $ini_path=~s/Rscripts$/config/;
-	 warn "Using default assembly ini $ini_path/assembly.ini file in  ";
-   $opts{'assemblyini'} = "$ini_path/assembly.ini";
- }
-	
+
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   $opts{'outdir'} = File::Spec->rel2abs( $opts{'outdir'} );
   $opts{'outdir'} = File::Spec->catdir(File::Spec->curdir(), $opts{'outdir'}) unless($opts{'outdir'} =~ m|^/|);
@@ -273,10 +265,10 @@ sub setup {
   PCAP::Cli::file_for_reading('repeats', $opts{'repeats'}) if(defined $opts{'repeats'});
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
-  PCAP::Cli::file_for_reading('assemblyini', $opts{'assemblyini'});
+  PCAP::Cli::file_for_reading('cytoband', $opts{'cytoband'});
 	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
 
-  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel assemblyini )) {
+  for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel )) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
   }
 
@@ -358,12 +350,6 @@ sub setup {
     }
   }
 
- 
- if(defined $opts{'assemblyini'}) {
-	 my $cfg = Config::IniFiles->new( -file =>$opts{'assemblyini'}, -nocase => 1);
-	 $opts{'ucsc_name'}=$cfg->val($opts{'species'},$opts{'assembly'});
-	 $opts{'ucsc_name'}=$opts{'assembly'} unless(defined $opts{'ucsc_name'});
-} 
   return \%opts;
 }
 
@@ -391,6 +377,7 @@ brass.pl [options]
     -viral     -vi  Virus sequences from NCBI
     -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'
     -gcbins    -b   5 column bed coord file, col 4 number of non-N bases, col 5 GC fraction.
+    -cytoband    -cb  Cytoband file for a species build (can be obtained from UCSC)
     -centtel   -ct  TSV file of usable regions of the chromosome
                       Example in perl/share/Rdefault/
 
@@ -404,8 +391,6 @@ brass.pl [options]
                       GenderChr Y [Y]
                       GenderChrFound Y/N [Y]
     -platform    -pl  Sequencing platform (when not defined in BAM header)
-    -assemblyini -ai  Assembly file in perl ini format (only if -assembly name is different than ucsc assembly)  
-    -cytoband    -cb  Cytoband file for a species build (can be obtained from UCSC)
 
     -tum_name    -tn  Tumour sample name (when not defined in BAM header)
     -norm_name   -nn  Normal sample name (when not defined in BAM header)

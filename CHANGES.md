@@ -1,3 +1,6 @@
+### v5.4.1
+* Fix bug in implementation of cytoband option.
+
 ### v5.4.0
 * pcf function in copynumber package is now species agnostic
 * removed NA rows before applying gam function

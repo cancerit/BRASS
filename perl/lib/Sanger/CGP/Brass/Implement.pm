@@ -69,7 +69,7 @@ const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 
 #genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
 const my $BRASS_COVERAGE => q{ %s %s %s %s};
 
-const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s %s %s};
+const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s %s};
 const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s %s %s};
 const my $DEL_FB_R => q{filter_small_deletions_and_fb_artefacts.R %s %s %s %s};
 
@@ -221,7 +221,6 @@ sub normcn {
                                   $options->{'Acf'},
                                   $normcn_stub,
                                   $options->{'centtel'},
-																	$options->{'ucsc_name'},
                                   $options->{'cytoband'};
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
@@ -291,7 +290,7 @@ sub isize {
       symlink("$options->{genome}.fai", "$decomp.fai");
     }
   }
-  my($chr_isize)=_getChr("$decomp.fai");  
+  my($chr_isize)=_getChr("$decomp.fai");
 
   return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
@@ -308,7 +307,7 @@ sub _getChr {
 	my($fai)=shift;
 
   my $fai_seqs = capture_stdout { system('cut', '-f', 1, $fai ); };
-  my @array = split /\n/, $fai_seqs; 
+  my @array = split /\n/, $fai_seqs;
   if( grep( /^$ISIZE_CHR$/, @array ) ) {
      return $ISIZE_CHR;
 	}elsif( grep(/^chr$ISIZE_CHR$/, @array ) ) {

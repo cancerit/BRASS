@@ -1,3 +1,7 @@
+
+### v6.0.0
+* Modified mormal panel is now handled in more efficient way - makes BRASS GROUP step extremly faster
+
 ### v5.4.1
 * Fix bug in implementation of cytoband option.
 

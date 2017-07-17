@@ -93,7 +93,7 @@ sub rgs {
     my $self = shift;
     my %rgs = ();
     for my $component ($self->components_array) {
-        for (keys %{$component->rgs}) {
+        for (sort {$a <=> $b} keys %{$component->rgs}) {
             $rgs{$_} = $component->rgs->{$_};
         }
     }

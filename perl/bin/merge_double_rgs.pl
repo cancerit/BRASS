@@ -74,7 +74,7 @@ for (@lines) {
 }
 
 my %to_be_excluded;
-for my $id (keys %id_overlaps_with) {
+for my $id (sort {$a <=> $b} keys %id_overlaps_with) {
   for (@{$id_overlaps_with{$id}}) {
     if ($data_of_id{$id}->[7] < $_->[1] || ($data_of_id{$id}->[7] == $_->[1] && $id gt $_->[0])) {
       $to_be_excluded{$id} = 1;
@@ -114,4 +114,3 @@ while (<$IN>) {
 close $IN;
 
 close $fh if(@ARGV == 2);
-

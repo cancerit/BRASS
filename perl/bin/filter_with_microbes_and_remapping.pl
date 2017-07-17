@@ -449,7 +449,7 @@ sub get_remapping_score_differences {
   unlink $source_fh_name or warn $!;
 
   my @diffs;
-  for(sort {$a <=> $b} keys %{$source_scores}) {
+  for(sort keys %{$source_scores}) {
     $target_scores->{$_} ||= 0;
     push @diffs, $source_scores->{$_} - $target_scores->{$_};
   }

@@ -284,7 +284,7 @@ sub write_local_reads {
   return (0,$k2+$d2) if($k2 >= $abort_reads); # artificially block extreme depth from assembly
 
   my $k_count = 0;
-  for my $pair(keys %{$k_reads}) {
+  for my $pair(sort keys %{$k_reads}) {
     # unmapped mates which had a poor quality mapping
     # are discarded by this section
     next if(first { $_ eq $pair } @{$q_pairs});

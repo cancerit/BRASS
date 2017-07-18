@@ -238,7 +238,7 @@ sub filter_rgs_by_no_cn_change {
     }
 
     my($cur_rg, $has_cn_change, $both_ends_balanced, @rgs_to_delete);
-    for my $rg_id (keys %{$self->rg_of_id}) {
+    for my $rg_id (sort {$a <=> $b} keys %{$self->rg_of_id}) {
         $cur_rg = $self->rg_of_id->{$rg_id};
 
         if ($params{keep_small_dels_and_tds} && ($cur_rg->is_small_td(%params) || $cur_rg->is_small_del(%params))) {
@@ -300,7 +300,7 @@ sub remove_shard_sequence_bypassing_rgs {
     my %params = @_;
     my @rgs_to_delete = ();
     my $rg_id;
-    for $rg_id (keys %{$self->rg_of_id}) {
+    for $rg_id (sort {$a <=> $b} keys %{$self->rg_of_id}) {
         if ($self->rg_of_id->{$rg_id}->is_shard_bypassing(%params)) {
             push @rgs_to_delete, $rg_id;
         }
@@ -393,7 +393,7 @@ sub compute_connected_components {
                                     ## in the current component. FIFO.
     my ($cur_rg_id, $cur_rg, $partner_rg_end);
 
-    for my $rg_id (keys %unseen_rearrangements) {
+    for my $rg_id (sort {$a <=> $b} keys %unseen_rearrangements) {
         # Has this been already 'seen' in previous iterations?
         if (!exists($unseen_rearrangements{$rg_id})) {
             next;
@@ -452,7 +452,7 @@ sub print_rearrangements_in_bedpe {
     my ($self, $fh, %params) = @_;
     $fh = *STDOUT unless(defined $fh);
     my $rg;
-    for (keys %{$self->rg_of_id}) {
+    for (sort {$a <=> $b} keys %{$self->rg_of_id}) {
         $rg = $self->rg_of_id->{$_};
         print $fh join(
             "\t",
@@ -590,15 +590,15 @@ sub find_rg_pattern_motifs {
             # too close to a non-included rearrangement.
             for $rg (values %included_rgs) {
                 if (
-                    defined($rg->low_end->closest_rg_end(%params, exclude_rgs => [keys %included_rgs])) ||
-                    defined($rg->high_end->closest_rg_end(%params, exclude_rgs => [keys %included_rgs]))
+                    defined($rg->low_end->closest_rg_end(%params, exclude_rgs => [sort {$a <=> $b} keys %included_rgs])) ||
+                    defined($rg->high_end->closest_rg_end(%params, exclude_rgs => [sort {$a <=> $b} keys %included_rgs]))
                 ) {
                     return();
                 }
             }
 
             return(
-                join(',', sort(keys %included_rgs)),
+                join(',', sort(sort {$a <=> $b} keys %included_rgs)),
                 Sanger::CGP::Rearrangement::Group->new(
                     components => [map { $_->component } values(%included_rgs)]
                 )
@@ -611,8 +611,8 @@ sub find_rg_pattern_motifs {
 
             for $rg (values %included_rgs) {
                 for (
-                    $rg->low_end->closest_rg_end(%params, exclude_rgs => [keys %included_rgs]),
-                    $rg->high_end->closest_rg_end(%params, exclude_rgs => [keys %included_rgs])
+                    $rg->low_end->closest_rg_end(%params, exclude_rgs => [sort {$a <=> $b} keys %included_rgs]),
+                    $rg->high_end->closest_rg_end(%params, exclude_rgs => [sort {$a <=> $b} keys %included_rgs])
                 ) {
                     if (defined($_)) {
                         $neighbours{$_->rg->id} = $_->rg;

@@ -193,7 +193,7 @@ sub cleanup {
 	my $intermediates_dir = File::Spec->catdir($outdir, 'intermediates');
   my $targz = $basefile.'.intermediates.tar.gz';
   unless(-e $targz && -s $targz) {
-  	system(qq{tar zcf $targz $intermediates_dir}) and die $!;
+  	system(qq{tar -C $outdir -zcf $targz $intermediates_dir}) and die $!;
   }
 
   my $tmplogs = File::Spec->catdir($tmpdir, 'logs');

@@ -526,8 +526,9 @@ for (@lines) {
   else {
     $low_end_low_clip = ($low_end_low_clip_count   >= $CLIPPED_READS_NEEDED ? "$low_end_low_clip_pos ($low_end_low_clip_count)"   : lowest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)');
     $low_end_high_clip = ($low_end_high_clip_count  >= $CLIPPED_READS_NEEDED ? "$low_end_high_clip_pos ($low_end_high_clip_count)"   : highest_pos_of_reads($low_end_reads_of_rg{$F[6]}) . ' (0)');
-    $low_end_read_uniq = join(',', unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}}));
-    $low_end_read_count = scalar(unique(@{$low_end_reads_of_rg{$F[6]}}));
+    my @tmpReads = unique(map { $_->query->name } @{$low_end_reads_of_rg{$F[6]}});
+    $low_end_read_uniq = join(',', @tmpReads);
+    $low_end_read_count = scalar(@tmpReads);
   }
 
   if(exists $no_end_reads{$F[6]}{'high'}) {
@@ -540,8 +541,9 @@ for (@lines) {
   else {
     $high_end_low_clip = ($high_end_low_clip_count  >= $CLIPPED_READS_NEEDED ? "$high_end_low_clip_pos ($high_end_low_clip_count)"   : lowest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)');
     $high_end_high_clip = ($high_end_high_clip_count >= $CLIPPED_READS_NEEDED ? "$high_end_high_clip_pos ($high_end_high_clip_count)" : highest_pos_of_reads($high_end_reads_of_rg{$F[6]}) . ' (0)');
-    $high_end_read_uniq = join(',', unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}}));
-    $high_end_read_count = scalar(unique(@{$high_end_reads_of_rg{$F[6]}}));
+    my @tmpReads = unique(map { $_->query->name } @{$high_end_reads_of_rg{$F[6]}});
+    $high_end_read_uniq = join(',', @tmpReads);
+    $high_end_read_count = scalar(@tmpReads);
   }
 
   print $outfh join(
@@ -676,5 +678,5 @@ sub unique {
   for (@_) {
     $seen{$_} = 1;
   }
-  return keys %seen;
+  return sort {$a cmp $b} keys %seen;
 }

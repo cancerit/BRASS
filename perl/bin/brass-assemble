@@ -380,7 +380,7 @@ sub assemble {
 
     foreach my $cat (sort {$a <=> $b} keys %contrib_read_names){
       $contrib_read_string .= q{|}  if($contrib_read_string);
-      $contrib_read_string .= join(q{,}, @{$contrib_read_names{$cat}});
+      $contrib_read_string .= join(q{,}, sort @{$contrib_read_names{$cat}});
     }
 
     if (defined $bedpe) {

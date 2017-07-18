@@ -306,7 +306,7 @@ sub _get_hits {
   # load an indexed fasta file
   my $fai = Bio::DB::HTS::Fai->load( $self->{ref} );
 
-  foreach my $name(keys %{$self->{data}}) {
+  foreach my $name(sort keys %{$self->{data}}) {
     my $Lrange = $self->{data}->{$name}->{Lrange};
     my $Hrange = $self->{data}->{$name}->{Hrange};
 

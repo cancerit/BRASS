@@ -301,7 +301,7 @@ sub header_map {
 sub uniq_list {
   my ($key, $a, $b) = @_;
   my %d = map {$_ => 1} (split /,/, $a->{$key}),(split /,/, $b->{$key});
-  return (join ',', keys %d);
+  return (join ',', sort keys %d);
 }
 
 sub l_min {

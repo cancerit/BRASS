@@ -1,7 +1,7 @@
 package Bio::Brass::Merge;
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2016 Genome Research Ltd.
+# Copyright (c) 2014-2017 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -86,7 +86,17 @@ sub merge_records {
   my $brass_np;
   $brass_np = Bio::DB::HTS::Tabix->new(filename => $self->{'_normal_groups'}) if(defined $self->{'_normal_groups'});
   my $fh = $self->{'_analysis_fh'};
-  while(my $line = <$fh>) {
+  while(1) {
+    my $line;
+    if(exists $self->{'_first_line'}) {
+      $line = $self->{'_first_line'};
+      delete $self->{'_first_line'};
+    }
+    else {
+      $line = <$fh>;
+    }
+    last if(! defined $line);
+
     next if($line =~ m/^$comment/);
     chomp $line;
 
@@ -102,7 +112,7 @@ sub merge_records {
       my %overlaps;
       my $low_chr=$a_grp->low_chr;
       while(my $record = $iter->next){
-        $record=~s/^[^\t]+/$low_chr/; 
+        $record=~s/^[^\t]+/$low_chr/;
         $n_grp->new_group($record);
         next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
         $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
@@ -126,14 +136,12 @@ sub filter_overlaps {
   my $ret;
   # must return a single value
   # Choose the overlapping group with the highest support (most samples first, then reads)
-  my @keys = keys %{$overlaps};
+  my @keys = sort keys %{$overlaps};
   my $count = (scalar @keys);
   return $ret if($count == 0);
   return $overlaps->{$keys[0]} if($count == 1);
-  my $max_samples = 0;
-  my $max_reads = 0;
-  my $best_key;
   my $count_end_pos = 7 + $samples;
+  my %best;
   for my $key(@keys) {
     my @record = split "\t", $overlaps->{$key};
     my @read_counts = (@record)[8..$count_end_pos];
@@ -145,17 +153,11 @@ sub filter_overlaps {
         $count_reads+= $_;
       }
     }
-    if($have_counts >= $max_samples) {
-      if($have_counts == $max_samples && $count_reads > $max_reads) {
-        $max_reads = $count_reads;
-        $best_key = $key;
-      }
-      else {
-        $max_samples = $have_counts;
-        $best_key = $key;
-      }
-    }
+    push @{$best{$have_counts}{$count_reads}}, $key;
   }
+  my $most_samples = (sort {$a<=>$b} keys %best)[-1];
+  my $most_reads = (sort {$a<=>$b} keys $best{$most_samples})[-1];
+  my $best_key = shift @{$best{$most_samples}{$most_reads}};
   return $overlaps->{$best_key};
 }
 
@@ -261,10 +263,12 @@ sub groups_header {
   else {
     open $fh, '<', $self->{'_analysis_groups'};
   }
-  while(my $line = <$fh>) {
+  my $line;
+  while($line = <$fh>) {
     last unless($line =~ m/^$comment/);
     $groups_header .= $line;
   }
+  $self->{'_first_line'} = $line;
   $self->{'_analysis_fh'} = $fh;
   return $groups_header;
 }

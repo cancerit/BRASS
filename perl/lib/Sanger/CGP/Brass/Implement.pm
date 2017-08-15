@@ -61,7 +61,7 @@ const my $ASSEMBLE_SPLIT => 40;
 const my $BED_INTERSECT_V => q{ intersect -ubam -v -abam %s -b %s };
 const my $BAMCOLLATE => q{ outputformat=sam exclude= classes=F,F2 T=%s/bamcollate2_%s};
 # tmpdir, iter, file
-const my $PREP_BAM => q{ -b %s -p %s};
+const my $PREP_BAM => q{ -b %s -p %s -q %i};
 # basfile[ -e exclude chrs]
 const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s};
 # out_bamname, out_bamname, out_bamname
@@ -125,7 +125,7 @@ sub input {
     }
 
     my $command = _which('samtools');
-    $command .= ' view -F 3854 -q 6 -u '.$input;
+    $command .= ' view -F 3854 -q '.$options->{'minmapq'}.' -u '.$input;
     $command .= ' | ';
     $command .= _which('bedtools');
     $command .= sprintf $BED_INTERSECT_V, 'stdin', $options->{'depth'};
@@ -135,7 +135,7 @@ sub input {
     $command .= ' | ';
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');
-    $command .= sprintf $PREP_BAM, $input.'.bas', $rg_prefix;
+    $command .= sprintf $PREP_BAM, $input.'.bas', $rg_prefix, $options->{'minmapq'};
     $command .= " -i ".join(',', valid_seqs($options));
     $command .= ' | ';
     $command .= _which('bamsort');

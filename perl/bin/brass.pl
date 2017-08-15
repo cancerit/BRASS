@@ -51,6 +51,7 @@ use Config::IniFiles;
 use PCAP::Cli;
 use Sanger::CGP::Brass::Implement;
 
+const my $MIN_MAPQ => 6;
 const my @REQUIRED_PARAMS => qw(species assembly protocol);
 const my @VALID_PROCESS => qw(input cover merge normcn group isize filter split assemble grass tabix);
 my %index_max = ( 'input'   => 2, # input and cover can run at same time
@@ -242,6 +243,7 @@ sub setup {
 ##    -minkeep   -k   Minmum reads to retain a group [4]. ## disabled until metropolis_hastings_inversions.R can handle variable
               'l|limit=i' => \$opts{'limit'},
               'x|noclean' => \$opts{'noclean'},
+              'q|minmapq=i' => \$opts{'minmapq'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1, -exit=>0) if(defined $opts{'h'});
@@ -279,6 +281,7 @@ sub setup {
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
   $opts{'mincn'} ||= 0.3;
+  $opts{'minmapq'} = $MIN_MAPQ unless(defined $opts{'minmapq'});
 
   die "ERROR: No '.bas' file (with content) for tumour bam has been found $opts{tumour}\n" unless(-e $opts{'tumour'}.'.bas' && -s _ > 0);
   die "ERROR: No '.bas' file (with content) for normal bam has been found $opts{normal}\n" unless(-e $opts{'normal'}.'.bas' && -s _ > 0);
@@ -398,6 +401,7 @@ brass.pl [options]
     -noclean     -x   Don't tidyup the processing areas.
     -cpus        -c   Number of cores to use. [1]
                      - recommend max 2 during 'input' process.
+    -minmapq     -q   Min MAPQ required to retain pair for group discovery [6]
 
   Targeted processing (further detail under PROCESS OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index

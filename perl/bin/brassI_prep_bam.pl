@@ -60,6 +60,7 @@ sub run {
   my $header_done = 0;
   my @good_seqs;
   my $p;
+  my $l_minmapq = $options->{'minmapq'};
   $p = $options->{'prefix'} if(exists $options->{'prefix'});
   while(my $r1 = <>) {
     if($r1 =~ m/^\@/) {
@@ -75,12 +76,12 @@ sub run {
     }
     my $r2 = <>;
     my ($rname,$mapq,$rnext,$tlen,$seq) = (split /\t/, $r1)[2,4,6,8,9];
-    next if($mapq < $MIN_MAPQ);
+    next if($mapq < $l_minmapq);
     next if($tlen != 0 && abs $tlen < (length $seq) * 2);
     next unless(first { $rname eq $_ } @good_seqs);
     next unless(first { $rnext eq $_ } @good_seqs);
     my $mapq2 = (split /\t/, $r2)[4];
-    next if($mapq2 < $MIN_MAPQ);
+    next if($mapq2 < $l_minmapq);
 
     if($options->{'np'}) { # clear pbq to save space
       my @info = split /\t/, $r1;
@@ -211,6 +212,7 @@ sub setup {
               'p|prefix:s'       => \$opts{'prefix'},
               'np|norm_panel' => \$opts{'np'},
               'i|include=s'   => \$opts{'include'},
+              'q|minmapq=i'   => \$opts{'minmapq'},
   ) or pod2usage(1);
 
   pod2usage(-message => PCAP::license, -verbose => 1) if(defined $opts{'h'});
@@ -221,6 +223,8 @@ sub setup {
 #  pod2usage(-message => qq{-include option not defined}, -verbose => 1) unless(defined $opts{'include'});
 
   delete $opts{'prefix'} unless(defined $opts{'prefix'});
+
+  $opts{'minmapq'} = $MIN_MAPQ unless(defined $opts{'minmapq'});
 
   return \%opts;
 }
@@ -249,6 +253,7 @@ brassI_prep_bam.pl [options]
     -prefix       -p    Prefix all readgroup IDs with this text to force unique between samples, (e.g. T, N)
                          - csv
     -norm_panel   -np   For generation of normal panel input only
+    -minmapq      -q    Min MAPQ required to retain pair [6]
 
   Other:
     -help         -h    Brief help message.

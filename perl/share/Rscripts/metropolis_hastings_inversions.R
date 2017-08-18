@@ -176,6 +176,8 @@ d = d[idx,]
 rp_count = d[,8]
 size = rowMeans(d[,5:6]) - rowMeans(d[,2:3])
 
+set.seed(42)
+
 # Initiate parameters
 library(MASS)
 library(poweRlaw)

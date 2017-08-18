@@ -81,6 +81,7 @@ if [ "x$BUILD_R" != "x" ]; then
   cd $TMP_DIR
 fi
 
+curl -sSL https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_1.0-3.tar.gz > VGAM_1.0-3.tar.gz
 Rscript $INIT_DIR/libInstall.R $R_LIBS_USER
 
 cd $INIT_DIR

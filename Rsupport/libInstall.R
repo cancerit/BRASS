@@ -5,13 +5,22 @@ r["CRAN"] = "http://cran.uk.r-project.org"
 options(repos = r)
 rm(r)
 source("http://bioconductor.org/biocLite.R")
-biocLite("data.table", ask=FALSE, lib=instLib)
-biocLite("gam", ask=FALSE, lib=instLib)
-biocLite("VGAM", ask=FALSE, lib=instLib)
-biocLite("stringr", ask=FALSE, lib=instLib)
-biocLite("poweRlaw", ask=FALSE, lib=instLib)
-biocLite("zlibbioc", ask=FALSE, lib=instLib)
-biocLite("RColorBrewer", ask=FALSE, lib=instLib)
+
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    biocLite(new.pkg, ask=FALSE, lib=instLib)
+  sapply(pkg, library, character.only = TRUE)
+}
+
+biocPackages <- c("data.table", "gam")
+ipak(biocPackages)
+
+install.packages("VGAM_1.0-3.tar.gz", type="source", lib=instLib)
+
+biocPackages <- c("stringr", "poweRlaw", "zlibbioc", "RColorBrewer")
+ipak(biocPackages)
+
 install.packages("devtools", lib=instLib)
 library(devtools)
 options(download.file.method = "auto")

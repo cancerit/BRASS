@@ -1,3 +1,6 @@
+### v6.0.5
+* Fix `ssearch36` queries attempting to get sequence beyond start of chromosome/contig.
+
 ### v6.0.4
 
 * Modify `Rsupport/libInstall.R` to cope with use of R <3.4 for standard builds

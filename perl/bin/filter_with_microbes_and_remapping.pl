@@ -209,8 +209,12 @@ for my $i(0..$#regions) {
   }
   else {
     # Deal with low end reads
-    my $target_seq = uc(get_fai_seq($fai, $r->[3], $h-$SLOP_FOR_GENOMIC_REGION, $h+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0)));
-    my $source_seq = uc(get_fai_seq($fai, $r->[0], $l-$SLOP_FOR_GENOMIC_REGION, $l+$SLOP_FOR_GENOMIC_REGION, 0));
+    my $h_low = $h-$SLOP_FOR_GENOMIC_REGION;
+    $h_low = 1 if($h_low < 1);
+    my $l_low = $l-$SLOP_FOR_GENOMIC_REGION;
+    $l_low = 1 if($l_low < 1);
+    my $target_seq = uc(get_fai_seq($fai, $r->[3], $h_low, $h+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0)));
+    my $source_seq = uc(get_fai_seq($fai, $r->[0], $l_low, $l+$SLOP_FOR_GENOMIC_REGION, 0));
     if ($target_seq =~ /N/ || $source_seq =~ /N/) {
       push @low_end_remap_score, 'ref_seq_has_N';
       push @high_end_remap_score, 'ref_seq_has_N';
@@ -264,8 +268,12 @@ for my $i(0..$#regions) {
       $read_name =~ s/:/_/g;
       $rg_id_of_read{$read_name} = $r->[6];
     }
-    $target_seq = get_fai_seq($fai, $r->[0], $l-$SLOP_FOR_GENOMIC_REGION, $l+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0));
-    $source_seq = get_fai_seq($fai, $r->[3], $h-$SLOP_FOR_GENOMIC_REGION, $h+$SLOP_FOR_GENOMIC_REGION, 0);
+    $h_low = $h-$SLOP_FOR_GENOMIC_REGION;
+    $h_low = 1 if($h_low < 1);
+    $l_low = $l-$SLOP_FOR_GENOMIC_REGION;
+    $l_low = 1 if($l_low < 1);
+    $target_seq = get_fai_seq($fai, $r->[0], $l_low, $l+$SLOP_FOR_GENOMIC_REGION, ($r->[8] eq $r->[9] ? 1 : 0));
+    $source_seq = get_fai_seq($fai, $r->[3], $h_low, $h+$SLOP_FOR_GENOMIC_REGION, 0);
     if (@reads >= $MIN_SUPPORT) {
       my @high_end_score_diffs = get_remapping_score_differences(
         'high_'.$r->[6],

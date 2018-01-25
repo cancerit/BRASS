@@ -1,7 +1,7 @@
 package Bio::Brass::Merge;
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2017 Genome Research Ltd.
+# Copyright (c) 2014-2018 Genome Research Ltd.
 #
 # Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 #
@@ -156,7 +156,7 @@ sub filter_overlaps {
     push @{$best{$have_counts}{$count_reads}}, $key;
   }
   my $most_samples = (sort {$a<=>$b} keys %best)[-1];
-  my $most_reads = (sort {$a<=>$b} keys $best{$most_samples})[-1];
+  my $most_reads = (sort {$a<=>$b} keys %{$best{$most_samples}})[-1];
   my $best_key = shift @{$best{$most_samples}{$most_reads}};
   return $overlaps->{$best_key};
 }

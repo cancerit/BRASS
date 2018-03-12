@@ -1,7 +1,7 @@
 /**   LICENCE
-* Copyright (c) 2014-2017 Genome Research Ltd.
+* Copyright (c) 2014-2018 Genome Research Ltd.
 *
-* Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+* Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 *
 * This file is part of BRASS.
 *
@@ -131,7 +131,7 @@ void copy(osamstream& out, isamstream& in, isamstream& augment, bool pairwise) {
 int main(int argc, char** argv)
 try {
   static const char copyright[] =
-"Copyright (C) 2014-2017 Genome Research Ltd.\n"
+"Copyright (c) 2014-2018 Genome Research Ltd.\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
 "";

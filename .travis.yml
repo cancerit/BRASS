@@ -19,13 +19,27 @@ addons:
    - libcurl4-openssl-dev
    - exonerate
 
-install: true
+install:
+ - git clone --depth 1 --single-branch --branch dev https://github.com/ICGC-TCGA-PanCancer/PCAP-core.git
+ - cd PCAP-core
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf PCAP-core
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
+ - cd cgpVcf
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf cgpVcf
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/grass.git
+ - cd grass
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf grass
 
 language: perl
 
 perl:
  - "5.22"
-# - "5.16"
 
 script:
  - ./setup.sh $HOME/wtsi-opt 2

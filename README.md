@@ -73,6 +73,8 @@ Central install via package manager of 2.2.0 is adequate. To skip just exonerate
 * [cgpVcf 2.0.1+](https://github.com/cancerit/cgpVcf/releases)
 * [grass 2.0.2+](https://github.com/cancerit/grass/releases)
 
+Each of these has it's own dependencies.
+
 ### R packages
 
 A large number of R packages are required to run BRASS.  To facilitate the install process there is

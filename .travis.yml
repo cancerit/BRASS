@@ -45,6 +45,11 @@ install:
  - ./setup.sh $HOME/wtsi-opt
  - cd ../
  - rm -rf cgpVcf
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/VAGrENT.git
+ - cd VAGrENT
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf VAGrENT
  - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/grass.git
  - cd grass
  - ./setup.sh $HOME/wtsi-opt

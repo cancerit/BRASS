@@ -8,16 +8,27 @@ env:
 addons:
  apt:
   packages:
+   - autoconf
+   - bsdtar
    - build-essential
    - curl
-   - zlib1g-dev
-   - libpng16-dev
-   - libboost1.58-dev
-   - libncurses5-dev
-   - libpstreams-dev
-   - libboost-iostreams-dev
-   - libcurl4-openssl-dev
    - exonerate
+   - libboost-iostreams-dev
+   - libboost1.58-dev
+   - libbz2-dev
+   - libcurl4-openssl-dev
+   - libexpat1-dev
+   - libgoogle-perftools-dev
+   - liblzma-dev
+   - libncurses5-dev
+   - libpng12-dev
+   - libpng16-dev
+   - libpstreams-dev
+   - lsof
+   - nettle-dev
+   - time
+   - unzip
+   - zlib1g-dev
 
 install:
  - git clone --depth 1 --single-branch --branch dev https://github.com/ICGC-TCGA-PanCancer/PCAP-core.git

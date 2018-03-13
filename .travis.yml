@@ -14,7 +14,7 @@ addons:
    - curl
    - exonerate
    - libboost-iostreams-dev
-   - libboost1.58-dev
+   - libboost-dev
    - libbz2-dev
    - libcurl4-openssl-dev
    - libexpat1-dev
@@ -22,7 +22,6 @@ addons:
    - liblzma-dev
    - libncurses5-dev
    - libpng12-dev
-   - libpng16-dev
    - libpstreams-dev
    - lsof
    - nettle-dev

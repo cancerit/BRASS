@@ -214,7 +214,7 @@ else
   echo "Building exonerate..."
   if [ -e $SETUP_DIR/exonerate.success ]; then
     echo " previously installed ..."
-  elif [ $INST_METHOD == 2 ]; then
+  elif [ $INST_METHOD -eq 2 ]; then
     echo " Skipping exonerate install ..."
   else
     cd $INIT_DIR/distros

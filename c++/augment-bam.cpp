@@ -44,10 +44,10 @@
 #include <pstreams/pstream.h>
 #endif
 
-#include "cansam/sam/alignment.h"
-#include "cansam/sam/header.h"
-#include "cansam/sam/stream.h"
-#include "cansam/exception.h"
+#include <cansam/sam/alignment.h>
+#include <cansam/sam/header.h>
+#include <cansam/sam/stream.h>
+#include <cansam/exception.h>
 
 #include "version.inc"
 

@@ -37,8 +37,6 @@ There are several stages the main component being:
 1. Run assembly
 1. Annotate with [GRASS](http://cancerit.github.io/grass/)
 
----
-
 ## Quick installation
 
 ```
@@ -64,7 +62,7 @@ Central install via package manager of 2.2.0 is adequate. To skip just exonerate
 
 ## Pre-requisites
 
-* The C++ code (within this package) requires the presence of pstreams.h (and associated development
+* The C++ code (within this package) requires the presence of `pstreams.h` (and associated development
   libraries).  This is not handled by the `setup.sh` script.
 
 ### Perl packages:
@@ -126,8 +124,6 @@ It can be run in a couple of ways:
   * Requires 2 extra parameters in the initial command
   * See ``-help`` for further details
 
----
-
 ## Input
 
 ### Initial mapping
@@ -137,8 +133,8 @@ useful output from BWA-mem.
 
 ### Library quality
 
-Please be aware that paired-end libraries where properly-paired reads overlap are unlikely to
-produce good results.
+Please be aware that paired-end libraries where properly-paired reads are heavily overlapped are
+unlikely to produce good results.
 
 ### Additional mapping information
 

@@ -46,7 +46,7 @@ our @EXPORT = qw(find_breakpoints find_dusty_vertices
 		 is_dusty get_isolated_bp_alignment get_isolated_bp_surrounding_region
 		 $VERSION);
 
-our $VERSION = '6.0.6';
+our $VERSION = '6.1.0';
 
 =head1 NAME
 

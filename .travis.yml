@@ -1,0 +1,65 @@
+notifications:
+  slack: wtsi-cgpit:ptUMR1tkNyZJYd9TpGoss8WR
+  email: false
+
+env:
+ - CC=gcc
+
+addons:
+ apt:
+  packages:
+   - autoconf
+   - bsdtar
+   - build-essential
+   - curl
+   - exonerate
+   - libboost-iostreams-dev
+   - libboost-dev
+   - libbz2-dev
+   - libcurl4-openssl-dev
+   - libexpat1-dev
+   - libgoogle-perftools-dev
+   - liblzma-dev
+   - libncurses5-dev
+   - libpng12-dev
+   - libpstreams-dev
+   - lsof
+   - nettle-dev
+   - time
+   - unzip
+   - zlib1g-dev
+
+install:
+ - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git
+ - cd cgpBigWig
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf cgpBigWig
+ - git clone --depth 1 --single-branch --branch dev https://github.com/ICGC-TCGA-PanCancer/PCAP-core.git
+ - cd PCAP-core
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf PCAP-core
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
+ - cd cgpVcf
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf cgpVcf
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/VAGrENT.git
+ - cd VAGrENT
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf VAGrENT
+ - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/grass.git
+ - cd grass
+ - ./setup.sh $HOME/wtsi-opt
+ - cd ../
+ - rm -rf grass
+
+language: perl
+
+perl:
+ - "5.22"
+
+script:
+ - ./setup.sh $HOME/wtsi-opt 2

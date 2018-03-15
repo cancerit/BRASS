@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2017 Genome Research Ltd.
+# Copyright (c) 2014-2018 Genome Research Ltd.
 #
-# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+# Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 # This file is part of BRASS.
 #
@@ -30,7 +30,6 @@
 # identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
 # 2009, 2010, 2011, 2012’."
 ########## LICENCE ##########
-
 
 # pre-filters brassI input to generate the correct headers in the bam file
 
@@ -76,7 +75,7 @@ sub run {
     my $r2 = <>;
     my ($rname,$mapq,$rnext,$tlen,$seq) = (split /\t/, $r1)[2,4,6,8,9];
     next if($mapq < $MIN_MAPQ);
-    next if($tlen != 0 && abs $tlen < (length $seq) * 2);
+    next if(($rnext eq '=' || $rname eq $rnext) && abs $tlen < (length $seq) * 2);
     next unless(first { $rname eq $_ } @good_seqs);
     next unless(first { $rnext eq $_ } @good_seqs);
     my $mapq2 = (split /\t/, $r2)[4];
@@ -242,7 +241,7 @@ brassI_prep_bam.pl [options]
 =head1 OPTIONS
 
   Required parameters:
-    -bas          -b    Bas statistics file for BAM being streame
+    -bas          -b    Bas statistics file for BAM being streamed
 
   Optional
     -include      -i    Include reads where self and mate are mapped to this ref name (or unmapped).

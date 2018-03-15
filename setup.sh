@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2017 Genome Research Ltd.
+# Copyright (c) 2014-2018 Genome Research Ltd.
 #
-# Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+# Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 # This file is part of BRASS.
 #
@@ -34,22 +34,8 @@
 
 SOURCE_BLAT="http://users.soe.ucsc.edu/~kent/src/blatSrc35.zip"
 
-# Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
-# No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
-SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz"
-
-done_message () {
-    if [ $? -eq 0 ]; then
-        echo " done."
-        if [ "x$1" != "x" ]; then
-            echo $1
-        fi
-    else
-        echo " failed.  See setup.log file for error messages." $2
-        echo "    Please check INSTALL file for items that should be installed by a package manager"
-        exit 1
-    fi
-}
+# if issues found downgrade to 2.23.0 but can't find any use of bedtools coverage
+SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz"
 
 get_distro () {
   EXT=""
@@ -87,9 +73,9 @@ fi
 INST_PATH=$1
 
 if [[ "x$2" == "x" ]] ; then
-  CORE_ONLY=0
+  INST_METHOD=0
 else
-  CORE_ONLY=1
+  INST_METHOD=$2
 fi
 
 CPU=`grep -c ^processor /proc/cpuinfo`
@@ -104,22 +90,6 @@ echo "Max compilation CPUs set to $CPU"
 
 # get current directory
 INIT_DIR=`pwd`
-
-# re-initialise log file
-echo > $INIT_DIR/setup.log
-
-# log information about this system
-(
-    echo '============== System information ===='
-    set -x
-    lsb_release -a
-    uname -a
-    sw_vers
-    system_profiler
-    grep MemTotal /proc/meminfo
-    set +x
-    echo; echo
-) >>$INIT_DIR/setup.log 2>&1
 
 set -eu
 
@@ -176,129 +146,127 @@ perlmods=( "Graph" )
 
 set +e
 for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
+  echo "Installing build prerequisite $i..."
   $CPANM --mirror http://cpan.metacpan.org -l $INST_PATH $i
-  done_message "" "Failed during installation of $i."
 done
 
 cd $SETUP_DIR
 
-if [ $CORE_ONLY -eq 1 ] ; then
-  echo -e "\n\t !!! Not installing additional tools CORE_ONLY requested !!! \n\n"
+set -e
+
+if [ $INST_METHOD -eq 1 ] ; then
+  echo -e "\n\t !!! Not installing additional tools INST_METHOD requested !!! \n\n"
 else
-  echo -n "Building bedtools2 ..."
+  echo "Building bedtools2 ..."
   if [ -e $SETUP_DIR/bedtools.success ]; then
-    echo -n " previously installed ...";
+    echo " previously installed ...";
   else
     cd $SETUP_DIR
-    get_distro "bedtools2" $SOURCE_BEDTOOLS && \
-    mkdir -p bedtools2 && \
-    tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz && \
-    make -C bedtools2 -j$CPU && \
-    cp bedtools2/bin/* $INST_PATH/bin/. && \
+    get_distro "bedtools2" $SOURCE_BEDTOOLS
+    mkdir -p bedtools2
+    tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz
+    make -C bedtools2 -j$CPU
+    cp bedtools2/bin/* $INST_PATH/bin/.
     touch $SETUP_DIR/bedtools.success
   fi
-  done_message "" "Failed to build bedtools."
 
-  echo -n "Building blat ..."
+
+  echo "Building blat ..."
   if [ -e $SETUP_DIR/blat.success ]; then
-    echo -n " previously installed ..."
+    echo " previously installed ..."
   else
-    get_distro "blat" $SOURCE_BLAT && \
-    unzip -qu blat.zip && \
-    cd $SETUP_DIR/blatSrc && \
-    BINDIR=$SETUP_DIR/blat/bin && \
-    export BINDIR && \
-    export MACHTYPE && \
-    mkdir -p $BINDIR && \
-    make -j$CPU && \
-    cp $BINDIR/blat $INST_PATH/bin/. && \
+    get_distro "blat" $SOURCE_BLAT
+    unzip -qu blat.zip
+    cd $SETUP_DIR/blatSrc
+    BINDIR=$SETUP_DIR/blat/bin
+    export BINDIR
+    export MACHTYPE
+    mkdir -p $BINDIR
+    make -j$CPU
+    cp $BINDIR/blat $INST_PATH/bin/.
     touch $SETUP_DIR/blat.success
   fi
-  done_message "" "Failed to build blat."
+
 
   cd $INIT_DIR
-  echo -n "Building velvet..."
+  echo "Building velvet..."
   if [ -e $SETUP_DIR/velvet.success ]; then
-    echo -n " previously installed ..."
+    echo " previously installed ..."
   else
-    cd $INIT_DIR/distros && \
-    tar zxf velvet_1.2.10.tgz && \
-    cd velvet_1.2.10 && \
-    make MAXKMERLENGTH=95 velveth velvetg && \
-    mv velveth $INST_PATH/bin/velvet95h && \
-    mv velvetg $INST_PATH/bin/velvet95g && \
-    make clean && \
-    make velveth velvetg && \   	# don't do multi-threaded make
-    mv velveth $INST_PATH/bin/velvet31h && \
-    mv velvetg $INST_PATH/bin/velvet31g && \
-    ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth && \
-    ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg && \
-    cd $INIT_DIR && \
-    rm -rf $INIT_DIR/distros/velvet_1.2.10 && \
+    cd $INIT_DIR/distros
+    tar -mzxf velvet_1.2.10.tgz
+    cd velvet_1.2.10
+    make MAXKMERLENGTH=95 velveth velvetg
+    mv velveth $INST_PATH/bin/velvet95h
+    mv velvetg $INST_PATH/bin/velvet95g
+    make clean
+    make velveth velvetg   	# don't do multi-threaded make
+    mv velveth $INST_PATH/bin/velvet31h
+    mv velvetg $INST_PATH/bin/velvet31g
+    ln -fs $INST_PATH/bin/velvet95h $INST_PATH/bin/velveth
+    ln -fs $INST_PATH/bin/velvet95g $INST_PATH/bin/velvetg
+    cd $INIT_DIR
+    rm -rf $INIT_DIR/distros/velvet_1.2.10
     touch $SETUP_DIR/velvet.success
   fi
-  done_message "" "Failed to build velvet."
 
   cd $INIT_DIR
-  echo -n "Building exonerate..."
+  echo "Building exonerate..."
   if [ -e $SETUP_DIR/exonerate.success ]; then
-    echo -n " previously installed ..."
+    echo " previously installed ..."
+  elif [ $INST_METHOD -eq 2 ]; then
+    echo " Skipping exonerate install ..."
   else
-    cd $INIT_DIR/distros && \
-    tar zxf exonerate-2.2.0.tar.gz && \
-    cd $INIT_DIR/distros/exonerate-2.2.0 && \
-    cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff . && \
-    patch -p1 < exonerate_pthread-asneeded.diff && \
-    ./configure --prefix=$INST_PATH && \
-    make && \    # don't do multi-threaded make
-    make check && \
-    make install && \
-    cd $INIT_DIR && \
-    rm -rf $INIT_DIR/distros/exonerate-2.2.0 && \
+    cd $INIT_DIR/distros
+    tar zxf exonerate-2.2.0.tar.gz
+    cd $INIT_DIR/distros/exonerate-2.2.0
+    cp $INIT_DIR/distros/patches/exonerate_pthread-asneeded.diff .
+    patch -p1 < exonerate_pthread-asneeded.diff
+    ./configure --prefix=$INST_PATH
+    make    # don't do multi-threaded make
+    make check
+    make install
+    cd $INIT_DIR
+    rm -rf $INIT_DIR/distros/exonerate-2.2.0
     touch $SETUP_DIR/exonerate.success
   fi
-  done_message "" "Failed to build exonerate."
 fi
 
 cd $INIT_DIR
-echo -n "Building brass (c++)..."
+echo "Building brass (c++)..."
 if [ -e $SETUP_DIR/brass.success ]; then
-  echo -n " previously installed ..."
+  echo " previously installed ..."
 else
   rm -rf $INIT_DIR/cansam*
-  unzip -q distros/cansam.zip && \
-  mv cansam-master cansam && \
-  make -C cansam && \
-  make -C c++ && \
-  cp c++/augment-bam $INST_PATH/bin/. && \
-  cp c++/brass-group $INST_PATH/bin/. && \
-  cp c++/filterout-bam $INST_PATH/bin/. && \
-  make -C c++ clean && \
-  rm -rf cansam && \
+  unzip -q distros/cansam.zip
+  mv cansam-master cansam
+  make -C cansam
+  make -C c++
+  cp c++/augment-bam $INST_PATH/bin/.
+  cp c++/brass-group $INST_PATH/bin/.
+  cp c++/filterout-bam $INST_PATH/bin/.
+  make -C c++ clean
+  rm -rf cansam
   touch $SETUP_DIR/brass.success
 fi
-done_message "" "Failed to build brass (c++)."
 
 #add bin path for install tests
 export PATH="$INST_PATH/bin:$PATH"
 
 cd $INIT_DIR/perl
 
-echo -n "Installing Perl prerequisites ..."
+echo "Installing Perl prerequisites ..."
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
     echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar."
 fi
 $CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
-done_message "" "Failed during installation of core dependencies."
 
-echo -n "Installing brass (perl)..."
-cd $INIT_DIR/perl && \
-perl Makefile.PL INSTALL_BASE=$INST_PATH && \
-make && \
-make test && \
+echo "Installing brass (perl)..."
+cd $INIT_DIR/perl
+perl Makefile.PL INSTALL_BASE=$INST_PATH
+make
+make test
 make install
-done_message "" "brass (perl) install failed."
 
 # cleanup all junk
 rm -rf $SETUP_DIR

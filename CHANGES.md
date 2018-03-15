@@ -1,6 +1,6 @@
 # Changes
 
-## NEXT
+## v6.1.0
 
 * Add travis-ci
 * Fix #46

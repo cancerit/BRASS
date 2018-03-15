@@ -1,37 +1,83 @@
-BRASS
-=====
+# BRASS
 
-### Breakpoints via assembly
+| Master                                        | Develop                                         |
+| --------------------------------------------- | ----------------------------------------------- |
+| [![Master Badge][travis-master]][travis-base] | [![Develop Badge][travis-develop]][travis-base] |
+
+<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
+
+- [Breakpoints via assembly](#breakpoints-via-assembly)
+- [Quick installation](#quick-installation)
+	- [Skipping all external dependencies](#skipping-all-external-dependencies)
+	- [Skipping exonerate install](#skipping-exonerate-install)
+- [Pre-requisites](#pre-requisites)
+	- [Perl packages:](#perl-packages)
+	- [R packages](#r-packages)
+	- [Other tools that need to be in path](#other-tools-that-need-to-be-in-path)
+	- [Tools installed by setup.sh](#tools-installed-by-setupsh)
+- [Running BRASS](#running-brass)
+- [Input](#input)
+	- [Initial mapping](#initial-mapping)
+	- [Library quality](#library-quality)
+	- [Additional mapping information](#additional-mapping-information)
+- [Docker, Singularity and Dockstore](#docker-singularity-and-dockstore)
+- [LICENCE](#licence)
+
+<!-- /TOC -->
+
+## Breakpoints via assembly
 
 BRASS analyses one or more related BAM files of paired-end sequencing to determine potential rearrangement breakpoints.
 
 There are several stages the main component being:
 
 1. Collect read-pairs where both ends map but **NOT** marked as properly-paired.
-2. Perform grouping based on mapped locations
-3. Filter
-4. Run assembly
-5. Annotate with [GRASS](http://cancerit.github.io/grass/)
+1. Perform grouping based on mapped locations
+1. Filter
+1. Run assembly
+1. Annotate with [GRASS](http://cancerit.github.io/grass/)
 
----
+## Quick installation
 
-## Installation
+```
+./setup.sh path_to_install_to
+```
 
-    ./setup.sh path_to_install_to
+### Skipping all external dependencies
 
-### Pre-requisites
+If you want to only install the core of BRASS (C and perl wrappers) and use existing versions of
+tools from your path run as:
 
-* The C++ code (within this package) requires the presence of pstreams.h (and associated development libraries).  This is not handled by the `setup.sh` script.
+```
+./setup.sh path_to_install_to 1
+```
 
-##### Perl packages:
+### Skipping exonerate install
 
-* [PCAP-core 2.1.3+](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
+Central install via package manager of 2.2.0 is adequate. To skip just exonerate install run:
+
+```
+./setup.sh path_to_install_to 2
+```
+
+## Pre-requisites
+
+* The C++ code (within this package) requires the presence of `pstreams.h` (and associated development
+  libraries).  This is not handled by the `setup.sh` script.
+
+### Perl packages:
+
+* [PCAP-core 2.1.3+](https://github.com/cancerit/PCAP-core/releases)
 * [cgpVcf 2.0.1+](https://github.com/cancerit/cgpVcf/releases)
 * [grass 2.0.2+](https://github.com/cancerit/grass/releases)
 
-##### R packages
+Each of these has it's own dependencies.
 
-A large number of R packages are required to run BRASS.  To facilitate the install process there is a script `Rsupport/libInstall.R` that can be run to build these for you.  See this file for the list of packages.
+### R packages
+
+A large number of R packages are required to run BRASS.  To facilitate the install process there is
+a script `Rsupport/libInstall.R` that can be run to build these for you.  See this file for the list
+of packages.
 
 Alternatively you can run:
 
@@ -43,24 +89,25 @@ cd Rsupport
 Appending `1` to the command will request a complete local build of `R` (3.1.3).
 
 
-##### Other tools that need to be in path
+### Other tools that need to be in path
 
 * [FASTA](https://github.com/wrpearson/fasta36/releases)
     * If not done failures due to absence of `ssearch36` will occur.
     * `ssearch36` is the only program required.
 
 ###  Tools installed by setup.sh
+
 * Many CPAN hosted libraries, see `perl/Makefile.PL` for the list
 * [BLAT](http://hgwdev.cse.ucsc.edu/~kent/src/)
 * [exonerate](http://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate)
 * [Velvet](https://www.ebi.ac.uk/~zerbino/velvet/)
 * [bedtools2](https://github.com/arq5x/bedtools2/releases)
 
-Please use `setup.sh` to install these dependencies.  Setting the environment variable `CGP_PERLLIBS` allows you to to append to `PERL5LIB` during install.  Without this all dependancies are installed into the target area.  `setup.sh` will not use `PERL5LIB` directly.
+Please use `setup.sh` to install these dependencies.  Setting the environment variable
+`CGP_PERLLIBS` allows you to to append to `PERL5LIB` during install.  Without this all dependancies
+are installed into the target area.  `setup.sh` will not use `PERL5LIB` directly.
 
 Please be aware that this expects basic C compilation libraries and tools to be available.
-
-###
 
 ## Running BRASS
 
@@ -73,34 +120,46 @@ It can be run in a couple of ways:
 1. Fire and forget
   * Execute on a single host with multiple cores (or 1 if that's all you have)
   * Some efficiency overhead as some steps aren't parallel
-2. Farm style
+1. Farm style
   * Requires 2 extra parameters in the initial command
   * See ``-help`` for further details
-
----
 
 ## Input
 
 ### Initial mapping
 
-BRASS has primarily been written to work with BWA mapped data.  You are likely to get the most useful output from BWA-mem.
+BRASS has primarily been written to work with BWA mapped data.  You are likely to get the most
+useful output from BWA-mem.
 
 ### Library quality
 
-Please be aware that paired-end libraries where properly-paired reads overlap are unlikely to produce good results.
+Please be aware that paired-end libraries where properly-paired reads are heavily overlapped are
+unlikely to produce good results.
 
 ### Additional mapping information
 
-BRASS requires accurate information regarding the insert size distribution and expects to find a ``*.bam.bas`` file
-co-located with the ``*.bam``'s.  These can be generated by the ``bam_stats`` program included in the
-[PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core) project.  If you use ``bwa_mem.pl`` to map your
-data (same repository) then this file is generated automatically for you.
+BRASS requires accurate information regarding the insert size distribution and expects to find a
+``*.bam.bas`` file co-located with the ``*.bam``'s.  These can be generated by the ``bam_stats``
+program included in the [PCAP-core](https://github.com/ICGC-TCGA-PanCancer/PCAP-core) project.
+If you use ``bwa_mem.pl`` to map your data (same repository) then this file is generated
+automatically for you.
 
-LICENCE
-=======
-Copyright (c) 2014-2017 Genome Research Ltd.
+## Docker, Singularity and Dockstore
 
-Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+There is a pre-built image containing this codebase on quay.io.
+
+* [dockstore-cgpwgs][ds-cgpwgs-git]: Contains additional tools for WGS analysis.
+
+This was primarily designed for use with dockstore.org but can be used as normal containers.
+
+The docker images are know to work correctly after import into a singularity image.
+
+## LICENCE
+
+```
+Copyright (c) 2014-2018 Genome Research Ltd.
+
+Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 
 This file is part of BRASS.
 
@@ -126,3 +185,12 @@ reads ‘Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012’ and a copyright
 statement that reads ‘Copyright (c) 2005-2012’ should be interpreted as being
 identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
 2009, 2010, 2011, 2012’."
+```
+
+<!-- Travis -->
+[travis-base]: https://travis-ci.org/cancerit/BRASS
+[travis-master]: https://travis-ci.org/cancerit/BRASS.svg?branch=master
+[travis-develop]: https://travis-ci.org/cancerit/BRASS.svg?branch=dev
+
+<!-- refs -->
+[ds-cgpwgs-git]: https://github.com/cancerit/dockstore-cgpwgs

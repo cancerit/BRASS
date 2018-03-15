@@ -67,7 +67,7 @@ Central install via package manager of 2.2.0 is adequate. To skip just exonerate
 
 ### Perl packages:
 
-* [PCAP-core 2.1.3+](https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases)
+* [PCAP-core 2.1.3+](https://github.com/cancerit/PCAP-core/releases)
 * [cgpVcf 2.0.1+](https://github.com/cancerit/cgpVcf/releases)
 * [grass 2.0.2+](https://github.com/cancerit/grass/releases)
 

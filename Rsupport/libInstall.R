@@ -18,7 +18,7 @@ ipak(biocPackages)
 
 install.packages("VGAM_1.0-3.tar.gz", type="source", lib=instLib)
 
-biocPackages <- c("stringr", "poweRlaw", "zlibbioc", "RColorBrewer")
+biocPackages <- c("stringr", "mgcv", "poweRlaw", "zlibbioc", "RColorBrewer")
 ipak(biocPackages)
 
 install.packages("devtools", lib=instLib)

@@ -45,8 +45,8 @@ use FindBin qw($Bin);
 
 use PCAP::Bam;
 
-const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2 -F 3852 -q 1 %s %s | bedtools intersect -loj -a %s -b stdin -sorted -c | gzip -1 -c > %s'};
-const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c | gzip -1 -c > %s'};
+const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2 -F 3852 -q 1 %s %s | bedtools intersect -loj -a %s -b stdin -sorted -c | gzip -c > %s'};
+const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c | gzip -c > %s'};
 
 if(scalar @ARGV < 3) {
   die "USAGE: ./compute_coverage.pl gc_windows.bed[.gz] in.bam out_path [chr_name]\n";

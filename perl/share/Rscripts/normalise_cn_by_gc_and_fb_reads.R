@@ -86,7 +86,7 @@ while (i < nrow(out_table)) {
 }
 
 # skipping diagnostinc plots for chromosome 9
-
+library(mgcv)
 if(is.element("9",chrs)){
   cat("Creating diagnostic plots...\n", file = stderr())
 	# Some diagnostic plots

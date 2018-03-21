@@ -17,17 +17,19 @@ install.packages("devtools", lib=instLib)
 library(devtools)
 options(download.file.method = "auto")
 
-biocPackages <- c("data.table", "gam")
-ipak(biocPackages)
+ipak(c("data.table"))
+ipak(c("gam"))
 
 if ( version$major == 3 && version$minor < 2 ) {
   install.packages("VGAM_1.0-3.tar.gz", type="source", lib=instLib, lib.loc=instLib)
 } else {
-  biocPackages <- c("VGAM")
-  ipak(biocPackages)
+  ipak(c("VGAM"))
 }
 
-biocPackages <- c("stringr", "mgcv", "poweRlaw", "zlibbioc", "RColorBrewer")
-ipak(biocPackages)
+ipak(c("stringr"))
+ipak(c("mgcv"))
+ipak(c("poweRlaw"))
+ipak(c("zlibbioc"))
+ipak(c("RColorBrewer"))
 
 install_github("sb43/copynumber", ref="f1688edc154f1a0e3aacf7781090afe02882f623")

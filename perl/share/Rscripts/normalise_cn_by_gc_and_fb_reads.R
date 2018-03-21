@@ -87,43 +87,43 @@ while (i < nrow(out_table)) {
 
 # skipping diagnostinc plots for chromosome 9
 library(mgcv)
-if(is.element("9",chrs)){
-  cat("Creating diagnostic plots...\n", file = stderr())
-	# Some diagnostic plots
-	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
-	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
-	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
-	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
-	plot.gam(gam_m, rugplot = F)
-	idx = d.t[,1] == "9"
-	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
-	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
-	dev.off()
-}else if(is.element("chr9",chrs)){
-	cat("Creating diagnostic plots...\n", file = stderr())
-	# Some diagnostic plots
-	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
-	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
-	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
-	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
-	plot.gam(gam_m, rugplot = F)
-	idx = d.t[,1] == "chr9"
-	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
-	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
-	dev.off()
-}else{
-  cat("Diagnostic plots created for fifth chromosome in the list...\n", file = stderr())
-	# Some diagnostic plots
-	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
-	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
-	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
-	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
-	plot.gam(gam_m, rugplot = F)
-	idx = d.t[,1] == chrs[5]
-	plot(d.t[idx, 3], d.t[idx, 6], xlab = paste0("chr ",chrs[5]," position"),  ylab = "Read depth", pch = ".")
-	plot(d.t[idx, 3], normalised_logratio[idx], xlab = paste0("chr ",chrs[5]," position"), ylab = "Normalised log-ratio", pch = ".")
-	dev.off()
-}
+# if(is.element("9",chrs)){
+#   cat("Creating diagnostic plots...\n", file = stderr())
+# 	# Some diagnostic plots
+# 	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+# 	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+# 	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+# 	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+# 	plot.gam(gam_m, rugplot = F)
+# 	idx = d.t[,1] == "9"
+# 	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
+# 	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
+# 	dev.off()
+# }else if(is.element("chr9",chrs)){
+# 	cat("Creating diagnostic plots...\n", file = stderr())
+# 	# Some diagnostic plots
+# 	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+# 	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+# 	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+# 	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+# 	plot.gam(gam_m, rugplot = F)
+# 	idx = d.t[,1] == "chr9"
+# 	plot(d.t[idx, 3], d.t[idx, 6], xlab = "Chr 9 position", ylab = "Read depth", pch = ".")
+# 	plot(d.t[idx, 3], normalised_logratio[idx], xlab = "Chr 9 position", ylab = "Normalised log-ratio", pch = ".")
+# 	dev.off()
+# }else{
+#   cat("Diagnostic plots created for fifth chromosome in the list...\n", file = stderr())
+# 	# Some diagnostic plots
+# 	pdf(paste0(output_body, ".diagnostic_plots.pdf"))
+# 	smoothScatter(gc, logratio, pch = ".", xlab = "GC-content", ylab = "Log-ratio")
+# 	smoothScatter(tumour_fb_ratio, logratio, pch = ".", xlab = "Tumour FB ratio", ylab = "Log-ratio")
+# 	smoothScatter(normal_fb_ratio, logratio, pch = ".", xlab = "Normal FB ratio", ylab = "Log-ratio")
+# 	plot.gam(gam_m, rugplot = F)
+# 	idx = d.t[,1] == chrs[5]
+# 	plot(d.t[idx, 3], d.t[idx, 6], xlab = paste0("chr ",chrs[5]," position"),  ylab = "Read depth", pch = ".")
+# 	plot(d.t[idx, 3], normalised_logratio[idx], xlab = paste0("chr ",chrs[5]," position"), ylab = "Normalised log-ratio", pch = ".")
+# 	dev.off()
+# }
 
 cat("Outputting data...\n", file = stderr())
 

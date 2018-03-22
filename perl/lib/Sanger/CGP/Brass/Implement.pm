@@ -233,7 +233,9 @@ sub normcn {
 
   move($normcn_stub.'.abs_cn.bg',$r_stub.'.ngscn.abs_cn.bg') || die "Move failed: $!\n";
   move($normcn_stub.'.segments.abs_cn.bg', $r_stub.'.ngscn.segments.abs_cn.bg') || die "Move failed: $!\n";
-  move($normcn_stub.'.diagnostic_plots.pdf', $r_stub.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
+  if(-e $normcn_stub.'.diagnostic_plots.pdf') {
+    move($normcn_stub.'.diagnostic_plots.pdf', $r_stub.'.ngscn.diagnostic_plots.pdf') || die "Move failed: $!\n";
+  }
 
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }

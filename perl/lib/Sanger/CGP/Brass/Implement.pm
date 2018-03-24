@@ -90,8 +90,8 @@ const my $BRASS_FILTER => q{ -seq_depth 25.1 -blat %s -ref %s -tumour %s -infile
 #perl ~kr2/git/brass/perl/bin/brassI_filter.pl
 
 ## assemble
-const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s:%s.bai %s:%s.bai};
-# extreme depth, genome.fa, tmp, output.tab, groups, tumourbam, tumourbam, normalbam, normalbam
+const my $BRASS_ASSEMBLE => q{ -X -m mem -O bedpe -r %s -T %s -o %s %s %s %s};
+# extreme depth, genome.fa, tmp, output.tab, groups, tumourbam, normalbam
 
 ## grass
 const my $GRASS => q{ -genome_cache %s -ref %s -species %s -assembly %s -platform %s -protocol %s -tumour %s -normal %s -file %s -add_header 'brassVersion=%s'};
@@ -592,8 +592,8 @@ sub assemble {
                                           $tmp_assemble,
                                           $assembled,
                                           $split_file,
-                                          $options->{'tumour'}, $options->{'tumour'},
-                                          $options->{'normal'}, $options->{'normal'};
+                                          $options->{'tumour'},
+                                          $options->{'normal'};
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
 

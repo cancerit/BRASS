@@ -82,7 +82,7 @@ sub show_usage {
   my ($option) = @_;
 
   my $usage = <<"EOF";
-Usage: brass-assemble [OPTION]... BEDPE-FILE [BAM-FILE]...
+Usage: brass-assemble [OPTION]... BEDPE-FILE [BAM|CRAM-FILE]...
 Options:
   -o FILE    Write events to FILE rather than standard output
   -O FORMAT  Write the next output stream in the specified FORMAT

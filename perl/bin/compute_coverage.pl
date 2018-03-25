@@ -45,8 +45,8 @@ use FindBin qw($Bin);
 
 use PCAP::Bam;
 
-const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2 -F 3852 -q 1 %s %s | bedtools intersect -loj -a %s -b stdin -sorted -c > %s'};
-const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c > %s'};
+const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2 -F 3852 -q 1 %s %s | bedtools intersect -loj -a %s -b stdin -sorted -c | bgzip -c > %s'};
+const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c | bgzip -c > %s'};
 
 if(scalar @ARGV < 3) {
   die "USAGE: ./compute_coverage.pl gc_windows.bed[.gz] in.bam out_path [chr_name]\n";
@@ -72,8 +72,8 @@ if(defined $chr_name) {
   # now need to capture all windows from original window file by the chr_name
   $new_windows = "$out/windows_$chr_name.bed";
   run_ext(qq{zgrep -wE '^$chr_name' $windows > $new_windows});
-  $cn_bed_file = qq{$out/${sample_name}.$chr_name.ngscn.bed};
-  $cn_fb_file = qq{$out/${sample_name}.$chr_name.ngscn.fb_reads.bed};
+  $cn_bed_file = qq{$out/${sample_name}.$chr_name.ngscn.bed.gz};
+  $cn_fb_file = qq{$out/${sample_name}.$chr_name.ngscn.fb_reads.bed.gz};
 }
 run_ext(sprintf $PROPER_INTERSECT, $bam, $chr_name, ($new_windows || $windows), $cn_bed_file);
 run_ext(sprintf $FOLDBK_INTERSECT, $bam, $bam, $chr_name, $^X, _which('brass_foldback_reads.pl'), $cn_bed_file, $cn_fb_file);

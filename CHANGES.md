@@ -1,5 +1,11 @@
 # Changes
 
+## v6.1.1
+
+* Reduce I/O for small cpu overhead in coverage step
+* Fix assembly step to cope with bam.csi and cram.crai
+* R lib issues and disable diagnostic plots.
+
 ## v6.1.0
 
 * Add travis-ci

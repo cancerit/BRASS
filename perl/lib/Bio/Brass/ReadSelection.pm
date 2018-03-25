@@ -68,8 +68,8 @@ use constant { PROPER_PAIRED => 0x2, UNMAPPED => 0x4, MATE_UNMAP => 0x8,
 
     $bam = Bio::Brass::ReadSelection->new($filename);
 
-Opens the specified BAM file and associated BAI index file.
-$filename is either the BAM filename or "BAM:BAI" to also give the BAI index
+Opens the specified BAM|CRAM file and associated BAI|CSI|CRAI index file.
+$filename is either the alignment filename or "ALIGNMENTS:INDEX" to also give the index
 filename, in which case temporary symlinks will be created as necessary.
 
 =cut
@@ -90,15 +90,33 @@ sub new {
 	# Index file is .bam.bai, so Bio::DB::HTS can use the files directly
 	undef $bam;  undef $bai;
     }
+    elsif (-e $bam && -e "$bam.csi") {
+      # Index file is .bam.csi, so Bio::DB::HTS can use the files directly
+      undef $bam;  undef $bai;
+    }
+		elsif (-e $bam && $bam =~ m/cram$/ && -e "$bam.crai") {
+      # Alignment is cram and index file is .cram.crai, so Bio::DB::HTS can use the files directly
+      undef $bam;  undef $bai;
+    }
     else {
-	$bai = $bam;  $bai =~ s{[.][^./]*$}{};  $bai .= '.bai';
-	if (-e $bam && -e $bai) {
-	    # Index file is .bai, so Bio::DB::HTS will need symlinks
-	}
-	else {
-	    # No index file present, so just fail with the original filename
-	    undef $bam;  undef $bai;
-	}
+			# handle files which don't include bam/cram before index extension
+			$bai = $bam;
+			$bai =~ s{[.][^./]*$}{};
+			if($bam =~ m/bam$/) {
+				$bai .= '.bai';
+				# doesn't matter if changed and not existing due to logic below
+				$bai .= '.csi' unless(-e $bai);
+			}
+			elsif($bam =~ m/cram$/) {
+				$bai .= '.crai';
+			}
+			if (-e $bam && -e $bai) {
+			    # Index file is .bai|.csi|.crai, so Bio::DB::HTS will need symlinks
+			}
+			else {
+			    # No index file present, so just fail with the original filename
+			    undef $bam;  undef $bai;
+			}
     }
 
     if (defined $bam) {
@@ -109,21 +127,31 @@ sub new {
 	# This is an abuse of tmpnam(), which tries to ensure that "$base" does
 	# not exist, but says nothing about "$base.bam" or "$base.bam.bai"
 	my $base = tmpnam();
-
-	symlink $bam, "$base.bam"
-	    or croak "can't symlink $bam to $base.bam: $!";
-	unless (symlink $bai, "$base.bam.bai") {
-	    unlink "$base.bam";  # Ignore errors during destruction
-	    croak "can't symlink $bai to $base.bam.bai: $!";
+	my $aln_ext = 'bam';
+	$aln_ext = 'cram' if($bam =~ m/cram$/);
+	my $idx_ext = 'bam.bai';
+	if($bai =~ m/csi$/) {
+		$idx_ext = 'bam.csi';
 	}
-	unless (symlink $bas, "$base.bam.bas") {
-	    unlink "$base.bam";  # Ignore errors during destruction
-	    unlink "$base.bam.bai";  # Ignore errors during destruction
-	    croak "can't symlink $bas to $base.bam.bas: $!";
+	elsif($bai =~ m/cram$/) {
+		$idx_ext = 'cram.crai';
+	}
+
+
+	symlink $bam, "$base.$aln_ext"
+	    or croak "can't symlink $bam to $base.$aln_ext: $!";
+	unless (symlink $bai, "$base.$idx_ext") {
+	    unlink "$base.$aln_ext";  # Ignore errors during destruction
+	    croak "can't symlink $bai to $base.$idx_ext: $!";
+	}
+	unless (symlink $bas, "$base.$aln_ext.bas") {
+	    unlink "$base.$aln_ext";  # Ignore errors during destruction
+	    unlink "$base.$idx_ext";  # Ignore errors during destruction
+	    croak "can't symlink $bas to $base.$aln_ext.bas: $!";
   }
 
 	$self->{unlink_base} = $base;
-	$filename = "$base.bam";
+	$filename = "$base.$aln_ext";
     }
 
     $self->{bam} = Bio::DB::HTS->new(-bam => $filename);
@@ -175,7 +203,8 @@ sub DESTROY {
     my ($self) = @_;
     if (exists $self->{unlink_base}) {
 	my $base = $self->{unlink_base};
-	unlink "$base.bam", "$base.bam.bai";  # Ignore errors during destruction
+	  # Ignore errors during destruction
+	unlink "$base.bam", "$base.bam.bai", "$base.bam.csi", "$base.cram", "$base.cram.crai";
     }
 }
 

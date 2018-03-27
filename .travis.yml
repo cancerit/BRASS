@@ -35,7 +35,7 @@ install:
  - ./setup.sh $HOME/wtsi-opt
  - cd ../
  - rm -rf cgpBigWig
- - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/PCAP-core.git
+ - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/PCAP-core.git
  - cd PCAP-core
  - ./setup.sh $HOME/wtsi-opt
  - cd ../

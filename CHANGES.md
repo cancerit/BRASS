@@ -1,5 +1,9 @@
 # Changes
 
+## v6.1.2
+
+* Change tabix->query to tabix->query_full
+
 ## v6.1.1
 
 * Reduce I/O for small cpu overhead in coverage step

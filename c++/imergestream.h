@@ -89,8 +89,8 @@ public:
     case pending1:  aln.swap(a1); state = only1; return true;
     case pending2:  aln.swap(a2); state = only2; return true;
 
-    case only1:  return stream1 >> aln;
-    case only2:  return stream2 >> aln;
+    case only1:  return bool(stream1 >> aln);
+    case only2:  return bool(stream2 >> aln);
 
     default:  return false;  // Can't happen
     }

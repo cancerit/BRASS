@@ -349,6 +349,21 @@ while (i <= length(seg_chr)) {
         (if (rght_side_not_NA) pmin(seg_end_coord[j+1], seg_end_coord[j]+MAX_GET_READS_EXTEND_DIST) else seg_end_coord[j])
     )
 
+    #sb43-count number of reads , if empty next record
+    cmd = paste0(
+        "samtools view -c -q 1 -F 3852 -f 2 ",
+        bam_file, " ",
+        loc
+    )
+    res = system(cmd, intern = T)
+
+	if ( res[1] == 0) {
+	    cat(paste0("     ", "No reads found, interval skipped:", loc, "\n"))
+        i = j+1
+        next
+    }
+    #sb43 -- end of check
+
     cmd = paste0(
         "samtools view -hb -q 1 -F 3852 -f 2 ",
         bam_file, " ",
@@ -356,6 +371,7 @@ while (i <= length(seg_chr)) {
         " > ",
         tmp_bam, ".subset"
     )
+
     system(cmd)
 
     # Create a BED file for each segment
@@ -381,7 +397,6 @@ while (i <= length(seg_chr)) {
         "-b ", tmp_bam, ".subset.segs ",
         "| bedtools groupby -g 1,2,3 -c 5 -o mean | sort -k2,2n "
     )
-
     res = system(cmd, intern = T)
     res = t(as.data.frame(strsplit(res, "\t")))
     coverage_of_coord = as.numeric(res[,4]) + 0.01

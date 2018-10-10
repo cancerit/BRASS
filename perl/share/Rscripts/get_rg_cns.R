@@ -349,11 +349,19 @@ while (i <= length(seg_chr)) {
         (if (rght_side_not_NA) pmin(seg_end_coord[j+1], seg_end_coord[j]+MAX_GET_READS_EXTEND_DIST) else seg_end_coord[j])
     )
 
-    #sb43-count number of reads , if empty next record
+
+
     cmd = paste0(
-        "samtools view -c -q 1 -F 3852 -f 2 ",
+        "samtools view -hb -q 1 -F 3852 -f 2 ",
         bam_file, " ",
-        loc
+        loc,
+        " > ",
+        tmp_bam, ".subset"
+    )
+
+     #sb43-count number of reads in  subset file, if mpty skip record
+    cmd = paste0(
+        "samtools view -c", tmp_bam, ".subset"
     )
     res = system(cmd, intern = T)
 
@@ -363,14 +371,6 @@ while (i <= length(seg_chr)) {
         next
     }
     #sb43 -- end of check
-
-    cmd = paste0(
-        "samtools view -hb -q 1 -F 3852 -f 2 ",
-        bam_file, " ",
-        loc,
-        " > ",
-        tmp_bam, ".subset"
-    )
 
     system(cmd)
 

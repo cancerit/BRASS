@@ -339,7 +339,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->end } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
             @{$high_end_reads_of_rg{$id1}} = grep { $_->end <= $median_pos } @{$high_end_reads_of_rg{$id1}};
             @{$high_end_reads_of_rg{$id2}} = grep { $_->end >  $median_pos } @{$high_end_reads_of_rg{$id2}};
-            $clip_pos = $median_posif $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id1}});

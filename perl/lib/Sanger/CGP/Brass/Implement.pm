@@ -388,14 +388,16 @@ sub filter {
   my $remap_file = $r_stub.'.r5';
   my $tumour_brm = File::Spec->catfile($tmp, sanitised_sample_from_bam($options->{'tumour'})).'.brm.bam';
   my $remap_micro = $^X.' '._which('filter_with_microbes_and_remapping.pl');
-  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d -groups_file %s',
+  $remap_micro .= sprintf ' -virus_db %s -bacterial_db_stub %s -scores_output_file %s -tmpdir %s -score_alg %s -search_cores %d -groups_file %s -noclean %s',
                           $options->{'viral'},
                           $options->{'microbe'},
                           $score_file,
                           File::Spec->catdir($tmp,'remap_micro'),
                           'ssearch36',
                           $options->{'threads'},
-                          $bedpe_no_head;
+                          $bedpe_no_head,
+                          $options->{'noclean'};
+
   $remap_micro .= sprintf ' %s %s %s %s',
                           $abs_bkp_file,
                           $tumour_brm,

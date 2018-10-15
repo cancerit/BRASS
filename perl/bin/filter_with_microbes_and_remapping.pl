@@ -95,7 +95,6 @@ GetOptions(
 );
 
 
-
 my %score_method = (emboss => \&pairwise_align_scores_emboss,
                     ssearch36 => \&pairwise_align_scores_ssearch36,
                     );

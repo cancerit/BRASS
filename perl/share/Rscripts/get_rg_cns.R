@@ -349,8 +349,6 @@ while (i <= length(seg_chr)) {
         (if (rght_side_not_NA) pmin(seg_end_coord[j+1], seg_end_coord[j]+MAX_GET_READS_EXTEND_DIST) else seg_end_coord[j])
     )
 
-
-
     cmd = paste0(
         "samtools view -hb -q 1 -F 3852 -f 2 ",
         bam_file, " ",
@@ -359,10 +357,13 @@ while (i <= length(seg_chr)) {
         tmp_bam, ".subset"
     )
 
+    system(cmd)
+
      #sb43-count number of reads in  subset file, if mpty skip record
     cmd = paste0(
         "samtools view -c", tmp_bam, ".subset"
     )
+
     res = system(cmd, intern = T)
 
 	if ( res[1] == 0) {
@@ -371,8 +372,6 @@ while (i <= length(seg_chr)) {
         next
     }
     #sb43 -- end of check
-
-    system(cmd)
 
     # Create a BED file for each segment
     k = j - i + 3

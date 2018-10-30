@@ -66,8 +66,8 @@ const my $PREP_BAM => q{ -b %s -p %s};
 const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s};
 # out_bamname, out_bamname, out_bamname
 
-#genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx]
-const my $BRASS_COVERAGE => q{ %s %s %s %s};
+#genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx] sample_type
+const my $BRASS_COVERAGE => q{ %s %s %s %s %s};
 
 const my $NORM_CN_R => q{normalise_cn_by_gc_and_fb_reads.R %s %s %s %s %s %s %s};
 const my $MET_HAST_R => q{metropolis_hastings_inversions.R %s %s %s};
@@ -171,7 +171,7 @@ sub cover {
 
       my $command = "$^X ";
       $command .= _which('compute_coverage.pl');
-      $command .= sprintf $BRASS_COVERAGE, $options->{'gcbins'}, $options->{$samp_type}, $tmp_cover, $seqs[$index-1];
+      $command .= sprintf $BRASS_COVERAGE, $options->{'gcbins'}, $options->{$samp_type}, $tmp_cover, $seqs[$index-1], $samp_type;
 
       PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $samp_type, $index);
 
@@ -192,11 +192,13 @@ sub merge {
   $command_t .= _which('coverage_merge.pl');
   $command_t .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_tumour_name'}, $tmp_cover;
   $command_t .= ' '.join(',', valid_seqs($options));
+  $command_t .=' tumour';
 
   my $command_n = "$^X ";
   $command_n .= _which('coverage_merge.pl');
   $command_n .= sprintf ' %s %s %s', $options->{'genome'}.'.fai', $options->{'safe_normal_name'}, $tmp_cover;
   $command_n .= ' '.join(',', valid_seqs($options));
+  $command_n .=' normal';
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command_t, $command_n], 0);
   PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);

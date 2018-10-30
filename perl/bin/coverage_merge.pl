@@ -89,7 +89,7 @@ sub cat_to_gzip {
   my $extended_chr_name;
   for my $chr(@{$chrs}) {
     $extended_chr_name = $sample_type if defined $sample_type;
-    $extended_chr_name .=  $chr_name;
+    $extended_chr_name .=  $chr;
     push @args, sprintf $format, $sample, $extended_chr_name;
     die "Expected file missing $indir/$args[-1]\n" unless(-e $args[-1]);
   }

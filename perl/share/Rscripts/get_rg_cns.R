@@ -361,9 +361,8 @@ while (i <= length(seg_chr)) {
 
      #sb43-count number of reads in  subset file, if mpty skip record
     cmd = paste0(
-        "samtools view -c ", tmp_bam, ".subset"
+        "samtools view ", tmp_bam, ".subset | head -n 1 | wc -l"
     )
-
     res = system(cmd, intern = T)
 
 	if ( res[1] == 0) {

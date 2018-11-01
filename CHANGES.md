@@ -1,5 +1,13 @@
 # Changes
 
+## v6.2.0
+* Fixed bug when a subset of intervals does not have read in it
+* Informative error when .bas file is absent
+* temp file were now kept for filter step - issue#73
+* Fixed issue#66 
+* Added script to process centro/telo data  
+* Fixed bug where intermediate file name matches one of the sample name
+
 ## v6.1.2
 
 * Change tabix->query to tabix->query_full

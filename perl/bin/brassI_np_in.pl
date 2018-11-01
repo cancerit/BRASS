@@ -59,6 +59,9 @@ my $index = shift;
 my @files = sort @ARGV;
 my $bam = $files[$index-1];
 
+#sb43: check .bas file present before processing bam files
+die "ERROR: No '.bas' file (with content) has been found for sample $bam\n" unless(-e $bam.'.bas' && -s _ > 0);
+
 my ($sample, undef) = PCAP::Bam::sample_name($bam);
 
 my $result_path = File::Spec->catdir($outpath, $sample);

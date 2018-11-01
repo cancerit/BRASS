@@ -356,7 +356,21 @@ while (i <= length(seg_chr)) {
         " > ",
         tmp_bam, ".subset"
     )
+
     system(cmd)
+
+     #sb43-count number of reads in  subset file, if mpty skip record
+    cmd = paste0(
+        "samtools view ", tmp_bam, ".subset | head -n 1 | wc -l"
+    )
+    res = system(cmd, intern = T)
+
+	if ( res[1] == 0) {
+	    cat(paste0("     ", "No reads found, interval skipped:", loc, "\n"))
+        i = j+1
+        next
+    }
+    #sb43 -- end of check
 
     # Create a BED file for each segment
     k = j - i + 3
@@ -381,7 +395,6 @@ while (i <= length(seg_chr)) {
         "-b ", tmp_bam, ".subset.segs ",
         "| bedtools groupby -g 1,2,3 -c 5 -o mean | sort -k2,2n "
     )
-
     res = system(cmd, intern = T)
     res = t(as.data.frame(strsplit(res, "\t")))
     coverage_of_coord = as.numeric(res[,4]) + 0.01

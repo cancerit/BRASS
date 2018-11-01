@@ -183,7 +183,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->end } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
             @{$low_end_reads_of_rg{$id1}} = grep { $_->end <= $median_pos } @{$low_end_reads_of_rg{$id1}};
             @{$low_end_reads_of_rg{$id2}} = grep { $_->end >  $median_pos } @{$low_end_reads_of_rg{$id2}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
               @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id1}});
@@ -220,7 +220,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->end } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
             @{$low_end_reads_of_rg{$id2}} = grep { $_->end <= $median_pos } @{$low_end_reads_of_rg{$id2}};
             @{$low_end_reads_of_rg{$id1}} = grep { $_->end >  $median_pos } @{$low_end_reads_of_rg{$id1}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$low_end_reads_of_rg{$id2}});
@@ -260,7 +260,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->start } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
             @{$low_end_reads_of_rg{$id1}} = grep { $_->start >= $median_pos } @{$low_end_reads_of_rg{$id1}};
             @{$low_end_reads_of_rg{$id2}} = grep { $_->start <  $median_pos } @{$low_end_reads_of_rg{$id2}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
 
           @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id1}});
@@ -296,7 +296,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->start } (@{$low_end_reads_of_rg{$id1}}, @{$low_end_reads_of_rg{$id2}}))->query();
             @{$low_end_reads_of_rg{$id2}} = grep { $_->start >= $median_pos } @{$low_end_reads_of_rg{$id2}};
             @{$low_end_reads_of_rg{$id1}} = grep { $_->start <  $median_pos } @{$low_end_reads_of_rg{$id1}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @higher_group_reads  = map { $_->query->name } grep( { $_->start >= $clip_pos } @{$low_end_reads_of_rg{$id2}});
@@ -339,7 +339,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->end } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
             @{$high_end_reads_of_rg{$id1}} = grep { $_->end <= $median_pos } @{$high_end_reads_of_rg{$id1}};
             @{$high_end_reads_of_rg{$id2}} = grep { $_->end >  $median_pos } @{$high_end_reads_of_rg{$id2}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id1}});
@@ -376,7 +376,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->end } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
             @{$high_end_reads_of_rg{$id2}} = grep { $_->end <= $median_pos } @{$high_end_reads_of_rg{$id2}};
             @{$high_end_reads_of_rg{$id1}} = grep { $_->end >  $median_pos } @{$high_end_reads_of_rg{$id1}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @lower_group_reads  = map { $_->query->name } grep( { $_->end <= $clip_pos } @{$high_end_reads_of_rg{$id2}});
@@ -416,7 +416,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->start } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
             @{$high_end_reads_of_rg{$id1}} = grep { $_->start >= $median_pos } @{$high_end_reads_of_rg{$id1}};
             @{$high_end_reads_of_rg{$id2}} = grep { $_->start <  $median_pos } @{$high_end_reads_of_rg{$id2}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id1}});
@@ -453,7 +453,7 @@ for my $i (0..($#lines - 1)) {
             my $median_pos = median(map { $_->start } (@{$high_end_reads_of_rg{$id1}}, @{$high_end_reads_of_rg{$id2}}))->query();
             @{$high_end_reads_of_rg{$id2}} = grep { $_->start >= $median_pos } @{$high_end_reads_of_rg{$id2}};
             @{$high_end_reads_of_rg{$id1}} = grep { $_->start <  $median_pos } @{$high_end_reads_of_rg{$id1}};
-            $clip_pos = $median_pos;
+            $clip_pos = $median_pos if $median_pos;
           }
           else {
             @higher_group_reads = map { $_->query->name } grep( { $_->start >=  $clip_pos } @{$high_end_reads_of_rg{$id2}});

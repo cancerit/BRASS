@@ -44,7 +44,7 @@ const my $FILE_FOLD => '%s.%s.ngscn.fb_reads.bed.gz';
 
 die "Usage: genome.fa.fai sample_name indir include_list" unless(scalar @ARGV >= 3);
 
-my ($fai, $sample, $indir, $include) = @ARGV;
+my ($fai, $sample, $indir, $include, $sample_type) = @ARGV;
 die "ERROR: *.fai file must exist with non-zero size\n" unless(-e $fai && -s _);
 die "ERROR: indir must exist\n" unless(-e $indir && -d _);
 die "ERROR: include_list must be provided (csv of valid chrs to use)\n" unless(defined $include);
@@ -70,8 +70,8 @@ my $init_dir = getcwd;
 my $err_code = 0;
 try {
   chdir $indir;
-  cat_to_gzip($FILE_PAIR, $final_pair, $sample, \@chr_order);
-  cat_to_gzip($FILE_FOLD, $final_fold, $sample, \@chr_order);
+  cat_to_gzip($FILE_PAIR, $final_pair, $sample, \@chr_order, $sample_type);
+  cat_to_gzip($FILE_FOLD, $final_fold, $sample, \@chr_order, $sample_type);
 } catch {
   if($_) {
     warn $_;
@@ -84,10 +84,13 @@ try {
 exit $err_code;
 
 sub cat_to_gzip {
-  my ($format, $outfile, $sample, $chrs) = @_;
+  my ($format, $outfile, $sample, $chrs, $sample_type) = @_;
   my @args;
+  my $extended_chr_name;
   for my $chr(@{$chrs}) {
-    push @args, sprintf $format, $sample, $chr;
+    $extended_chr_name = $sample_type if defined $sample_type;
+    $extended_chr_name .=  $chr;
+    push @args, sprintf $format, $sample, $extended_chr_name;
     die "Expected file missing $indir/$args[-1]\n" unless(-e $args[-1]);
   }
   my $command = qq{bash -c 'set -o pipefail; zcat @args | gzip -c > $outfile'};

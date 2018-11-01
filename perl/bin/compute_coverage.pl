@@ -49,13 +49,17 @@ const my $PROPER_INTERSECT => q{bash -c 'set -o pipefail; samtools view -ub -f 2
 const my $FOLDBK_INTERSECT => q{bash -c 'set -o pipefail; (samtools view -H %s; samtools view -F 3854 %s %s | %s %s) | samtools view -Sbu - | bedtools intersect -loj -a %s -b stdin -sorted -c | bgzip -c > %s'};
 
 if(scalar @ARGV < 3) {
-  die "USAGE: ./compute_coverage.pl gc_windows.bed[.gz] in.bam out_path [chr_name]\n";
+  die "USAGE: ./compute_coverage.pl gc_windows.bed[.gz] in.bam out_path [chr_name] [sample_type]\n";
 }
 
 my ($windows, $bam, $out) = @ARGV;
 my $chr_name;
+my $sample_type;
 if(scalar @ARGV == 4) {
   $chr_name = $ARGV[3];
+}elsif(scalar @ARGV == 5) {
+   $sample_type = $ARGV[4];
+   $chr_name = $ARGV[3];
 }
 
 # input checks
@@ -67,13 +71,21 @@ my $sample_name = sanitised_sample_from_bam($bam);
 my $cn_bed_file = qq{$out/${sample_name}.ngscn.bed.gz};
 my $cn_fb_file = qq{$out/${sample_name}.ngscn.fb_reads.bed.gz};
 my $new_windows;
+my $extended_chr_name;
 if(defined $chr_name) {
   # need to get windows for just this chr and write to a tmp file
   # now need to capture all windows from original window file by the chr_name
   $new_windows = "$out/windows_$chr_name.bed";
+
+  # adding sample type will avoid overwritting tumor and normal files
+  # due to name match after adding chromosome postfix e.g, Tumour : BC-1_A.1 Normal : BC-1_A
+
+  $extended_chr_name = $sample_type if defined $sample_type;
+  $extended_chr_name .=  $chr_name;
+
   run_ext(qq{zgrep -wE '^$chr_name' $windows > $new_windows});
-  $cn_bed_file = qq{$out/${sample_name}.$chr_name.ngscn.bed.gz};
-  $cn_fb_file = qq{$out/${sample_name}.$chr_name.ngscn.fb_reads.bed.gz};
+  $cn_bed_file = qq{$out/${sample_name}.$extended_chr_name.ngscn.bed.gz};
+  $cn_fb_file = qq{$out/${sample_name}.$extended_chr_name.ngscn.fb_reads.bed.gz};
 }
 run_ext(sprintf $PROPER_INTERSECT, $bam, $chr_name, ($new_windows || $windows), $cn_bed_file);
 run_ext(sprintf $FOLDBK_INTERSECT, $bam, $bam, $chr_name, $^X, _which('brass_foldback_reads.pl'), $cn_bed_file, $cn_fb_file);

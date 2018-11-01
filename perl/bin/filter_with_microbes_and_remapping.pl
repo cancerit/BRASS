@@ -74,6 +74,7 @@ my $TMP_DIR = q{};
 my $SCORE_ALG = 'ssearch36';
 my $SEARCH_CORES = 1;
 my $MIN_SUPPORT = 3;
+my $UNLINK = q{};
 GetOptions(
   'blat_mapping_threshold=i' => \$BLAT_MAPPING_THRESHOLD,
   'groups_file=s' => \$GROUPS_FILE,
@@ -90,7 +91,9 @@ GetOptions(
   'score_alg=s' => \$SCORE_ALG,
   'search_cores=i' => \$SEARCH_CORES,
   'min_support=s' => \$MIN_SUPPORT,
+  'noclean' => \$UNLINK
 );
+
 
 my %score_method = (emboss => \&pairwise_align_scores_emboss,
                     ssearch36 => \&pairwise_align_scores_ssearch36,
@@ -102,6 +105,14 @@ my $bam_file = $ARGV[1];
 my $fa_file = $ARGV[2];
 my $bedpe_out;
 $bedpe_out = $ARGV[3] if(@ARGV == 4);
+
+# sb43 : when noclean flag is set, don't unlink tmp results
+if ($UNLINK eq q{}){
+    $UNLINK = 1;
+}
+else{
+    $UNLINK = 0;
+}
 
 if($TMP_DIR eq q{}) {
   undef $TMP_DIR;
@@ -142,7 +153,9 @@ close $IN;
 # viral genomes.
 print STDERR "Performing abnormally paired reads remapping...\n";
 my (@low_end_remap_score, @high_end_remap_score, @low_end_footprint, @high_end_footprint);
-my ($all_reads_fh, $all_reads_file_name) = tempfile('allreads_XXXXXX', DIR => $TMP_DIR, UNLINK=>1);
+
+
+my ($all_reads_fh, $all_reads_file_name) = tempfile('allreads_XXXXXX', DIR => $TMP_DIR, UNLINK => $UNLINK);
 my %rg_id_of_read;
 
 for my $i(0..$#regions) {

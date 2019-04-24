@@ -1,6 +1,6 @@
 # Changes
 
-##
+## v6.2.1
 
 * Fixes #80 - allow RGID == 0
 * Resolves #84 - use helper threads where possible

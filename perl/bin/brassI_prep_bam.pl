@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2018 Genome Research Ltd.
+# Copyright (c) 2014-2019 Genome Research Ltd.
 #
 # Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -143,8 +143,7 @@ sub process_header {
     $rg_id = $1 if($row =~ /\tID:([^\t]+)/);
 
     # die horribly if RG ids don't match
-    unless ($bas_ob->get($rg_id, 'readgroup')) { die "Readgroup $rg_id in bam file but not in bas file $!"; }
-
+    unless (defined $bas_ob->get($rg_id, 'readgroup')) { die "Readgroup $rg_id in bam file but not in bas file $!"; }
 
     # The script needs use the information in the *.bas file to augment the Reagd-group line with the 'MI:' tag.
     #     This holds the 'maximum insert' size, this should be calculated as:

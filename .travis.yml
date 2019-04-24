@@ -28,6 +28,8 @@ addons:
    - time
    - unzip
    - zlib1g-dev
+   - libgd-dev
+   - libdb-dev
 
 install:
  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git

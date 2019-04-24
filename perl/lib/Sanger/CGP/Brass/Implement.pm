@@ -1,7 +1,7 @@
 package Sanger::CGP::Brass::Implement;
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2018 Genome Research Ltd.
+# Copyright (c) 2014-2019 Genome Research Ltd.
 #
 # Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -63,7 +63,7 @@ const my $BAMCOLLATE => q{ outputformat=sam exclude= classes=F,F2 T=%s/bamcollat
 # tmpdir, iter, file
 const my $PREP_BAM => q{ -b %s -p %s};
 # basfile[ -e exclude chrs]
-const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s};
+const my $BAMSORT => q{ tmpfile=%s/bamsort_%s inputformat=sam verbose=0 index=1 md5=1 md5filename=%s.md5 indexfilename=%s.bai O=%s outputthreads=%d sortthreads=%d};
 # out_bamname, out_bamname, out_bamname
 
 #genome.fa.fai gc_windows.bed[.gz] in.bam out_path [chr_idx] sample_type
@@ -124,6 +124,9 @@ sub input {
       $rg_prefix = 'N';
     }
 
+    my $helper_threads = int $options->{'threads'}/2 || 1;
+    $helper_threads = 6 if($helper_threads > 6);
+
     my $command = _which('samtools');
     $command .= ' view -F 3854 -q 6 -u '.$input;
     $command .= ' | ';
@@ -139,7 +142,7 @@ sub input {
     $command .= " -i ".join(',', valid_seqs($options));
     $command .= ' | ';
     $command .= _which('bamsort');
-    $command .= sprintf $BAMSORT, $tmp, $index, $outbam, $outbam, $outbam;
+    $command .= sprintf $BAMSORT, $tmp, $index, $outbam, $outbam, $outbam, $helper_threads, $helper_threads;
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, $index);
 

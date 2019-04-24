@@ -1,11 +1,17 @@
 # Changes
 
+## v6.2.1
+
+* Fixes #80 - allow RGID == 0
+* Resolves #84 - use helper threads where possible
+
 ## v6.2.0
+
 * Fixed bug where subset of intervals does not have reads -issue#65
 * Informative error when .bas file is absent - issue#71
 * temp file were now kept after running filter step - issue#73
-* Fixed issue#66 
-* Added script to process centro/telomere data - issue#70  
+* Fixed issue#66
+* Added script to process centro/telomere data - issue#70
 * Fixed bug where intermediate file name matches with one of the sample
 
 ## v6.1.2

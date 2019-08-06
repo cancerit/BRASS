@@ -2,6 +2,11 @@
 
 ## v6.2.1
 
+* Resolves #85 - command line help
+* Resolves #86 - blatSrc code moved
+
+## v6.2.1
+
 * Fixes #80 - allow RGID == 0
 * Resolves #84 - use helper threads where possible
 

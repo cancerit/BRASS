@@ -266,7 +266,7 @@ sub setup {
   PCAP::Cli::file_for_reading('g_cache', $opts{'g_cache'});
   PCAP::Cli::file_for_reading('filter', $opts{'filter'}) if(defined $opts{'filter'});
   PCAP::Cli::file_for_reading('cytoband', $opts{'cytoband'});
-	PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'}) if(defined $opts{'ascat_summary'});
+  PCAP::Cli::file_for_reading('ascat_summary', $opts{'ascat_summary'});
 
   for my $item(qw(tumour normal depth genome viral repeats g_cache filter ascat_summary centtel )) {
     $opts{$item} = File::Spec->rel2abs( $opts{$item} ) if(defined $opts{$item});
@@ -380,16 +380,16 @@ brass.pl [options]
     -cytoband    -cb  Cytoband file for a species build (can be obtained from UCSC)
     -centtel   -ct  TSV file of usable regions of the chromosome
                       Example in perl/share/Rdefault/
-
-  Optional
-    -mingroup  -j   Minimum reads to call group [2].
-    -mincn  	 -cn   Minimum CN change for copynumber_flag [0.3].
-    -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -sampstat  -ss  ASCAT sample statistics file or file containing
                       rho 0.XXXXX [0.75] (~ 1-normalContamination)
                       Ploidy X.XXX [2.0]
                       GenderChr Y [Y]
                       GenderChrFound Y/N [Y]
+
+  Optional
+    -mingroup  -j   Minimum reads to call group [2].
+    -mincn  	 -cn   Minimum CN change for copynumber_flag [0.3].
+    -repeats   -r   Repeat file, see 'make-repeat-file' (legacy)
     -platform    -pl  Sequencing platform (when not defined in BAM header)
 
     -tum_name    -tn  Tumour sample name (when not defined in BAM header)

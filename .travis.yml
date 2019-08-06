@@ -30,6 +30,10 @@ addons:
    - zlib1g-dev
    - libgd-dev
    - libdb-dev
+   - liblzma-dev
+   - libgnutls-dev
+   - libtasn1-6-dev
+   - p11-kit
 
 install:
  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git

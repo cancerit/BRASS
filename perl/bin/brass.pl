@@ -46,7 +46,6 @@ use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
-use Config::IniFiles;
 
 use PCAP::Cli;
 use Sanger::CGP::Brass::Implement;

@@ -78,6 +78,7 @@ p11-kit \
 exonerate \
 libcairo2 \
 gfortran \
+libboost-iostreams-dev \
 unattended-upgrades && \
 unattended-upgrade -d -v && \
 apt-get remove -yq unattended-upgrades && \

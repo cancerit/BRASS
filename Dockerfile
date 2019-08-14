@@ -63,7 +63,13 @@ LABEL maintainer="cgphelp@sanger.ac.uk" \
       version="v6.2.2" \
       description="BRASS docker"
 
-RUN apt-get -yq update
+RUN apt-get -yq update \
+&& apt-get install -qy --no-install-recommends lsb-release
+
+RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu `lsb_release -cs`/" >> /etc/apt/sources.list \
+&& apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
+&& apt-get -yq update
+
 RUN apt-get install -yq --no-install-recommends \
 apt-transport-https \
 locales \

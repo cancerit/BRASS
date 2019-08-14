@@ -87,7 +87,7 @@ fi
 
 ## blat
 if [ ! -e $SETUP_DIR/blat.success ]; then
-  curl -sSL --retry 10 https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc${VER_BLAT}.zip > blat.zip
+  curl -sSL --retry 10 -o blat.zip https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc${VER_BLAT}.zip
   unzip -qu blat.zip
   cd $SETUP_DIR/blatSrc
   BINDIR=$SETUP_DIR/blat/bin
@@ -103,9 +103,36 @@ fi
 
 ## ssearch36
 if [ ! -e $SETUP_DIR/fasta36.success ]; then
-  curl -sSL --retry 10 https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz > distro.tar.gz
+  curl -sSL --retry 10 -o distro.tar.gz https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz
   tar -zxf distro.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
   cp ./fasta-${VER_FASTA36}/bin/ssearch36 $OPT/bin/.
   rm -rf distro.tar.gz
   touch $SETUP_DIR/fasta36.success
+fi
+
+### VAGrENT
+if [ ! -e $SETUP_DIR/VAGrENT.success ]; then
+  curl -sSL --retry 10 -o distro.tar.gz https://github.com/cancerit/VAGrENT/archive/${VER_VAGRENT}.tar.gz
+  rm -rf distro/*
+  tar --strip-components 1 -C distro -xzf distro.tar.gz
+  cd distro
+  cpanm --no-interactive --notest --mirror http://cpan.metacpan.org --notest -l $INST_PATH --installdeps .
+  cpanm -v --no-interactive --mirror http://cpan.metacpan.org -l $INST_PATH .
+  cd $SETUP_DIR
+  rm -rf distro.* distro/*
+  touch $SETUP_DIR/VAGrENT.success
+fi
+
+### grass
+if [ ! -e $SETUP_DIR/grass.success ]; then
+  curl -sSL --retry 10 -o distro.tar.gz https://github.com/cancerit/grass/archive/${VER_GRASS}.tar.gz
+  rm -rf distro/*
+  tar --strip-components 1 -C distro -xzf distro.tar.gz
+  cd distro
+
+  cpanm --no-interactive --notest --mirror http://cpan.metacpan.org --notest -l $INST_PATH --installdeps .
+  cpanm -v --no-interactive --mirror http://cpan.metacpan.org -l $INST_PATH .
+  cd $SETUP_DIR
+  rm -rf distro.* distro/*
+  touch $SETUP_DIR/grass.success
 fi

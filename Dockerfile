@@ -9,6 +9,8 @@ ENV VER_BLAT="35"
 ENV VER_CGPVCF="v2.2.1"
 # for ssearch36, don't include 'v'
 ENV VER_FASTA36="36.3.8g"
+ENV VER_VAGRENT="v3.5.0"
+ENV VER_GRASS="v2.1.1"
 
 RUN apt-get -yq update
 

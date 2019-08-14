@@ -45,6 +45,8 @@ ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
+ENV R_LIBS $OPT/R-lib
+ENV R_LIBS_USER $R_LIBS
 
 # build tools from other repos
 ADD build/opt-build.sh build/
@@ -94,6 +96,8 @@ ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
+ENV R_LIBS $OPT/R-lib
+ENV R_LIBS_USER $R_LIBS
 
 RUN mkdir -p $OPT
 COPY --from=builder $OPT $OPT

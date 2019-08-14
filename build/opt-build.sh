@@ -101,15 +101,11 @@ if [ ! -e $SETUP_DIR/blat.success ]; then
   touch $SETUP_DIR/blat.success
 fi
 
-## R
-#if [ ! -e $SETUP_DIR/R.success ]; then
-#  curl -sSL --retry 10 -o distro.tar.gz http://ftp.heanet.ie/mirrors/cran.r-project.org/src/base/R-3/R-${VER_RBASE}.tar.gz
-#  rm -rf distro/*
-#  tar --strip-components 1 -C distro -xzf distro.tar.gz
-#  cd $SETUP_DIR/distro
-#  ./configure --enable-R-shlib --with-cairo=yes --prefix=$INST_PATH
-#  make -j$CPU
-#  make check
-#  make install
-#  touch $SETUP_DIR/R.success
-#fi
+## ssearch36
+if [ ! -e $SETUP_DIR/fasta36.success ]; then
+  curl -sSL --retry 10 https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz > distro.tar.gz
+  tar -zxf fasta-${VER_FASTA36}-linux64.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
+  cp ./fasta-${VER_FASTA36}/bin/ssearch36 $OPT/bin/.
+  rm -rf distro.tar.gz
+  touch $SETUP_DIR/fasta36.success
+fi

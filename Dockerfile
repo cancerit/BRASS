@@ -7,6 +7,8 @@ ENV VER_BEDTOOLS="2.28.0"
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_BLAT="35"
 ENV VER_CGPVCF="v2.2.1"
+# for ssearch36, don't include 'v'
+ENV VER_FASTA36="36.3.8g"
 
 RUN apt-get -yq update
 

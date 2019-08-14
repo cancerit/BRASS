@@ -104,7 +104,7 @@ fi
 ## ssearch36
 if [ ! -e $SETUP_DIR/fasta36.success ]; then
   curl -sSL --retry 10 https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz > distro.tar.gz
-  tar -zxf fasta-${VER_FASTA36}-linux64.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
+  tar -zxf distro.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
   cp ./fasta-${VER_FASTA36}/bin/ssearch36 $OPT/bin/.
   rm -rf distro.tar.gz
   touch $SETUP_DIR/fasta36.success

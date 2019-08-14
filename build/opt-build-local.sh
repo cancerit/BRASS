@@ -77,7 +77,8 @@ if [ ! -e $SETUP_DIR/velvet.success ]; then
 fi
 
 ## brass c++
-if [ -e $SETUP_DIR/brass.success ]; then
+if [ ! -e $SETUP_DIR/brass.success ]; then
+  cd $INIT_DIR
   rm -rf $INIT_DIR/cansam*
   unzip -q distros/cansam.zip
   mv cansam-master cansam

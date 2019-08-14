@@ -33,6 +33,8 @@ RUN apt-get install -yq --no-install-recommends libssl-dev
 RUN apt-get install -yq --no-install-recommends libcairo2-dev
 RUN apt-get install -yq --no-install-recommends gfortran
 RUN apt-get install -yq --no-install-recommends libblas-dev
+RUN apt-get install -yq --no-install-recommends libboost-all-dev
+RUN apt-get install -yq --no-install-recommends libpstreams-dev
 
 RUN locale-gen en_US.UTF-8
 RUN update-locale LANG=en_US.UTF-8

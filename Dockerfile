@@ -78,6 +78,7 @@ p11-kit \
 exonerate \
 libcairo2 \
 gfortran \
+r-base \
 libboost-iostreams-dev \
 unattended-upgrades && \
 unattended-upgrade -d -v && \

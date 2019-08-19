@@ -1,5 +1,9 @@
 # Changes
 
+## v6.3.0
+
+* Adds stand alone (supported) docker container
+
 ## v6.2.1
 
 * Resolves #85 - command line help

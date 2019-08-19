@@ -1,27 +1,29 @@
 # BRASS
 
+[![Quay Badge][quay-status]][quay-repo]
+
 | Master                                        | Develop                                         |
 | --------------------------------------------- | ----------------------------------------------- |
 | [![Master Badge][travis-master]][travis-base] | [![Develop Badge][travis-develop]][travis-base] |
 
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Breakpoints via assembly](#breakpoints-via-assembly)
-- [Quick installation](#quick-installation)
-	- [Skipping all external dependencies](#skipping-all-external-dependencies)
-	- [Skipping exonerate install](#skipping-exonerate-install)
-- [Pre-requisites](#pre-requisites)
-	- [Perl packages:](#perl-packages)
-	- [R packages](#r-packages)
-	- [Other tools that need to be in path](#other-tools-that-need-to-be-in-path)
-	- [Tools installed by setup.sh](#tools-installed-by-setupsh)
-- [Running BRASS](#running-brass)
-- [Input](#input)
-	- [Initial mapping](#initial-mapping)
-	- [Library quality](#library-quality)
-	- [Additional mapping information](#additional-mapping-information)
-- [Docker, Singularity and Dockstore](#docker-singularity-and-dockstore)
-- [LICENCE](#licence)
+* [Breakpoints via assembly](#breakpoints-via-assembly)
+* [Quick installation](#quick-installation)
+	* [Skipping all external dependencies](#skipping-all-external-dependencies)
+	* [Skipping exonerate install](#skipping-exonerate-install)
+* [Pre-requisites](#pre-requisites)
+	* [Perl packages:](#perl-packages)
+	* [R packages](#r-packages)
+	* [Other tools that need to be in path](#other-tools-that-need-to-be-in-path)
+	* [Tools installed by setup.sh](#tools-installed-by-setupsh)
+* [Running BRASS](#running-brass)
+* [Input](#input)
+	* [Initial mapping](#initial-mapping)
+	* [Library quality](#library-quality)
+	* [Additional mapping information](#additional-mapping-information)
+* [Docker, Singularity and Dockstore](#docker-singularity-and-dockstore)
+* [LICENCE](#licence)
 
 <!-- /TOC -->
 
@@ -146,18 +148,20 @@ automatically for you.
 
 ## Docker, Singularity and Dockstore
 
-There is a pre-built image containing this codebase on quay.io.
+There are pre-built images containing this codebase on quay.io.
 
-* [dockstore-cgpwgs][ds-cgpwgs-git]: Contains additional tools for WGS analysis.
-
-This was primarily designed for use with dockstore.org but can be used as normal containers.
+* [brass][quay-repo]
+  * Just this repo and any dependencies.
+* [dockstore-cgpwgs][ds-cgpwgs-git]
+  * Contains additional tools for WGS analysis
+  * This was primarily designed for use with dockstore.org but can be used as normal container
 
 The docker images are know to work correctly after import into a singularity image.
 
 ## LICENCE
 
 ```
-Copyright (c) 2014-2018 Genome Research Ltd.
+Copyright (c) 2014-2019 Genome Research Ltd.
 
 Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 
@@ -194,3 +198,8 @@ identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
 
 <!-- refs -->
 [ds-cgpwgs-git]: https://github.com/cancerit/dockstore-cgpwgs
+
+<!-- Quay.io -->
+[quay-status]: https://quay.io/repository/wtsicgp/brass/status
+[quay-repo]: https://quay.io/repository/wtsicgp/brass
+[quay-builds]: https://quay.io/repository/wtsicgp/brass?tab=builds

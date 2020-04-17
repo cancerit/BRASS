@@ -600,8 +600,35 @@ sub collect_reads_by_region {
   $dir = ($dir eq '+' ? 1 : -1);
   $mate_dir = ($mate_dir eq '+' ? 1 : -1);
 
-  my @aln = $bam->get_features_by_location($chr, $start, $end);
-  @aln = grep {
+  # my @aln;
+  # for($bam->get_features_by_location($chr, $start, $end)) {
+  #   if(
+  #   # !is_supplementary($_->flag) &&
+  #   $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
+  #   $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
+  #   $_->strand eq $dir &&
+  #   (
+  #     ( $ignore_mate_pos && $_->get_tag_values('FLAGS') =~ /MAP_PAIR/ ) ||
+  #     ( $chr ne $mate_chr || $dir != $mate_dir ) ||
+  #     ( $pos <= $mate_pos && $_->start <= $_->mate_start ) ||
+  #     ( $pos  > $mate_pos && $_->start >= $_->mate_start )
+  #   ) &&
+  #   (
+  #     $ignore_mate_pos ||
+  #     (
+  #       defined $_->mate_seq_id &&
+  #       $_->mate_seq_id eq $mate_chr &&
+  #       $_->mstrand   eq $mate_dir &&
+  #       $_->mate_start  <= $mate_end &&
+  #       $_->mate_start + $_->length - 1 >= $mate_start
+  #     )
+  #   )
+  #   ) {
+  #     push @aln, $_;
+  #   }
+  # }
+
+  my @aln = grep {
     # !is_supplementary($_->flag) &&
     $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
     $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
@@ -615,13 +642,14 @@ sub collect_reads_by_region {
     (
       $ignore_mate_pos ||
       (
+        defined $_->mate_seq_id &&
         $_->mate_seq_id eq $mate_chr &&
         $_->mstrand   eq $mate_dir &&
         $_->mate_start  <= $mate_end &&
         $_->mate_start + $_->length - 1 >= $mate_start
       )
     )
-  } @aln;
+  } $bam->get_features_by_location($chr, $start, $end);
   return @aln;
 }
 

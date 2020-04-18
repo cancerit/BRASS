@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2018 Genome Research Ltd.
+# Copyright (c) 2014-2020 Genome Research Ltd.
 #
 # Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -600,8 +600,7 @@ sub collect_reads_by_region {
   $dir = ($dir eq '+' ? 1 : -1);
   $mate_dir = ($mate_dir eq '+' ? 1 : -1);
 
-  my @aln = $bam->get_features_by_location($chr, $start, $end);
-  @aln = grep {
+  my @aln = grep {
     # !is_supplementary($_->flag) &&
     $_->get_tag_values('FLAGS') =~ /PAIRED/ &&
     $_->get_tag_values('FLAGS') !~ /UNMAPPED/ &&
@@ -615,13 +614,14 @@ sub collect_reads_by_region {
     (
       $ignore_mate_pos ||
       (
+        defined $_->mate_seq_id &&
         $_->mate_seq_id eq $mate_chr &&
         $_->mstrand   eq $mate_dir &&
         $_->mate_start  <= $mate_end &&
         $_->mate_start + $_->length - 1 >= $mate_start
       )
     )
-  } @aln;
+  } $bam->get_features_by_location($chr, $start, $end);
   return @aln;
 }
 

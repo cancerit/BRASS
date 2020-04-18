@@ -1,4 +1,4 @@
-FROM  quay.io/wtsicgp/dockstore-cgpmap:3.1.4 as builder
+FROM  quay.io/wtsicgp/pcap-core:5.0.4 as builder
 
 USER  root
 
@@ -57,6 +57,11 @@ ADD build/opt-build.sh build/
 RUN bash build/opt-build.sh $OPT
 
 # build the tools in this repo, separate to reduce build time on errors
+COPY Rsupport Rsupport
+COPY distros distros
+ADD build/opt-build-local-deps.sh build/
+RUN bash build/opt-build-local-deps.sh $OPT
+
 COPY . .
 RUN bash build/opt-build-local.sh $OPT
 

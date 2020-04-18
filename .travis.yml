@@ -2,70 +2,26 @@ notifications:
   slack: wtsi-cgpit:ptUMR1tkNyZJYd9TpGoss8WR
   email: false
 
-env:
- - CC=gcc
+sudo: false
 
-addons:
- apt:
-  packages:
-   - autoconf
-   - bsdtar
-   - build-essential
-   - curl
-   - exonerate
-   - libboost-iostreams-dev
-   - libboost-dev
-   - libbz2-dev
-   - libcurl4-openssl-dev
-   - libexpat1-dev
-   - libgoogle-perftools-dev
-   - liblzma-dev
-   - libncurses5-dev
-   - libpng12-dev
-   - libpstreams-dev
-   - lsof
-   - nettle-dev
-   - time
-   - unzip
-   - zlib1g-dev
-   - libgd-dev
-   - libdb-dev
-   - liblzma-dev
-   - libgnutls-dev
-   - libtasn1-6-dev
-   - p11-kit
-
-install:
- - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git
- - cd cgpBigWig
- - ./setup.sh $HOME/wtsi-opt
- - cd ../
- - rm -rf cgpBigWig
- - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/PCAP-core.git
- - cd PCAP-core
- - ./setup.sh $HOME/wtsi-opt
- - cd ../
- - rm -rf PCAP-core
- - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
- - cd cgpVcf
- - ./setup.sh $HOME/wtsi-opt
- - cd ../
- - rm -rf cgpVcf
- - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/VAGrENT.git
- - cd VAGrENT
- - ./setup.sh $HOME/wtsi-opt
- - cd ../
- - rm -rf VAGrENT
- - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/grass.git
- - cd grass
- - ./setup.sh $HOME/wtsi-opt
- - cd ../
- - rm -rf grass
-
-language: perl
-
-perl:
- - "5.22"
+services:
+  - docker
 
 script:
- - ./setup.sh $HOME/wtsi-opt 2
+ - set -e
+ - echo 'Build and check docker image'
+ - docker build -t brass .
+ - docker images | grep -c brass
+ - echo 'Verify program(s) from each inherited base image - cgpbigwig'
+ - docker run -t --rm brass bwjoin --version
+ - echo 'Verify program(s) from each inherited base image - pcap-core'
+ - docker run -t --rm brass bwa_mem.pl -version
+ - docker run -t --rm brass bammarkduplicates2 --version
+ - docker run -t --rm brass samtools --version
+ - docker run -t --rm brass bash -c 'bwa 2>&1 | grep Version'
+ - echo 'Verify program(s) from this repo'
+ - docker run -t --rm brass brass.pl --version
+ - docker run -t --rm brass brass-group --version
+ - docker run -t --rm brass brass-assemble --version
+
+

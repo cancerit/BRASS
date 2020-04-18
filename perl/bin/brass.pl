@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ########## LICENCE ##########
-# Copyright (c) 2014-2018 Genome Research Ltd.
+# Copyright (c) 2014-2020 Genome Research Ltd.
 #
 # Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -371,7 +371,7 @@ brass.pl [options]
     -genome    -g   Genome fasta file
     -species   -s   Species name
     -assembly  -as  Assembly name
-    -protocol  -pr  Sequencing protocol (WGS|WXS|RNA)
+    -protocol  -pr  Sequencing protocol (WGS only - remains for compat)
     -g_cache   -gc  Genome cache file.
     -viral     -vi  Virus sequences from NCBI
     -microbe   -mi  Microbe sequences file prefix from NCBI, please exclude '.N.fa.2bit'

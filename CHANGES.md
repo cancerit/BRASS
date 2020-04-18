@@ -1,5 +1,12 @@
 # Changes
 
+## v6.3.1
+
+* Handle undefined value edge case #95.
+  * Thanks to @udvzol for reproducible test data.
+* Updated travis build (#89)
+* Fixed up dockerfile to reduce build time when testing.
+
 ## v6.3.0
 
 * Adds stand alone (supported) docker container

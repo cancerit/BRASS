@@ -35,7 +35,7 @@
 SOURCE_BLAT="https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc35.zip"
 
 # if issues found downgrade to 2.23.0 but can't find any use of bedtools coverage
-SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz"
+SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.28.0/bedtools-2.28.0.tar.gz"
 
 get_distro () {
   EXT=""
@@ -166,6 +166,7 @@ else
     mkdir -p bedtools2
     tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz
     make -C bedtools2 -j$CPU
+    rm -f $INST_PATH/bin/bedtools
     cp bedtools2/bin/* $INST_PATH/bin/.
     touch $SETUP_DIR/bedtools.success
   fi

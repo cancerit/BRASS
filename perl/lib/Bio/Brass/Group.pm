@@ -54,7 +54,7 @@ Control of the matching is the responsibility of the wrapping code (Bio::Brass:M
 
 =cut
 
-const my @EXPECTED => qw(header);
+const my @EXPECTED => qw(header sample_chk hts);
 const my $CHR => 0;
 const my $STRAND => 1;
 const my $START => 2;
@@ -84,6 +84,18 @@ sub _init {
     $self->{"_$key"} = $options{$key};
   }
   $self->parse_header($options{'sample_chk'});
+  $self->max_ins if(exists $self->{_hts});
+}
+
+sub max_ins {
+  my $self = shift;
+  my $max = 0;
+  for my $l(split /\n/, $self->{_hts}->header->text) {
+    next unless($l =~ m/^\@RG/);
+    my ($mi) = $l =~ m/\tMI:(\d+)/;
+    $max = $mi if($mi > $max);
+  }
+  $self->{_mi} = $max;
 }
 
 sub parse_header {
@@ -143,7 +155,10 @@ sub new_group {
   # process it backwards to save messy handling
   my ($self, @record) = @_;
   my $ref = ref $record[0];
-  if($ref eq 'ARRAY') {
+  if($ref eq 'SCALAR') {
+    @record = split "\t", ${$record[0]};
+  }
+  elsif($ref eq 'ARRAY') {
     @record = @{$record[0]};
   }
   elsif($ref eq q{}) {
@@ -157,19 +172,50 @@ sub new_group {
     return 0;
   }
 
-
   my $repeats = pop @record;
   my @read_counts = splice(@record, -$sample_count);
 
-  # ignore close events
   if(exists $self->{'tumour_idx'}) {
     my ($lChr, $lStr, $l5p, $l3p, $hChr, $hStr, $h5p, $h3p) = @record;
+    # ignore close events
     if($lChr eq $hChr && $lStr eq q{+} && $hStr eq q{-} && ($h5p - $l3p) <= $MIN_GAP) {
       return 0;
     }
+
+    my $pad = $self->{_mi};
+
+    # ignore if less than 3 unique starts at low or high breakpoint (pseudo-PCR 20200602)
+    my %want_reads = map {$_ => undef} split ';', $read_lists[$self->{'tumour_idx'}];
+    my $found = 0;
+    my %starts;
+    my $r_iter = $self->{_hts}->features(-type => 'match', -seq_id => $lChr, -start => $l5p-$pad, -end => $l3p+$pad, -iterator => 1);
+    while(my $a = $r_iter->next_seq) {
+      next unless(exists $want_reads{$a->qname});
+      next if($a->start >= $a->mate_start && ($a->seq_id eq q{=} || $a->seq_id eq $a->mate_seq_id));
+      $found++;
+      $starts{$a->start} = 1;
+    }
+    if($found != scalar keys %want_reads) {
+      warn join "\n", keys %want_reads;
+      die sprintf "L: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, scalar keys %want_reads;
+    }
+    return 0 if(scalar keys %starts < 3);
+    $found = 0;
+    %starts = ();
+    $r_iter = $self->{_hts}->features(-type => 'match', -seq_id => $hChr, -start => $h5p-$pad, -end => $h3p+$pad, -iterator => 1);
+    while(my $a = $r_iter->next_seq) {
+      next unless(exists $want_reads{$a->qname});
+      next if($a->start <= $a->mate_start && ($a->seq_id eq q{=} || $a->seq_id eq $a->mate_seq_id));
+      $found++;
+      $starts{$a->start} = 1;
+    }
+    if($found != scalar keys %want_reads) {
+      warn join "\n", keys %want_reads;
+      die sprintf "H: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, scalar keys %want_reads;
+    }
+    return 0 if(scalar keys %starts < 3);
   }
 
-  #my ($lChr $lStr $l5p $l3p $hChr $hStr $h5p $h3p) = @record;
   # in the order it should be reconstructed
   $self->{'_loc_data'} = \@record;
   $self->{'_read_counts'} = \@read_counts;

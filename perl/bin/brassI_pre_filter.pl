@@ -50,11 +50,13 @@ use PCAP::Cli;
 
 my $options = &setup;
 
-my $merger = Bio::Brass::Merge->new(comment_char => '#',
-                                    normal_groups => $options->{'normals'},
-                                    analysis_groups => $options->{'input'},
-                                    tumour => $options->{'tumour'},
-                                    );
+my $merger = Bio::Brass::Merge->new(
+  comment_char => '#',
+  normal_groups => $options->{'normals'},
+  analysis_groups => $options->{'input'},
+  tumour => $options->{'tumour'},
+  htsfile => $options->{'htsfile'},
+);
 
 my $ofh;
 if($options->{'output'} eq '-') {
@@ -70,11 +72,6 @@ $merger->merge_records($ofh);
 
 close $ofh if($options->{'output'} ne '-');
 
-
-
-
-
-
 sub setup {
   my %opts;
   pod2usage(-msg  => "\nERROR: Option must be defined.\n", -verbose => 1,  -output => \*STDERR) if(scalar @ARGV == 0);
@@ -85,6 +82,7 @@ sub setup {
               'o|output=s' => \$opts{'output'},
               'n|normals=s' => \$opts{'normals'},
               't|tumour=s' => \$opts{'tumour'},
+              'b|htsfile=s' => \$opts{'htsfile'},
               'v|version' => \$opts{'version'},
   ) or pod2usage(2);
 
@@ -98,6 +96,7 @@ sub setup {
 
   PCAP::Cli::file_for_reading('input', $opts{'input'}) unless($opts{'input'} eq q{-});
   PCAP::Cli::file_for_reading('normals', $opts{'normals'}) if(defined $opts{'normals'});
+  PCAP::Cli::file_for_reading('htsfile', $opts{'htsfile'});
 
   return \%opts;
 }
@@ -115,13 +114,15 @@ brassI_pre_filter.pl [options]
   Required parameters:
     -output    -o   File or '-' for STDOUT
     -input     -i   Brass groups file or '-' for SDTIN
+    -htsfile   -b   brm (brass remap) BAM/CRAM file for tumour
     -normals   -n   bgzip tabix-ed normal panel groups file
     -tumour    -t   Tumour sample name
 
   Other:
+
     -help      -h   Brief help message.
     -man       -m   Full documentation.
     -version   -v   Version
 
   File list can be full file names or wildcard, e.g.
-    brassI_pre_filter.pl -i Tumour_vs_Normal.groups -o data.filtered.groups -n brass_np.groups.gz -t Tumour
+    brassI_pre_filter.pl -i Tumour_vs_Normal.groups -o data.filtered.groups -n brass_np.groups.gz -t Tumour -b tumour.brm.[bam|cram]

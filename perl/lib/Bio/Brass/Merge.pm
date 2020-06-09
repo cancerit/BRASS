@@ -42,10 +42,11 @@ use Bio::Brass qw($VERSION);
 use Bio::Brass::Group;
 
 use Bio::DB::HTS::Tabix;
+use Bio::DB::HTS;
 
 use Const::Fast qw(const);
 
-const my @EXPECTED => qw(comment_char normal_groups analysis_groups tumour);
+const my @EXPECTED => qw(comment_char normal_groups analysis_groups tumour htsfile);
 
 sub new {
   my ($class, @args) = @_;
@@ -69,7 +70,11 @@ sub _init {
     $self->{"_$key"} = $options{$key};
   }
 
-  $self->{'analysis_groups'} = Bio::Brass::Group->new(header => $self->groups_header, sample_chk => $self->{'_tumour'});
+  $self->{'analysis_groups'} = Bio::Brass::Group->new(
+    header => $self->groups_header,
+    sample_chk => $self->{'_tumour'},
+    hts => Bio::DB::HTS->new(-bam => $self->{'_htsfile'})
+  );
 
   if(defined $self->{'_normal_groups'}) {
     $self->{'normal_groups'} = Bio::Brass::Group->new(header => $self->tabix_header);
@@ -86,6 +91,7 @@ sub merge_records {
   my $brass_np;
   $brass_np = Bio::DB::HTS::Tabix->new(filename => $self->{'_normal_groups'}) if(defined $self->{'_normal_groups'});
   my $fh = $self->{'_analysis_fh'};
+  my @lines;
   while(1) {
     my $line;
     if(exists $self->{'_first_line'}) {
@@ -116,7 +122,7 @@ sub merge_records {
           $record=~s/^[^\t]+/$low_chr/;
           $n_grp->new_group($record);
           next unless($a_grp->high_3p >= $n_grp->high_5p && $a_grp->high_5p <= $n_grp->high_3p);
-          $overlaps{"@{$n_grp->{_loc_data}}"} = $record;
+          $overlaps{"@{$n_grp->{_loc_data}}"} = \$record;
         }
       }
       my $overlap = filter_overlaps(\%overlaps, $n_grp->sample_count);
@@ -145,7 +151,7 @@ sub filter_overlaps {
   my $count_end_pos = 7 + $samples;
   my %best;
   for my $key(@keys) {
-    my @record = split "\t", $overlaps->{$key};
+    my @record = split "\t", ${$overlaps->{$key}};
     my @read_counts = (@record)[8..$count_end_pos];
     my $have_counts = 0;
     my $count_reads = 0;

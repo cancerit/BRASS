@@ -128,7 +128,7 @@ sub input {
     $helper_threads = 6 if($helper_threads > 6);
 
     my $command = _which('samtools');
-    $command .= ' view -F 3854 -q 6 -u '.$input;
+    $command .= ' view -F 3854 -q 6 -u '.$input.' '.join(' ', valid_seqs($options));
     $command .= ' | ';
     $command .= _which('bedtools');
     $command .= sprintf $BED_INTERSECT_V, 'stdin', $options->{'depth'};
@@ -139,7 +139,6 @@ sub input {
     $command .= "$^X ";
     $command .= _which('brassI_prep_bam.pl');
     $command .= sprintf $PREP_BAM, $input.'.bas', $rg_prefix;
-    $command .= " -i ".join(',', valid_seqs($options));
     $command .= ' | ';
     $command .= _which('bamsort');
     $command .= sprintf $BAMSORT, $tmp, $index, $outbam, $outbam, $outbam, $helper_threads, $helper_threads;
@@ -276,6 +275,7 @@ sub group {
   $command .= _which('brassI_pre_filter.pl');
   $command .= sprintf $FILTER_GROUP, $options->{'tumour_name'}, $groups;
   $command .= " -n $options->{filter}" if(exists $options->{'filter'});
+  $command .= " -b $tumour";
 
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), qq{bash -c 'set -o pipefail; $command'}, 0);
 
@@ -402,7 +402,7 @@ sub filter {
                           $options->{'threads'},
                           $bedpe_no_head;
 
-  $remap_micro .= ' -noclean' if $options->{'noclean'};
+  #$remap_micro .= ' -noclean' if $options->{'noclean'};
 
   $remap_micro .= sprintf ' %s %s %s %s',
                           $abs_bkp_file,

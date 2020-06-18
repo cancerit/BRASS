@@ -33,7 +33,7 @@
 
 
 SOURCE_BLAT="https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc35.zip"
-
+VER_FASTA36="36.3.8g"
 # if issues found downgrade to 2.23.0 but can't find any use of bedtools coverage
 SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.28.0/bedtools-2.28.0.tar.gz"
 
@@ -186,6 +186,15 @@ else
     make -j$CPU
     cp $BINDIR/blat $INST_PATH/bin/.
     touch $SETUP_DIR/blat.success
+  fi
+
+  ## ssearch36
+  if [ ! -e $SETUP_DIR/fasta36.success ]; then
+    curl -sSL --retry 10 -o distro.tar.gz https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz
+    tar -zxf distro.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
+    cp ./fasta-${VER_FASTA36}/bin/ssearch36 $OPT/bin/.
+    rm -rf distro.tar.gz fasta-${VER_FASTA36}
+    touch $SETUP_DIR/fasta36.success
   fi
 
 

@@ -130,12 +130,13 @@ sub process_header {
 
   my $count_in_bam = 0;
   foreach my $row(@header) {
-    chomp $row;
     if ($row !~ /^\@RG/) {
       $new_header .= $row;
       push @seq_names, $1 if($row =~ m/^\@SQ.*\tSN:([^\t]+)/);
       next;
     }
+
+    chomp $row;
 
     # process the @RG line
     # order of lines in header MUST NOT CHANGE IN ANY WAY

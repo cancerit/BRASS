@@ -298,7 +298,7 @@ sub setup {
   my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
   if(-e $intermediates && -e $final_logs) {
     warn "NOTE: Presence of intermediates.tar.gz and final logs directories suggests successful complete analysis, please delete to proceed: $intermediates\n";
-    exit 1;
+    exit 0; # don't cause failure
   }
 
   # now safe to apply defaults

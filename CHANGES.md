@@ -1,5 +1,10 @@
 # Changes
 
+## v6.3.2
+
+* Fix edgecase on RG line handling (#99)
+* Ensure attempt to run on completion give exit==0 (#98)
+
 ## v6.3.1
 
 * Handle undefined value edge case #95.

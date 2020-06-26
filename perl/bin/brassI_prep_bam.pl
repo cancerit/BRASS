@@ -130,6 +130,7 @@ sub process_header {
 
   my $count_in_bam = 0;
   foreach my $row(@header) {
+    chomp $row;
     if ($row !~ /^\@RG/) {
       $new_header .= $row;
       push @seq_names, $1 if($row =~ m/^\@SQ.*\tSN:([^\t]+)/);
@@ -179,7 +180,7 @@ sub process_header {
       $row =~ s/(\tID:)([^\t]+)/${1}${p}${2}/;
     }
 
-    $new_header .= $row;
+    $new_header .= $row."\n";
   }
 
   # die horribly if number of RGs in bas and bam don't match

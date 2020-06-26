@@ -141,6 +141,7 @@ sub process_header {
     $count_in_bam++;
     my $rg_id = 0;
     $rg_id = $1 if($row =~ /\tID:([^\t]+)/);
+    chomp $rg_id;
 
     # die horribly if RG ids don't match
     unless (defined $bas_ob->get($rg_id, 'readgroup')) { die "Readgroup $rg_id in bam file but not in bas file $!"; }

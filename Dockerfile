@@ -69,7 +69,7 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="v6.2.2" \
+      version="v6.3.2" \
       description="BRASS docker"
 
 RUN apt-get -yq update \

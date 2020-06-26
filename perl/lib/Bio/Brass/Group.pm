@@ -186,6 +186,9 @@ sub new_group {
 
     # ignore if less than 3 unique starts at low or high breakpoint (pseudo-PCR 20200602)
     my %want_reads = map {$_ => undef} split ';', $read_lists[$self->{'tumour_idx'}];
+    my $want_count = scalar keys %want_reads;
+    #my $want_min = 3;
+    my $want_min = 0.75 * $want_count;
     my $found = 0;
     my %starts;
     my $r_iter = $self->{_hts}->features(-type => 'match', -seq_id => $lChr, -start => $l5p-$pad, -end => $l3p+$pad, -iterator => 1);
@@ -195,11 +198,11 @@ sub new_group {
       $found++;
       $starts{$a->start} = 1;
     }
-    if($found != scalar keys %want_reads) {
+    if($found != $want_count) {
       warn join "\n", keys %want_reads;
-      die sprintf "L: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, scalar keys %want_reads;
+      die sprintf "L: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, $want_count;
     }
-    return 0 if(scalar keys %starts < 3);
+    return 0 if(scalar keys %starts <= $want_min);
     $found = 0;
     %starts = ();
     $r_iter = $self->{_hts}->features(-type => 'match', -seq_id => $hChr, -start => $h5p-$pad, -end => $h3p+$pad, -iterator => 1);
@@ -209,11 +212,11 @@ sub new_group {
       $found++;
       $starts{$a->start} = 1;
     }
-    if($found != scalar keys %want_reads) {
+    if($found != $want_count) {
       warn join "\n", keys %want_reads;
-      die sprintf "H: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, scalar keys %want_reads;
+      die sprintf "H: %s:%d-%d - %s:%d-%d\t%d/%d\n", $lChr, $l5p, $l3p, $hChr, $h5p, $h3p, $found, $want_count;
     }
-    return 0 if(scalar keys %starts < 3);
+    return 0 if(scalar keys %starts < $want_min);
   }
 
   # in the order it should be reconstructed

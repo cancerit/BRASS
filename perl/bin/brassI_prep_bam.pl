@@ -136,13 +136,12 @@ sub process_header {
       next;
     }
 
-    chomp $row;
-
     # process the @RG line
     # order of lines in header MUST NOT CHANGE IN ANY WAY
     $count_in_bam++;
     my $rg_id = 0;
     $rg_id = $1 if($row =~ /\tID:([^\t]+)/);
+    chomp $rg_id;
 
     # die horribly if RG ids don't match
     unless (defined $bas_ob->get($rg_id, 'readgroup')) { die "Readgroup $rg_id in bam file but not in bas file $!"; }
@@ -181,7 +180,7 @@ sub process_header {
       $row =~ s/(\tID:)([^\t]+)/${1}${p}${2}/;
     }
 
-    $new_header .= $row."\n";
+    $new_header .= $row;
   }
 
   # die horribly if number of RGs in bas and bam don't match

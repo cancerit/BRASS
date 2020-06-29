@@ -1,5 +1,9 @@
 # Changes
 
+## v6.3.3
+
+* Singularity specific execution issue corrected
+
 ## v6.3.2
 
 * Fix edgecase on RG line handling (#99)

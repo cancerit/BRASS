@@ -67,7 +67,6 @@ my %index_max = ( 'input'   => 2, # input and cover can run at same time
 {
   my $options = setup();
   my $threads = PCAP::Threaded->new($options->{'threads'});
-  &PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
   # register any process that can run in parallel here
   $threads->add_function('input', \&Sanger::CGP::Brass::Implement::input);

@@ -31,39 +31,15 @@
 # 2009, 2010, 2011, 2012’."
 ########## LICENCE ##########
 
-
-SOURCE_BLAT="https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc35.zip"
-
-# if issues found downgrade to 2.23.0 but can't find any use of bedtools coverage
-SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz"
-
-get_distro () {
-  EXT=""
-  if [[ $2 == *.tar.bz2* ]] ; then
-    EXT="tar.bz2"
-  elif [[ $2 == *.zip* ]] ; then
-    EXT="zip"
-  elif [[ $2 == *.tar.gz* ]] ; then
-    EXT="tar.gz"
-  else
-    echo "I don't understand the file type for $1"
-    exit 1
-  fi
-  if hash curl 2>/dev/null; then
-    curl -sS -o $1.$EXT -L $2
-  else
-    wget -nv -O $1.$EXT $2
-  fi
-}
-
-get_file () {
-# output, source
-  if hash curl 2>/dev/null; then
-    curl --insecure -sS -o $1 -L $2
-  else
-    wget -nv -O $1 $2
-  fi
-}
+# ALL tool versions used by opt-build.sh
+VER_BEDTOOLS="2.29.2"
+VER_VCFTOOLS="0.1.16"
+VER_BLAT="35"
+VER_CGPVCF="v2.2.1"
+# for ssearch36, don't include 'v'
+VER_FASTA36="36.3.8g"
+VER_VAGRENT="v3.7.0"
+VER_GRASS="v2.1.1"
 
 if [ "$#" -lt "1" ] ; then
   echo "Please provide an installation path  such as /opt/pancan"
@@ -77,6 +53,35 @@ if [[ "x$2" == "x" ]] ; then
 else
   INST_METHOD=$2
 fi
+
+# get current directory
+INIT_DIR=`pwd`
+
+set -e
+
+# cleanup inst_path
+mkdir -p $INST_PATH/bin
+cd $INST_PATH
+INST_PATH=`pwd`
+cd $INIT_DIR
+
+# make sure that build is self contained
+PERLROOT=$INST_PATH/lib/perl5
+
+# allows user to knowingly specify other PERL5LIB areas.
+if [ -z ${CGP_PERLLIBS+x} ]; then
+  export PERL5LIB="$PERLROOT"
+else
+  export PERL5LIB="$PERLROOT:$CGP_PERLLIBS"
+fi
+
+export OPT=$INST_PATH
+
+bash build/opt-build.sh $INST_PATH
+bash build/opt-build-local-deps.sh $INST_PATH
+bash build/opt-build-local.sh $INST_PATH
+
+exit 0
 
 CPU=`grep -c ^processor /proc/cpuinfo`
 if [ $? -eq 0 ]; then
@@ -166,6 +171,7 @@ else
     mkdir -p bedtools2
     tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz
     make -C bedtools2 -j$CPU
+    rm -f $INST_PATH/bin/bedtools
     cp bedtools2/bin/* $INST_PATH/bin/.
     touch $SETUP_DIR/bedtools.success
   fi
@@ -185,6 +191,15 @@ else
     make -j$CPU
     cp $BINDIR/blat $INST_PATH/bin/.
     touch $SETUP_DIR/blat.success
+  fi
+
+  ## ssearch36
+  if [ ! -e $SETUP_DIR/fasta36.success ]; then
+    curl -sSL --retry 10 -o distro.tar.gz https://github.com/wrpearson/fasta36/releases/download/fasta-v${VER_FASTA36}/fasta-${VER_FASTA36}-linux64.tar.gz
+    tar -zxf distro.tar.gz ./fasta-${VER_FASTA36}/bin/ssearch36
+    cp ./fasta-${VER_FASTA36}/bin/ssearch36 $OPT/bin/.
+    rm -rf distro.tar.gz fasta-${VER_FASTA36}
+    touch $SETUP_DIR/fasta36.success
   fi
 
 

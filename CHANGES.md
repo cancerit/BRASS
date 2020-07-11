@@ -1,5 +1,9 @@
 # Changes
 
+## v6.3.4
+
+* Bedtools 2.28.0 binary caused stack collision.
+
 ## v6.3.3
 
 * Singularity specific execution issue corrected

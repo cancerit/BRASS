@@ -76,8 +76,10 @@ sub run {
     my ($rname,$mapq,$rnext,$tlen,$seq) = (split /\t/, $r1)[2,4,6,8,9];
     next if($mapq < $MIN_MAPQ);
     next if(($rnext eq '=' || $rname eq $rnext) && abs $tlen < (length $seq) * 2);
-    next unless(first { $rname eq $_ } @good_seqs);
-    next unless(first { $rnext eq $_ } @good_seqs);
+    if(defined $options->{'include'}) {
+      next unless(first { $rname eq $_ } @good_seqs);
+      next unless(first { $rnext eq $_ } @good_seqs);
+    }
     my $mapq2 = (split /\t/, $r2)[4];
     next if($mapq2 < $MIN_MAPQ);
 

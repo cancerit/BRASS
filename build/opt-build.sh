@@ -78,7 +78,7 @@ fi
 
 ## bedtools
 if [ ! -e $SETUP_DIR/bedtools.success ]; then
-  curl -sSL --retry 10 -o $INST_PATH/bin/bedtools https://github.com/arq5x/bedtools2/releases/download/v${VER_BEDTOOLS}/bedtools
+  curl -sSL --retry 10 -o $INST_PATH/bin/bedtools https://github.com/arq5x/bedtools2/releases/download/v${VER_BEDTOOLS}/bedtools.static.binary
   chmod +x $INST_PATH/bin/bedtools
   chmod -w $INST_PATH/bin/bedtools
   touch $SETUP_DIR/bedtools.success

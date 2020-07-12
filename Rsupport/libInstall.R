@@ -18,7 +18,7 @@ library(devtools)
 options(download.file.method = "auto")
 
 ipak(c("data.table"))
-ipak(c("gam"))
+install_github("cran/gam", ref="1.16.1")
 
 if ( version$major == 3 && version$minor < 2 ) {
   install.packages("VGAM_1.0-3.tar.gz", type="source", lib=instLib, lib.loc=instLib)

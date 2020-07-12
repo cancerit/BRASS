@@ -3,7 +3,7 @@ FROM  quay.io/wtsicgp/pcap-core:5.0.5 as builder
 USER  root
 
 # ALL tool versions used by opt-build.sh
-ENV VER_BEDTOOLS="2.28.0"
+ENV VER_BEDTOOLS="2.29.2"
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_BLAT="35"
 ENV VER_CGPVCF="v2.2.1"
@@ -69,7 +69,7 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="v6.3.3" \
+      version="v6.3.4" \
       description="BRASS docker"
 
 RUN apt-get -yq update \

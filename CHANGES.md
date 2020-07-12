@@ -3,6 +3,7 @@
 ## v6.3.4
 
 * Bedtools 2.28.0 binary caused stack collision.
+* Fix R package `gam` to 1.16.1 due to change in behaviour of 1.20 (5th July 2020).
 
 ## v6.3.3
 

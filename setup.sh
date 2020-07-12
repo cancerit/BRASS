@@ -35,7 +35,7 @@
 SOURCE_BLAT="https://hgwdev.gi.ucsc.edu/~kent/src/blatSrc35.zip"
 
 # if issues found downgrade to 2.23.0 but can't find any use of bedtools coverage
-SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz"
+SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools-2.29.2.tar.gz"
 
 get_distro () {
   EXT=""

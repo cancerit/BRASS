@@ -862,8 +862,15 @@ sub get_bam_info {
     $platform = $norm_plat;
   }
 
-  die "Specified tumour name doesn't match BAM header" if(defined $options->{'tumour_name'} && defined $tum_name && $options->{'tumour_name'} ne $tum_name);
-  die "Specified normal name doesn't match BAM header" if(defined $options->{'normal_name'} && defined $norm_name && $options->{'normal_name'} ne $norm_name);
+  if (defined $options->{'tumour_name'} && defined $tum_name && $options->{'tumour_name'} ne $tum_name) {
+    $tum_name = $options->{'tumour_name'};
+    warn "Using supplied tumour name from options.";
+  }
+
+  if (defined $options->{'normal_name'} && defined $norm_name && $options->{'normal_name'} ne $norm_name) {
+      $norm_name = $options->{'normal_name'};
+      warn "Using supplied normal name from options.";
+  }
 
   $options->{'tumour_name'} = $tum_name unless(defined $options->{'tumour_name'});
   $options->{'normal_name'} = $norm_name unless(defined $options->{'normal_name'});
